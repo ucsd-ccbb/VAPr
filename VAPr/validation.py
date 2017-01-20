@@ -55,8 +55,10 @@ def convert_to_nonneg_int(input_val, nullable=False):
         else:
             result = float(input_val)
 
-        if not result.is_integer(): raise ValueError()
-        if result < 0: raise ValueError()
+        if not result.is_integer():
+            raise ValueError()
+        if result < 0:
+            raise ValueError()
         return int(result)
     except ValueError:
         raise ValueError("Input ({0}) must be a non-negative integer".format(input_val))
