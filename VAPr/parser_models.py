@@ -4,7 +4,7 @@ import csv
 import re
 import itertools
 from pymongo import MongoClient
-import variantannotation.vcf_parsing as uvp
+import VAPr.vcf_parsing as vvp
 
 
 class VariantParsing(object):
@@ -20,7 +20,7 @@ class VariantParsing(object):
         self.collection = collection_name
         self.db = db_name
 
-    def gather_chunked_data(self):
+    def push_to_db(self):
 
         while self.csv_parsing.num_lines > self.step*self.chunksize:
 
@@ -41,8 +41,6 @@ class VariantParsing(object):
         """
         Export data do a MongoDB server
         :param list_docs: list of dictionaries containing variant information
-        :param collection_name: name of collection
-        :param db_name: name of database
         :return: null
         """
         client = MongoClient()
@@ -65,7 +63,8 @@ class VariantParsing(object):
         """
         Function designated to place the queries on myvariant.info servers.
 
-        :param variant_list: list of HGVS variant ID's. Usually retrived beforehand using the method get_variants_from_vcf
+        :param variant_list: list of HGVS variant ID's. Usually retrived beforehand using the method
+        get_variants_from_vcf
         from the class VariantParsing.
         :return: list of dictionaries. Each dictionary contains data about a single variant.
         """
@@ -79,9 +78,9 @@ class VariantParsing(object):
     @staticmethod
     def remove_id_key(variant_data):
 
-        for i in variant_data:
-            i.pop("_id", None)
-            i.pop("query", None)
+        for dic in variant_data:
+            dic['hgvs_id'] = dic.pop("_id", None)
+            dic['hgvs_id'] = dic.pop("query", None)
 
         return variant_data
 
@@ -96,8 +95,6 @@ class HgvsParser(object):
     def get_variants_from_vcf(self, step):
         """
         Retrieves variant names from a LARGE vcf file.
-
-        :param vcf_file: initial file containing genomic data.
         :param step: ...
         :return: a list of variants formatted according to HGVS standards
         """
@@ -108,9 +105,10 @@ class HgvsParser(object):
             if len(record.ALT) > 1:
                 for alt in record.ALT:
                     list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-                                                      record.REF, str(alt)))
+                                                          record.REF, str(alt)))
             else:
-                list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS, record.REF, str(record.ALT[0])))
+                list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+                                                      record.REF, str(record.ALT[0])))
 
         return self.complete_chromosome(list_ids[0:self.chunksize])
 
@@ -210,7 +208,6 @@ class AnnovarModels(object):
 
             if key == 'otherinfo':
                 self.dictionary[key] = re.split(r'\t+', self.dictionary[key].rstrip('\t'))
-                self.dictionary[key]['genotype_raw_strings'] = [self.dictionary[key][-2], self.dictionary[key][-1]]
 
         self.dictionary['genotype'] = self.parse_genotype()
 
@@ -218,7 +215,7 @@ class AnnovarModels(object):
 
     def parse_genotype(self):
 
-        parser = uvp.VCFGenotypeStrings()
+        parser = vvp.VCFGenotypeStrings()
         genotype_to_fill = parser.parse(self.dictionary['otherinfo'][-2], self.dictionary['otherinfo'][-1])
 
         gen_dic = {'genotype': genotype_to_fill.genotype,
@@ -262,8 +259,3 @@ class CytoBand(object):
         if '.' in spliced:
             processed['Sub_Band'] = spliced[-1]
         return processed
-
-
-
-
-
