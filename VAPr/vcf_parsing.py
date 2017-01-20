@@ -1,8 +1,7 @@
 # standard libraries
 import logging
 
-import variantannotation.validation
-
+import VAPr.validation
 
 __author__ = 'Birmingham'
 
@@ -107,7 +106,7 @@ class VCFGenotypeInfo:
     @genotype_confidence.setter
     def genotype_confidence(self, value):
         # TODO: Determine if genotype confidence value is limited to being a positive or non-negative number
-        self._genotype_confidence = utilities.validation.convert_to_nullable(value, float)
+        self._genotype_confidence = VAPr.validation.convert_to_nullable(value, float)
 
     @property
     def filter_passing_reads_count(self):
@@ -115,7 +114,7 @@ class VCFGenotypeInfo:
 
     @filter_passing_reads_count.setter
     def filter_passing_reads_count(self, value):
-        self._filter_passing_reads_count = utilities.validation.convert_to_nonneg_int(value, nullable=True)
+        self._filter_passing_reads_count = VAPr.validation.convert_to_nonneg_int(value, nullable=True)
 
 
 class Allele:
@@ -133,7 +132,7 @@ class Allele:
 
     @read_counts.setter
     def read_counts(self, value):
-        self._read_counts = utilities.validation.convert_to_nonneg_int(value, nullable=True)
+        self._read_counts = VAPr.validation.convert_to_nonneg_int(value, nullable=True)
 
 
 class GenotypeLikelihood:
@@ -159,7 +158,7 @@ class GenotypeLikelihood:
 
     @allele1_number.setter
     def allele1_number(self, value):
-        int_value = utilities.validation.convert_to_nonneg_int(value)
+        int_value = VAPr.validation.convert_to_nonneg_int(value)
         if self.allele2_number is not None:
             self._validate_allele_relationship(int_value, self.allele2_number)
         self._allele1_number = int_value
@@ -170,7 +169,7 @@ class GenotypeLikelihood:
 
     @allele2_number.setter
     def allele2_number(self, value):
-        int_value = utilities.validation.convert_to_nonneg_int(value)
+        int_value = VAPr.validation.convert_to_nonneg_int(value)
         if self.allele1_number is not None:
             self._validate_allele_relationship(self.allele1_number, int_value)
         self._allele2_number = int_value
@@ -181,7 +180,7 @@ class GenotypeLikelihood:
 
     @likelihood_neg_exponent.setter
     def likelihood_neg_exponent(self, value):
-        self._likelihood_neg_exponent = utilities.validation.convert_to_nullable(value, float)
+        self._likelihood_neg_exponent = VAPr.validation.convert_to_nullable(value, float)
 
 
 class VCFGenotypeStrings:
@@ -198,7 +197,7 @@ class VCFGenotypeStrings:
     def parse(cls, format_string, info_string):
         result = VCFGenotypeInfo(info_string)
 
-        if format_string not in ('GT:GQ:PL', 'GT:AD:GQ:PL','GT:AD:DP:GQ:PL', 'GT:AD:DP:GQ:PGT:PID:PL'):
+        if format_string not in ('GT:GQ:PL', 'GT:AD:GQ:PL', 'GT:AD:DP:GQ:PL', 'GT:AD:DP:GQ:PGT:PID:PL'):
             raise ValueError("Unrecognized format string: {0}".format(format_string))
 
         if not result.is_null_call:
@@ -211,4 +210,3 @@ class VCFGenotypeStrings:
                 result = parse_func(curr_value, result)
 
         return result
-
