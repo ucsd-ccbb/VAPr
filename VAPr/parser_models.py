@@ -9,14 +9,14 @@ import VAPr.vcf_parsing as vvp
 
 class VariantParsing(object):
 
-    def __init__(self, csv_file, vcf_file, collection_name, db_name):
+    def __init__(self, annotated_file, vcf_file, collection_name, db_name):
 
         self.chunksize = 1000
-        self.step = 25
-        self.csv_file = csv_file
+        self.step = 24
+        self.txt_file = annotated_file
         self.vcf_file = vcf_file
         self.hgvs = HgvsParser(self.vcf_file)
-        self.csv_parsing = CsvParser(self.csv_file)
+        self.csv_parsing = TxtParser(self.txt_file)
         self.collection = collection_name
         self.db = db_name
 
@@ -124,12 +124,12 @@ class HgvsParser(object):
         return expanded_list
 
 
-class CsvParser(object):
+class TxtParser(object):
 
-    def __init__(self, csv_file):
+    def __init__(self, txt_file):
 
-        self.csv_file = csv_file
-        self.num_lines = sum(1 for _ in open(self.csv_file))
+        self.txt_file = txt_file
+        self.num_lines = sum(1 for _ in open(self.txt_file))
         self.chunksize = 1000
         self.columns = ['chr',
                         'start',
@@ -144,7 +144,7 @@ class CsvParser(object):
                         'cytoband',
                         'genomicsuperdups',
                         '1000g20XX',
-                        'esp6500si_all',
+                        'esp6500siv2_all',
                         'cosmic70',
                         'nci60',
                         'otherinfo']
@@ -153,13 +153,14 @@ class CsvParser(object):
 
         listofdicts = []
 
-        with open(self.csv_file, 'r') as csvfile:
+        with open(self.txt_file, 'r') as txt:
 
-            reader = csv.reader(csvfile, delimiter=',')
+            reader = csv.reader(txt, delimiter='\t')
             header = self._normalize_header(next(reader))
 
             for i in itertools.islice(reader, step * self.chunksize, (step + 1) * self.chunksize):
-                sparse_dict = dict(zip(header, i))
+                sparse_dict = dict(zip(header[0:len(header)-1], i[0:len(header)-1]))
+                sparse_dict['otherinfo'] = i[-2::]
                 dict_filled = {k: sparse_dict[k] for k in self.columns if sparse_dict[k] != '.'}
                 modeled = AnnovarModels(dict_filled)
                 listofdicts.append(modeled.final_dict)
@@ -207,7 +208,7 @@ class AnnovarModels(object):
                 self.dictionary[key] = self.to_dict(key)
 
             if key == 'otherinfo':
-                self.dictionary[key] = re.split(r'\t+', self.dictionary[key].rstrip('\t'))
+                self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
 
         self.dictionary['genotype'] = self.parse_genotype()
 
@@ -216,7 +217,7 @@ class AnnovarModels(object):
     def parse_genotype(self):
 
         parser = vvp.VCFGenotypeStrings()
-        genotype_to_fill = parser.parse(self.dictionary['otherinfo'][-2], self.dictionary['otherinfo'][-1])
+        genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
 
         gen_dic = {'genotype': genotype_to_fill.genotype,
                    'filter_passing_reads_count': genotype_to_fill.filter_passing_reads_count,
