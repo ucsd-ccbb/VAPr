@@ -1,46 +1,35 @@
-**variantannotation**
+##VAPr 
+####Variant Annotation and Prioritization package
 
-This package is aimed at providing a way of retrieving variant information using ANNOVAR http://annovar.openbioinformatics.org/en/latest/ and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single database. The data structure used is a python dictionaty, so the data can be easily parsed to a MongoDBinstance.
+This package is aimed at providing a way of retrieving variant information using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL database (MongoDB solely at the moment). 
 
-Required library: myvariant, pymongo. The other ones should be installed natively. Run:
+###Requirements
 
-```pip install myvariant```
+- [MongoDB installation](https://docs.mongodb.com/getting-started/python/)
+- Python 3 and pip3 for installation 
+- [Annovar](http://annovar.openbioinformatics.org/en/latest/user-guide/download/)
 
-To get the package. For more info, https://github.com/SuLab/myvariant.py
+###Background
 
-Basic steps to set up pymongo: install mongodb for your operating system, create a directory /data/db wherever you'd like to store your data.
-Install pymongo:
+VAPr was developed to simplify the steps required to get mutation data from a VCF file to a downstream analysis process. A query system was implemented allowing users to quickly slice the GV data and select variants according to their characteristics, allowing researchers to focus their analysis only on the subset of data that contains meaningful information. Further, this query system allows the user to select the format in which the data can be retrieved. Most notably, CSV or VCF files can be retrieved from the database, allowing any researcher to quickly filter variants and retrieve them in commonly used formats. 
 
-```pip install pymongo```
+####Notes
 
-Then run, on your terminal:
-
-```mongod --dbpath /data/db```
-
-And as soon as you run the scripts from variantannotaiton the data will automatically be stored to it. Database and collection name should be specified (refer to sample code below).
-For pymongo, and more information on how to set up a Mongo Database: https://docs.mongodb.com/getting-started/python/
-
-If you don't have pymongo, you can still get the results in a list, where each item in the list will be a dictionary (JSON formatted) containing the information for the variants coming from both ANNOVAR and myvariant.info.
-
-Other required software tools: ANNOVAR, with some of their datasets installed. The required datasets are the following:
+ANNOVAR, with some of their datasets needs to be installed. The required datasets are the following:
 
 - knownGene
 - tfbsConsSites
 - cytoBand
 - genomicSuperDups
-- gwasCatalog
 - esp6500siv2_all
 - 1000g2015aug_all
-- snp138
-- ljb26_all
-- cg46
-- cg69
 - popfreq_all
 - clinvar_20140929
 - cosmic70
 - nci60
 
-They can be downloaded after ANNOVAR has been installed. Head to the directory where ANNOVAR has been installed and run these commands
+They can be downloaded after ANNOVAR has been installed. Head to the directory where ANNOVAR has been installed and run these commands:
+
 
 
 ```
@@ -49,15 +38,14 @@ perl annotate_variation.pl -buildver hg19 -downdb -webfrom annovar esp6500siv2_a
 ...
 ```
 
-More on how to download and troubleshoot: http://annovar.openbioinformatics.org/en/latest/user-guide/download/
+**NOTE**: automated database download script is on its way. 
 
+More on how to download and troubleshoot: 
 ANNOVAR standard script (this is run automatically, as long as the required databases, as well as ANNOVAR, are installed.
 
-```sudo perl /database/annovar/table_annovar.pl (/filepath) /database/annovar/humandb/ -buildver hg19 -out (/output filepath and name) -remove -protocol knownGene,tfbsConsSites,cytoBand,targetScanS,genomicSuperDups,gwasCatalog,esp6500siv2_all,1000g2015aug_all,snp138,ljb26_all,cg46,cg69,popfreq_all,clinvar_20140929,cosmic70,nci60 -operation g,r,r,r,r,r,f,f,f,f,f,f,f,f,f,f -nastring . -vcfinput -csvout```
+After these steps have been taken, you can proceed and install VAPr as follows:
 
-After these steps have been taken, you can proceed and install variantannotation as follows:
-
-```pip install variantannotation```
+```pip install VARp```
 
 Alternatively, clone repository on your desktop. Unzip archive and run, on your terminal:
 
@@ -67,6 +55,7 @@ cd variantannotation
 python setup.py build
 python setup.py install
 ```
+
 For method 1 and 2, a processed csv file from annovar is required, and it will provide the user with integrated data from annovar and myvariant.info. For methods 3 and 4, the VCF file is enough, and the functions used will create a list of dictionaries with information retrieved from myvariant.info query service.
 
 Here is some sample code for all the methods supplied by the package. It is possible to retrieve the HGVS ID from all the variants contained in a VCF file, thanks to a functionality offered by myvariant.info. It is possible then to integrate the data supplied by myvariant.info databases with ANNOVAR's data.
