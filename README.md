@@ -45,7 +45,7 @@ ANNOVAR standard script (this is run automatically, as long as the required data
 
 After these steps have been taken, you can proceed and install VAPr as follows:
 
-```pip install VARp```
+```pip install VAPr```
 
 Alternatively, clone repository on your desktop. Unzip archive and run, on your terminal:
 
@@ -60,7 +60,12 @@ For method 1 and 2, a processed csv file from annovar is required, and it will p
 
 Here is some sample code for all the methods supplied by the package. It is possible to retrieve the HGVS ID from all the variants contained in a VCF file, thanks to a functionality offered by myvariant.info. It is possible then to integrate the data supplied by myvariant.info databases with ANNOVAR's data.
 
-See this [iPython notebook](https://github.com/Mazzafish/VAPr/blob/master/variantannotation_sample_usage.ipynb) for sample usage.
+###Quick-Startup Guide
+See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr_sample_usage.ipynb) for sample usag
+
+
+###Workflow Overview
+![Workflow](https://github.com/ucsd-ccbb/VAPr/blob/master/simpler.jpg)
 
 
 **Citations**
