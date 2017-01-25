@@ -1,0 +1,392 @@
+
+{
+  "_id": ObjectId("5887c6d3bc644e51c028971a"),
+  "chr": "chr19",
+  "cytoband": {
+    "Region": "13",
+    "Sub_Band": "41",
+    "Chromosome": 19,
+    "Band": "q",
+    "Name": "19q13.41"
+  },
+  "alt": "C",
+  "hg19": {
+    "end": 25194768,
+    "start": 25194768
+  },
+  "wellderly": {
+    "gene": [
+      "ENTPD6",
+      "CD39L2"
+    ],
+    "vartype": "snp",
+    "genotypes": [
+      {
+        "count": 39,
+        "freq": 0.19500000000000000666,
+        "genotype": "A/G"
+      },
+      {
+        "count": 159,
+        "freq": 0.79500000000000003997,
+        "genotype": "G/G"
+      },
+      {
+        "count": 2,
+        "freq": 0.010000000000000008882,
+        "genotype": "A/A"
+      }
+    ],
+    "alleles": [
+      {
+        "freq": 0.10749999999999999833,
+        "allele": "A"
+      },
+      {
+        "freq": 0.89249999999999996003,
+        "allele": "G"
+      }
+    ],
+    "chrom": "20",
+    "alt": "G",
+    "ref": "A",
+    "hg19": {
+      "end": 25194768,
+      "start": 25194768
+    },
+    "pos": 25194768
+  },
+  "func_knowngene": "intronic",
+  "gene_knowngene": "KLK5",
+  "1000g20XX": 0.80870600000000003593,
+  "snpeff": {
+    "ann": [
+      {
+        "effect": "intron_variant",
+        "transcript_biotype": "Coding",
+        "total": "14",
+        "putative_impact": "MODIFIER",
+        "rank": "5",
+        "hgvs_c": "c.597+726A>G",
+        "genename": "ENTPD6",
+        "feature_id": "NM_001247.2",
+        "feature_type": "transcript",
+        "gene_id": "ENTPD6"
+      },
+      {
+        "effect": "intron_variant",
+        "transcript_biotype": "Coding",
+        "total": "13",
+        "putative_impact": "MODIFIER",
+        "rank": "4",
+        "hgvs_c": "c.546+726A>G",
+        "genename": "ENTPD6",
+        "feature_id": "NM_001114089.1",
+        "feature_type": "transcript",
+        "gene_id": "ENTPD6"
+      }
+    ]
+  },
+  "dbsnp": {
+    "dbsnp_build": 114,
+    "vartype": "snp",
+    "alt": "G",
+    "validated": true,
+    "gmaf": 0.93889999999999995683,
+    "alleles": [
+      {
+        "freq": 0.061100000000000001532,
+        "allele": "A"
+      },
+      {
+        "freq": 0.93889999999999995683,
+        "allele": "G"
+      }
+    ],
+    "hg19": {
+      "end": 25194768,
+      "start": 25194768
+    },
+    "class": "SNV",
+    "gene": {
+      "geneid": "955",
+      "symbol": "ENTPD6"
+    },
+    "flags": [
+      "ASP",
+      "G5",
+      "GNO",
+      "HD",
+      "INT",
+      "KGPhase1",
+      "KGPhase3",
+      "SLO"
+    ],
+    "ref": "A",
+    "var_subtype": "ts",
+    "chrom": "20",
+    "allele_origin": "unspecified",
+    "rsid": "rs6083780"
+  },
+  "genotype": {
+    "alleles": [
+      0,
+      2
+    ],
+    "genotype_lieklihoods": [
+      89.0,
+      6.0,
+      0.0
+    ],
+    "filter_passing_reads_count": 2,
+    "genotype": "1/1"
+  },
+  "end": 51447065,
+  "vcf": {
+    "alt": "G",
+    "position": "25194768",
+    "ref": "A"
+  },
+  "cadd": {
+    "_license": "http://goo.gl/bkpNhq",
+    "min_dist_tse": 667,
+    "cpg": 0.080000000000000001665,
+    "phred": 3.7189999999999998614,
+    "mutindex": -40,
+    "phast_cons": {
+      "mammalian": 0.0010000000000000000208,
+      "primate": 0.010999999999999999362,
+      "vertebrate": 0.0010000000000000000208
+    },
+    "alt": "G",
+    "phylop": {
+      "mammalian": -0.0070000000000000001457,
+      "primate": 0.50900000000000000799,
+      "vertebrate": 0.0
+    },
+    "segway": "TF2",
+    "mapability": {
+      "35bp": 1,
+      "20bp": 1
+    },
+    "isknownvariant": "TRUE",
+    "gc": 0.64000000000000001332,
+    "rawscore": 0.11039300000000000501,
+    "1000g": {
+      "af": 0.93999999999999994671,
+      "afr": 1.0,
+      "asn": 0.98999999999999999112,
+      "eur": 0.86999999999999999556,
+      "amr": 0.93000000000000004885
+    },
+    "istv": "FALSE",
+    "pos": 25194768,
+    "consequence": [
+      "UPSTREAM",
+      "INTRONIC"
+    ],
+    "dna": {
+      "mgw": 0.26000000000000000888,
+      "prot": 1.8500000000000000888,
+      "roll": 2.5699999999999998401,
+      "helt": 0.46000000000000001998
+    },
+    "encode": {
+      "h3k4me3": 4.0,
+      "nucleo": 1.3000000000000000444,
+      "h3k4me1": 4.4800000000000004263,
+      "h3k27ac": 7.4000000000000003553
+    },
+    "anc": "G",
+    "consdetail": [
+      "upstream",
+      "intron"
+    ],
+    "consscore": [
+      1,
+      2
+    ],
+    "gene": [
+      {
+        "genename": "Y_RNA",
+        "feature_id": "ENST00000365544",
+        "gene_id": "ENSG00000202414"
+      },
+      {
+        "ccds_id": "CCDS13170.1",
+        "genename": "ENTPD6",
+        "feature_id": "ENST00000376652",
+        "gene_id": "ENSG00000197586"
+      }
+    ],
+    "annotype": [
+      "Intergenic",
+      "Transcript"
+    ],
+    "fitcons": 0.062364000000000002766,
+    "min_dist_tss": 567,
+    "type": "SNV",
+    "ref": "A",
+    "isderived": "FALSE",
+    "chrom": 20,
+    "chmm": {
+      "quies": 0.016000000000000000333,
+      "bivflnk": 0.0,
+      "reprpcwk": 0.0,
+      "tssbiv": 0.0,
+      "tssaflnk": 0.0,
+      "enh": 0.016000000000000000333,
+      "tssa": 0.0,
+      "enhbiv": 0.0,
+      "znfrpts": 0.0,
+      "het": 0.0,
+      "tx": 0.73999999999999999112,
+      "reprpc": 0.0,
+      "txwk": 0.22800000000000000822,
+      "txflnk": 0.0
+    },
+    "gerp": {
+      "n": 1.0200000000000000178,
+      "s": -0.016500000000000000777
+    },
+    "length": 0,
+    "bstatistic": 675
+  },
+  "otherinfo": [
+    "GT:AD:DP:GQ:PL",
+    "1/1:0,2:2:6:89,6,0"
+  ],
+  "hgvs_id": "chr20:g.25194768A>G",
+  "esp6500siv2_all": "0.71",
+  "ref": "T",
+  "chrom": "20",
+  "grasp": {
+    "exclusively_male_female": "n",
+    "initial_sample_description": [
+      "Up to 46186 EA individuals",
+      [
+        "Up to 3445 EA cases",
+        " 6935 EA controls"
+      ],
+      "69395 EA individuals",
+      "69395 EA individuals"
+    ],
+    "creation_date": "8/17/12",
+    "gwas_ancestry_description": "European",
+    "srsid": 6083780,
+    "platform_snps_passing_qc": [
+      "Affymetrix & Illumina [~2.5 million] (imputed)",
+      "Illumina [528745]",
+      [
+        "Affymetrix",
+        " Illumina & Perlegen [~2.5 million] (imputed)"
+      ],
+      [
+        "Affymetrix",
+        " Illumina & Perlegen [~2.5 million] (imputed)"
+      ]
+    ],
+    "hg19": {
+      "chr": 20,
+      "pos": 25194768
+    },
+    "publication": [
+      {
+        "pmid": 20081858,
+        "phenotype": "HOMA-B",
+        "p_value": 0.033930000000000001825,
+        "snpid": "rs6083780",
+        "paper_phenotype_description": [
+          "Glucose homeostasis traits (fasting glucose",
+          " fasting insulin",
+          " HOMA-B",
+          " HOMA-IR)"
+        ],
+        "date_pub": "1/17/2010",
+        "title": "New genetic loci implicated in fasting glucose homeostasis and their impact on type 2 diabetes risk.",
+        "location_within_paper": "FullData",
+        "paper_phenotype_categories": "Quantitative trait(s);Type 2 diabetes (T2D);Blood-related",
+        "journal": "Nat Genet"
+      },
+      {
+        "pmid": 20522523,
+        "phenotype": "Partial epilepsy",
+        "p_value": 0.022849999999999998784,
+        "snpid": "rs6083780",
+        "paper_phenotype_description": "Epilepsy (partial epilepsy)",
+        "date_pub": "6/22/2010",
+        "title": "Common genetic variation and susceptibility to partial epilepsies: a genome-wide association study.",
+        "location_within_paper": "FullScan",
+        "paper_phenotype_categories": "Neuro;Epilepsy",
+        "journal": "Brain"
+      },
+      {
+        "pmid": 21909115,
+        "phenotype": "Systolic blood pressure (SBP)",
+        "p_value": 0.007100000000000000408,
+        "snpid": "rs6083780",
+        "paper_phenotype_description": "Blood pressure",
+        "date_pub": "9/11/2011",
+        "title": "Genetic variants in novel pathways influence blood pressure and cardiovascular disease risk.",
+        "location_within_paper": "Full Data",
+        "paper_phenotype_categories": "Quantitative trait(s);Blood pressure;CVD risk factor (CVD RF)",
+        "journal": "Nature"
+      },
+      {
+        "pmid": 21909115,
+        "phenotype": "Diastolic blood pressure (DBP)",
+        "p_value": 0.01200000000000000025,
+        "snpid": "rs6083780",
+        "paper_phenotype_description": "Blood pressure",
+        "date_pub": "9/11/2011",
+        "title": "Genetic variants in novel pathways influence blood pressure and cardiovascular disease risk.",
+        "location_within_paper": "Full Data",
+        "paper_phenotype_categories": "Quantitative trait(s);Blood pressure;CVD risk factor (CVD RF)",
+        "journal": "Nature"
+      }
+    ],
+    "last_curation_date": "8/17/12",
+    "replication": [
+      {
+        "total_samples": 76558,
+        "european": 76558
+      },
+      {
+        "total_samples": 133661,
+        "european": 133661
+      },
+      {
+        "total_samples": 133661,
+        "european": 133661
+      }
+    ],
+    "discovery": [
+      {
+        "total_samples": 46186,
+        "european": 46186
+      },
+      {
+        "total_samples": 10380,
+        "european": 10380
+      },
+      {
+        "total_samples": 69395,
+        "european": 69395
+      },
+      {
+        "total_samples": 69395,
+        "european": 69395
+      }
+    ],
+    "hupfield": "Jan2014",
+    "includes_male_female_only_analyses": "n",
+    "in_gene": "(ENTPD6)",
+    "replication_sample_description": [
+      "up to 76558 EA individuals",
+      "NR",
+      "133661 EA individuals",
+      "133661 EA individuals"
+    ]
+  },
+  "start": 51447065
+}

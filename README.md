@@ -61,8 +61,17 @@ For method 1 and 2, a processed csv file from annovar is required, and it will p
 Here is some sample code for all the methods supplied by the package. It is possible to retrieve the HGVS ID from all the variants contained in a VCF file, thanks to a functionality offered by myvariant.info. It is possible then to integrate the data supplied by myvariant.info databases with ANNOVAR's data.
 
 ###Quick-Startup Guide
-See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr_sample_usage.ipynb) for sample usag
+See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr_sample_usage.ipynb) for sample usage. 
 
+###Available Methods
+The package offers 4 different methods to obtain variant data. Two of them require annovar, while the other two are based solely on the use of myvariant.info service. The latter can be used without having to worry about downloading and installing annovar databases, but it tends to return partial or no information for some variants. 
+
+The different methods also enable the user to decide how the data will be parsed to MongoDB. 1 and 3 parse the data by chunks: the user specifies a number of variants (usually 1000), and the data from the vcf and csv files are parsed as soon as those 1000 variants are processed and integrated. This enables huge files to be processed without having to hold them in memory and potentially cause a Memory Overflow error. 
+
+Methods 2 and 4, on the other hand, process the files on their entirety and send them to MongoDB at once.
+
+###Data Models
+A sample entry in the Mongo Database will look like [this](
 
 ###Workflow Overview
 ![Workflow](https://github.com/ucsd-ccbb/VAPr/blob/master/simpler.jpg)
