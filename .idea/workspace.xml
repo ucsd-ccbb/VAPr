@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3c97aee6-3f5b-4468-a574-120a955935ac" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/VAPr/sample_variant_document" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/VAPr/sample_variant_document" afterPath="$PROJECT_DIR$/sample_variant_document" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/VAPr_sample_usage.ipynb" afterPath="$PROJECT_DIR$/VAPr_sample_usage.ipynb" />
     </list>
     <ignored path="VAPr.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -98,10 +96,10 @@
         </entry>
       </file>
       <file leaf-file-name="sample_variant_document" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/VAPr/sample_variant_document">
+        <entry file="file://$PROJECT_DIR$/sample_variant_document">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="676">
-              <caret line="384" column="35" selection-start-line="384" selection-start-column="35" selection-end-line="384" selection-end-column="35" />
+            <state relative-caret-position="721">
+              <caret line="388" column="5" selection-start-line="388" selection-start-column="5" selection-end-line="388" selection-end-column="5" />
               <folding />
             </state>
           </provider>
@@ -221,6 +219,11 @@
   </component>
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -642,10 +645,10 @@
         <state />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VAPr/sample_variant_document">
+    <entry file="file://$PROJECT_DIR$/sample_variant_document">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="676">
-          <caret line="384" column="35" selection-start-line="384" selection-start-column="35" selection-end-line="384" selection-end-column="35" />
+        <state relative-caret-position="721">
+          <caret line="388" column="5" selection-start-line="388" selection-start-column="5" selection-end-line="388" selection-end-column="5" />
           <folding />
         </state>
       </provider>
