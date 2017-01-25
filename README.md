@@ -63,6 +63,9 @@ Here is some sample code for all the methods supplied by the package. It is poss
 ###Quick-Startup Guide
 See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr_sample_usage.ipynb) for sample usage. 
 
+###Workflow Overview
+![Workflow](https://github.com/ucsd-ccbb/VAPr/blob/master/simpler.jpg)
+
 ###Available Methods
 The package offers 4 different methods to obtain variant data. Two of them require annovar, while the other two are based solely on the use of myvariant.info service. The latter can be used without having to worry about downloading and installing annovar databases, but it tends to return partial or no information for some variants. 
 
@@ -70,11 +73,170 @@ The different methods also enable the user to decide how the data will be parsed
 
 Methods 2 and 4, on the other hand, process the files on their entirety and send them to MongoDB at once.
 
-###Data Models
-A sample entry in the Mongo Database will look like [this](
+####Method 1 & 3
 
-###Workflow Overview
-![Workflow](https://github.com/ucsd-ccbb/VAPr/blob/master/simpler.jpg)
+####Method 2 & 4
+
+
+###Data Models
+A sample entry in the Mongo Database will look like [this](https://github.com/ucsd-ccbb/VAPr/blob/master/sample_variant_document). The variaty of data that can be retrieved from the sources results from the richness of databases that can be accessed through myvariant.info. However, not every variant will have such data readily available. In some cases, the data will be restricted to what can be inferred from the vcf file and the annotation carried out with annovar. In that case, the entries that will be found in the document will be the following:
+
+    {
+      "_id": ObjectId("5887c6d3bc644e51c028971a"),
+      "chr": "chr19",
+      "cytoband": {
+        "Region": "13",
+        "Sub_Band": "41",
+        "Chromosome": 19,
+        "Band": "q",
+        "Name": "19q13.41"
+            },
+            
+      "genotype": {
+        "alleles": [
+            0,
+            2
+            ],
+        "genotype_lieklihoods": [
+              89.0,
+              6.0,
+              0.0
+                ],
+        "filter_passing_reads_count": 2,
+        "genotype": "1/1"
+          },
+          
+      "end": 51447065,
+      "vcf": {
+        "alt": "G",
+        "position": "25194768",
+        "ref": "A"
+            }
+        
+      "hgvs_id": "chr20:g.25194768A>G",
+      "esp6500siv2_all": "0.71"
+    }
+
+
+###Filtering 
+
+Three different pre-made filters that allow for the retrieval of specific variants have been implemented. The filters are in the form of MongoDB queries, and are designed to provide the user with a set of relevant variants. In case the user would like to define its own querying, a template is provided. 
+The output of the queries is a list of dictionaries (JSON documents), where each dictionary contains data relative to one variant. 
+
+Further, the package allows the user to parse these variants into an annotated csv or vcf file. 
+If needed, annotated, unfiltered vcf and csv files can also be created. They will have the same length (number of variants) as the original files, but will contain much more complete annotation data coming from myvariant.info and ANNOVAR databases. 
+
+To create a csv file, just the filtered output is needed. To create an annotated vcf file, a tab indexed file (.tbi) file is needed (see comments in  section Create unfiltered annotated vcf and csv files at the end of this page). This can be created using tabix.  
+
+First, the file needs to be compressed:
+
+From the command line, running:
+
+`bgzip -c input_file.vcf > input_file.vcf.gz`
+
+returns `input_vcf_file.vcf.gz`
+
+and running 
+
+`tabix input_vcf_file.vcf.gz`
+
+will return: `input_vcf_file.vcf.gz.tbi`
+
+#### Filter #1: specifying cancer-specifc rare variants
+
+ - filter 1: ThousandGenomeAll < 0.05 or info not available
+ - filter 2: ESP6500siv2_all < 0.05 or info not available
+ - filter 3: cosmic70 information is present
+ - filter 4: Func_knownGene is exonic, splicing, or both
+ - filter 5: ExonicFunc_knownGene is not "synonymous SNV"
+ - filter 6: Read Depth (DP) > 10
+
+        filepath = '.../data/files'
+        #Create output files (if needed): specify name of files and path 
+        rare_cancer_variants_csv = filepath + "/tumor_rna_rare_cancer_vars_csv.csv"
+        rare_cancer_variants_vcf = filepath + "/tumor_rna_rare_cancer_vars_vcf.vcf"
+        input_vcf_compressed = filepath + '/test_vcf/Tumor_RNAseq_variants.vcf.gz'
+        
+        #Apply filter.
+        filter_collection = MongoDB_querying.Filters(db_name, collection_name)
+        rare_cancer_variants = filter_collection.rare_cancer_variant()
+        
+        #Crete writer object for filtered lists:
+        my_writer = create_output_files.FileWriter(db_name, collection_name)
+        
+        #cancer variants filtered files
+        my_writer.generate_annotated_csv(rare_cancer_variants, rare_cancer_variants_csv)
+        my_writer.generate_annotated_vcf(rare_cancer_variants,input_vcf_compressed, rare_cancer_variants_vcf)
+
+
+### Filter #2: specifying rare disease-specifc (rare) variants
+
+- filter 1: ThousandGenomeAll < 0.05 or info not available
+- filter 2: ESP6500siv2_all < 0.05 or info not available
+- filter 3: cosmic70 information is present
+- filter 4: Func_knownGene is exonic, splicing, or both
+- filter 5: ExonicFunc_knownGene is not "synonymous SNV"
+- filter 6: Read Depth (DP) > 10
+- filter 7: Clinvar data is present 
+
+        filter_collection = MongoDB_querying.Filters(db_name, collection_name)
+        rare_disease_variants = filter_collection.rare_disease_variant()
+
+### Filter #3: specifying rare disease-specifc (rare) variants with high impact
+
+- filter 1: ThousandGenomeAll < 0.05 or info not available
+- filter 2: ESP6500siv2_all < 0.05 or info not available
+- filter 3: cosmic70 information is present
+- filter 4: Func_knownGene is exonic, splicing, or both
+- filter 5: ExonicFunc_knownGene is not "synonymous SNV"
+- filter 6: Read Depth (DP) > 10
+- filter 7: Clinvar data is present 
+- filter 8: cadd.phred > 10
+
+
+        filter_collection = MongoDB_querying.Filters(db_name, collection_name)
+        rare_high_impact_variants = filter_collection.rare_high_impact_variants()
+
+
+### Create your own filter
+
+As long as you have a MongoDB instance running, filtering can be perfomed trough pymongo as shown by the code below. If a list is intended to be created from it, simply add: `filter2 = list(filter2)`
+
+If you'd like to customize your filters, a good idea would be to look at the available fields to be filtered. Looking at the myvariant.info [documentation](http://docs.myvariant.info/en/latest/doc/data.html), you can see what are all the fields avaialble and can be used for filtering. 
+
+        from pymongo import MongoClient
+        
+        client = MongoClient()
+        db = client.My_Variant_Database
+        collection = db.ANNOVAR_MyVariant_chunks
+        
+        filter2 = collection.find({ "$and": [
+                                         {"$or": [{"ThousandGenomeAll": {"$lt": 0.05}}, {"ThousandGenomeAll": {"$exists": False}}]},
+                                         {"$or": [{"ESP6500siv2_all": { "$lt": 0.05}}, {"ESP6500siv2_all": { "$exists": False}}]},
+                                         {"$or": [{"Func_knownGene": "exonic"}, {"Func_knownGene": "splicing"}]},
+                                         {"ExonicFunc_knownGene": {"$ne": "synonymous SNV"}},
+                                         {"Genotype_Call.DP": {"$gte": 10}},
+                                         {"cosmic70": { "$exists": True}}
+                                 ]})
+
+
+### Create unfiltered annotated vcf and csv files 
+This output file will contains all annotation data. This may be useful for researchers interested in obtaining a full description of their files.
+
+        #Create output files (if needed): specify name of files and path 
+        out_unfiltered_vcf_file = filepath + "/out_unfiltered_rnaseq_vcf.vcf"
+        out_unfiltered_csv_file = filepath + "/out_unfiltered_rnaseq_csv.csv"
+        input_vcf_compressed = filepath + '/test_vcf/Tumor_RNAseq_variants.vcf.gz'
+        
+        #Create writer object
+        #db and collection name must be specified since no list is given. The entire collection will be queried. 
+        my_writer = create_output_files.FileWriter(db_name, collection_name)
+        
+        #Write collection to csv and vcf
+        #The in_vcf_file must be the .vcf.gz file and it needs to have an associated .tbi file. 
+        
+        my_writer.generate_unfiltered_annotated_csv(out_unfiltered_csv_file)
+        my_writer.generate_unfiltered_annotated_vcf(input_vcf_compressed, out_unfiltered_vcf_file)
 
 
 **Citations**
