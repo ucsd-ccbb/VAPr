@@ -12,10 +12,11 @@ This package is aimed at providing a way of retrieving variant information using
 ###Background
 
 VAPr was developed to simplify the steps required to get mutation data from a VCF file to a downstream analysis process. A query system was implemented allowing users to quickly slice the GV data and select variants according to their characteristics, allowing researchers to focus their analysis only on the subset of data that contains meaningful information. Further, this query system allows the user to select the format in which the data can be retrieved. Most notably, CSV or VCF files can be retrieved from the database, allowing any researcher to quickly filter variants and retrieve them in commonly used formats. 
+The package can also be installed and used without having to download Annovar. In that case, variant data can be retrieved solely by myvariant.info and rapidly parsed to the mongoDB instance. 
 
 ####Notes
 
-ANNOVAR, alongside with some of their data sets, needs to be installed. The required data sets are the following:
+ANNOVAR, alongside with some of their data sets, should to be installed. The required data sets to benefit from the full functionalities of the package are the following:
 
 - knownGene
 - tfbsConsSites
@@ -29,7 +30,6 @@ ANNOVAR, alongside with some of their data sets, needs to be installed. The requ
 - nci60
 
 They can be downloaded after ANNOVAR has been installed. Head to the directory where ANNOVAR has been installed and run these commands:
-
 
 
 ```
@@ -56,27 +56,18 @@ python setup.py build
 python setup.py install
 ```
 
-For method 1 and 2, a processed csv file from annovar is required, and it will provide the user with integrated data from annovar and myvariant.info. For methods 3 and 4, the VCF file is enough, and the functions used will create a list of dictionaries with information retrieved from myvariant.info query service.
-
-Here is some sample code for all the methods supplied by the package. It is possible to retrieve the HGVS ID from all the variants contained in a VCF file, thanks to a functionality offered by myvariant.info. It is possible then to integrate the data supplied by myvariant.info databases with ANNOVAR's data.
+Sample code for all the methods supplied by the package is provided. 
 
 ###Quick-Startup Guide
-See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr_sample_usage.ipynb) for sample usage. 
+See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/Quick%20Start-Up%20Guide.ipynb) for sample usage; the complete guide can be found [here](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr%20Sample%20Usage.ipynb). 
+
 
 ###Workflow Overview
 ![Workflow](https://github.com/ucsd-ccbb/VAPr/blob/master/simpler.jpg)
 
 ###Available Methods
-The package offers 4 different methods to obtain variant data. Two of them require annovar, while the other two are based solely on the use of myvariant.info service. The latter can be used without having to worry about downloading and installing annovar databases, but it tends to return partial or no information for some variants. 
-
-The different methods also enable the user to decide how the data will be parsed to MongoDB. 1 and 3 parse the data by chunks: the user specifies a number of variants (usually 1000), and the data from the vcf and csv files are parsed as soon as those 1000 variants are processed and integrated. This enables huge files to be processed without having to hold them in memory and potentially cause a Memory Overflow error. 
-
-Methods 2 and 4, on the other hand, process the files on their entirety and send them to MongoDB at once.
-
-####Method 1 & 3
-
-####Method 2 & 4
-
+The package offers 2 different ways to obtain variant data. One requires annovar, while the other is based solely on the use of myvariant.info service. The latter can be used without having to worry about downloading and installing annovar databases, but it tends to return partial or no information for some variants. 
+Calling the methods is extremely straightforward since the syntax is the same. The main difference is in the arguments passed to the class VariantParsing.
 
 ###Data Models
 A sample entry in the Mongo Database will look like [this](https://github.com/ucsd-ccbb/VAPr/blob/master/sample_variant_document). The variaty of data that can be retrieved from the sources results from the richness of databases that can be accessed through myvariant.info. However, not every variant will have such data readily available. In some cases, the data will be restricted to what can be inferred from the vcf file and the annotation carried out with annovar. In that case, the entries that will be found in the document will be the following:
