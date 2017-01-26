@@ -1,0 +1,14 @@
+setup.py
+VAPr/MongoDB_querying.py
+VAPr/__init__.py
+VAPr/annovar_suprocess.py
+VAPr/file_writer.py
+VAPr/parser_models.py
+VAPr/validation.py
+VAPr/vcf_parsing.py
+VAPr.egg-info/PKG-INFO
+VAPr.egg-info/SOURCES.txt
+VAPr.egg-info/dependency_links.txt
+VAPr.egg-info/not-zip-safe
+VAPr.egg-info/requires.txt
+VAPr.egg-info/top_level.txt

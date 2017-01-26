@@ -151,6 +151,7 @@ will return: `input_vcf_file.vcf.gz.tbi`
  - filter 5: ExonicFunc_knownGene is not "synonymous SNV"
  - filter 6: Read Depth (DP) > 10
 
+
         filepath = '.../data/files'
         #Create output files (if needed): specify name of files and path 
         rare_cancer_variants_csv = filepath + "/tumor_rna_rare_cancer_vars_csv.csv"
