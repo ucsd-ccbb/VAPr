@@ -1,5 +1,5 @@
 ##VAPr 
-####Variant Annotation and Prioritization package
+###Variant Annotation and Prioritization package
 
 This package is aimed at providing a way of retrieving variant information using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL database (MongoDB solely at the moment). 
 
@@ -15,7 +15,7 @@ VAPr was developed to simplify the steps required to get mutation data from a VC
 
 ####Notes
 
-ANNOVAR, with some of their datasets needs to be installed. The required datasets are the following:
+ANNOVAR, alongside with some of their data sets, needs to be installed. The required data sets are the following:
 
 - knownGene
 - tfbsConsSites
