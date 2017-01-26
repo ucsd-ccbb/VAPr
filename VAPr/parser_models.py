@@ -9,7 +9,7 @@ import VAPr.vcf_parsing as vvp
 
 class VariantParsing(object):
 
-    def __init__(self, annotated_file, vcf_file, collection_name, db_name):
+    def __init__(self, vcf_file, collection_name, db_name, annotated_file=None):
 
         self.chunksize = 1000
         self.step = 24
@@ -22,20 +22,33 @@ class VariantParsing(object):
 
     def push_to_db(self):
 
-        while self.csv_parsing.num_lines > self.step*self.chunksize:
+        if not self.txt_file:
+            while self.hgvs.num_lines > self.step * self.chunksize:
 
-            list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
-            myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
-            csv_variants = self.csv_parsing.open_and_parse_chunks(self.step)
+                list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
+                myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
 
-            merged_list = []
-            for i, _ in enumerate(myvariants_variants):
-                merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+                self.export(myvariants_variants)
+                self.step += 1
 
-            self.export(merged_list)
-            self.step += 1
+            return 'Done'
 
-        return 'Done'
+        else:
+
+            while self.csv_parsing.num_lines > self.step*self.chunksize:
+
+                list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
+                myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                csv_variants = self.csv_parsing.open_and_parse_chunks(self.step)
+
+                merged_list = []
+                for i, _ in enumerate(myvariants_variants):
+                    merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+
+                self.export(merged_list)
+                self.step += 1
+
+            return 'Done'
 
     def export(self, list_docs):
         """
@@ -90,6 +103,7 @@ class HgvsParser(object):
     def __init__(self, vcf_file):
 
         self.vcf = vcf_file
+        self.num_lines = sum(1 for _ in open(self.vcf))
         self.chunksize = 1000
 
     def get_variants_from_vcf(self, step):
