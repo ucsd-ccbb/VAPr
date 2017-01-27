@@ -2,16 +2,19 @@ import unittest
 import sys
 import os
 sys.path.append("/Users/carlomazzaferro/Documents/Code/variantannotation-master/variantannotation")
-from variantannotation import utilities
-from variantannotation import csv_to_df
+from VAPr import parser_models
 
 
 file_name = os.path.dirname(os.path.realpath('__file__')) + '/test_file.csv'
+
+"""
 sample_list = csv_to_df.open_and_parse(file_name)
 sample_df = csv_to_df.parse_to_df(sample_list)
 
 larger_list = csv_to_df.open_and_parse(file_name)
 larger_df = csv_to_df.parse_to_df(larger_list)
+"""
+
 
 
 class TestUtilities(unittest.TestCase):
@@ -34,15 +37,15 @@ class TestUtilities(unittest.TestCase):
                               ]
 
         self.cytoBand_dict = [
-                                {'Arm': 'p', 'Band': 6, 'Chromosome': '1', 'Region': 3, 'Sub_Band': 33},
-                                {'Arm': 'p', 'Band': 1, 'Chromosome': '16', 'Region': 1, 'Sub_Band': 1},
-                                {'Arm': 'q', 'Band': 1, 'Chromosome': '16', 'Region': 1, 'Sub_Band': 2},
-                                {'Arm': 'q', 'Band': 1, 'Chromosome': '16', 'Region': 2},
-                                {'Arm': 'p', 'Band': 2, 'Chromosome': 'X', 'Region': 2, 'Sub_Band': 32},
-                                {'Arm': 'p', 'Band': 2, 'Chromosome': 'X', 'Region': 2, 'Sub_Band': 2},
-                                {'Arm': 'p', 'Band': 2, 'Chromosome': 'X', 'Region': 2, 'Sub_Band': 11},
-                                {'Arm': 'q', 'Band': 2, 'Chromosome': 'X', 'Region': 1},
-                                {'Arm': 'q', 'Band': 3, 'Chromosome': 'X', 'Region': 1, 'Sub_Band': 1}
+                                {'Band': 'p', 'Name': '1p36.33', 'Chromosome': '1', 'Region': 36, 'Sub_Band': 33},
+                                {'Band': 'p', 'Name': '16p11.1', 'Chromosome': '16', 'Region': 11, 'Sub_Band': 1},
+                                {'Band': 'q', 'Name': '16q11.2', 'Chromosome': '16', 'Region': 11, 'Sub_Band': 2},
+                                {'Band': 'q', 'Name': '16q21', 'Chromosome': '16', 'Region': 21},
+                                {'Band': 'p', 'Name': 'Xp22.32', 'Chromosome': 'X', 'Region': 22, 'Sub_Band': 32},
+                                {'Band': 'p', 'Name': 'Xp22.2', 'Chromosome': 'X', 'Region': 22, 'Sub_Band': 2},
+                                {'Band': 'p', 'Name': 'Xp22.11', 'Chromosome': 'X', 'Region': 22, 'Sub_Band': 11},
+                                {'Band': 'q', 'Name': 'Xq12', 'Chromosome': 'X', 'Region': 12},
+                                {'Band': 'q', 'Name': 'Xq13.1', 'Chromosome': 'X', 'Region': 13, 'Sub_Band': 1}
                              ]
 
 
@@ -69,26 +72,20 @@ class TestUtilities(unittest.TestCase):
                                        '/data/ccbb_internal/interns/Carlo/test_vcf_out/somatic_mutect_old']
 
 
-    def test_split_cytoBand(self):
-
-        cytolist = []
-        for i in range(0, len(self.cytoBand)):
-            cytolist.append(utilities.split_cytoband(self.cytoBand[i]))
-
-        self.assertEqual(cytolist, self.cytoBand_split)
-
     def test_cytoBand_to_dict(self):
 
-        cytodict = []
+        cytoband_list = []
         for i in self.cytoBand:
-            print cytodict
-            cytodict.append(utilities.lists_to_dict(utilities.split_cytoband(i)))
+            cyto = parser_models.CytoBand(i)
+            cytoband_list.append(cyto.processed)
 
-        self.assertEqual(cytodict, self.cytoBand_dict)
+        for idx,_ in enumerate(self.cytoBand_dict):
+            print(cytoband_list[idx])
+            self.assertEqual(cytoband_list[idx].keys(), self.cytoBand_dict[idx].keys())
 
 
-    def test_expand_list_ids(self):
-        self.assertEqual(utilities.expand_list(self.ids_to_expand), self.expanded_ids)
+    #def test_expand_list_ids(self):
+    #    self.assertEqual(utilities.expand_list(self.ids_to_expand), self.expanded_ids)
 
 
 #HGVS_id creation not tested since it comes straight from myvariant.info's implementation: tested before.
