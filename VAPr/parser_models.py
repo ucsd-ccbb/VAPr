@@ -11,8 +11,8 @@ class VariantParsing(object):
 
     def __init__(self, vcf_file, collection_name, db_name, annotated_file=None):
 
-        self.chunksize = 1000
-        self.step = 24
+        self.chunksize = 600
+        self.step = 0
         self.txt_file = annotated_file
         self.vcf_file = vcf_file
         self.hgvs = HgvsParser(self.vcf_file)
@@ -39,8 +39,10 @@ class VariantParsing(object):
 
                 list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
                 myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
-                csv_variants = self.csv_parsing.open_and_parse_chunks(self.step)
+                offset = len(list_hgvs_ids) - self.chunksize
+                csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
 
+                print(len(myvariants_variants), len(csv_variants))
                 merged_list = []
                 for i, _ in enumerate(myvariants_variants):
                     merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
@@ -104,7 +106,7 @@ class HgvsParser(object):
 
         self.vcf = vcf_file
         self.num_lines = sum(1 for _ in open(self.vcf))
-        self.chunksize = 1000
+        self.chunksize = 600
 
     def get_variants_from_vcf(self, step):
         """
@@ -124,7 +126,7 @@ class HgvsParser(object):
                 list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
                                                       record.REF, str(record.ALT[0])))
 
-        return self.complete_chromosome(list_ids[0:self.chunksize])
+        return self.complete_chromosome(list_ids)
 
     @staticmethod
     def complete_chromosome(expanded_list):
@@ -144,7 +146,8 @@ class TxtParser(object):
 
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 1000
+        self.chunksize = 600
+        self.offset = 0
         self.columns = ['chr',
                         'start',
                         'end',
@@ -163,21 +166,23 @@ class TxtParser(object):
                         'nci60',
                         'otherinfo']
 
-    def open_and_parse_chunks(self, step):
+    def open_and_parse_chunks(self, step, offset=None):
 
         listofdicts = []
-
         with open(self.txt_file, 'r') as txt:
 
             reader = csv.reader(txt, delimiter='\t')
             header = self._normalize_header(next(reader))
 
-            for i in itertools.islice(reader, step * self.chunksize, (step + 1) * self.chunksize):
+            for i in itertools.islice(reader, (step*self.chunksize) + self.offset,
+                                      ((step+1)*self.chunksize) + offset + self.offset):
+
                 sparse_dict = dict(zip(header[0:len(header)-1], i[0:len(header)-1]))
                 sparse_dict['otherinfo'] = i[-2::]
                 dict_filled = {k: sparse_dict[k] for k in self.columns if sparse_dict[k] != '.'}
                 modeled = AnnovarModels(dict_filled)
                 listofdicts.append(modeled.final_dict)
+            self.offset += offset
 
         return listofdicts
 
