@@ -12,7 +12,6 @@ class FileWriter(object):
 
     def generate_unfiltered_annotated_csv(self, filepath):
         """
-        :param list_dictionaries: list of annotated variants in dictionary
         :param filepath: filpath (including name of output file) to which the output will be written
         :return: annotated csv file
         """
