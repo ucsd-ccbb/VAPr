@@ -1,7 +1,7 @@
 Metadata-Version: 1.0
 Name: VAPr
-Version: 0.2
-Summary: This package is aimed at providing a way of retrieving variant information using ANNOVAR http://annovar.openbioinformatics.org/en/latest/ and myvariant.info. In particular, it issuited for bioinformaticians interested in aggregating variant information into a single database.The data structure used is a python dictionaty, so the data can be easily parsed to a MongoDBinstance.
+Version: 1.0
+Summary: Package for NoSQL variant data storage, annotation and prioritization.
 Home-page: https://github.com/ucsd-ccbb/VAPr
 Author: Carlo Mazzaferro
 Author-email: cmazzafe@ucsd.edu
