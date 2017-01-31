@@ -94,14 +94,16 @@ class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
 
         if self.dl:
-            if event.src_path.split('.')[-1] not in ["annovar_date"]:
+            dowloaded = ["annovar_date"]
+            if event.src_path.split('.')[-1] not in dowloaded:
                 print("Currently downloading database file: " + event.src_path.split('/')[-1].split('.')[0])
+                dowloaded.append(event.src_path.split('/')[-1].split('.')[0])
 
-                final = event.src_path[-3:]
-                if final == 'txt':
-                    print("\nAnnovar finished working on file : " + event.src_path.split('/')[-1].split('.')[0] + \
-                          ". A .txt file has been created in the OUT_PATH directory\n")
-                    self.observer.stop()
+            final = event.src_path[-3:]
+            if final == 'txt':
+                print("\nAnnovar finished dowloading on file : " + event.src_path.split('/')[-1].split('.')[0] + \
+                      ". A .txt file has been created in the ANNOVAR_PATH directory\n")
+                self.observer.stop()
 
         else:
             if event.src_path.split('.')[-1] not in ["invalid_input", "log"]:
