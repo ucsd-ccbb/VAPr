@@ -19,7 +19,7 @@ class OpenParseTest(unittest.TestCase):
         self.vcf_file = vcf_file
         self.step = 0
         self.txt_len = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 1000
+        self.chunksize = 600
         self.hgvs = parser_models.HgvsParser(self.vcf_file)
         self.csv_parsing = parser_models.TxtParser(self.txt_file)
 
@@ -51,7 +51,7 @@ class OpenParseTest(unittest.TestCase):
     def test_hgvs_parsing(self):
 
         step = 0
-        chunksize = 1000
+        chunksize = 600
         list_hgvs_ids = []
 
         while self.txt_len > step * chunksize:
