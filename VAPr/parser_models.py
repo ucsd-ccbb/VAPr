@@ -146,6 +146,7 @@ class TxtParser(object):
 
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
+        print(self.num_lines)
         self.chunksize = 600
         self.offset = 0
         self.columns = ['chr',
@@ -166,7 +167,7 @@ class TxtParser(object):
                         'nci60',
                         'otherinfo']
 
-    def open_and_parse_chunks(self, step, offset=None):
+    def open_and_parse_chunks(self, step, offset=0):
 
         listofdicts = []
         with open(self.txt_file, 'r') as txt:
@@ -182,6 +183,7 @@ class TxtParser(object):
                 dict_filled = {k: sparse_dict[k] for k in self.columns if sparse_dict[k] != '.'}
                 modeled = AnnovarModels(dict_filled)
                 listofdicts.append(modeled.final_dict)
+
             self.offset += offset
 
         return listofdicts
