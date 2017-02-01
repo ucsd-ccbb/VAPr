@@ -16,6 +16,7 @@ The package can also be installed and used without having to download Annovar. I
 
 ####Notes
 
+
 ANNOVAR, alongside with some of their data sets, should to be installed. The required data sets to benefit from the full functionalities of the package are the following:
 
 - knownGene
