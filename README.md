@@ -30,14 +30,8 @@ ANNOVAR, alongside with some of their data sets, should to be installed. The req
 - cosmic70
 - nci60
 
-They can be downloaded after ANNOVAR has been installed. Head to the directory where ANNOVAR has been installed and run these commands:
 
-
-```
-perl annotate_variation.pl -buildver hg19 -downdb -webfrom annovar knownGene humandb
-perl annotate_variation.pl -buildver hg19 -downdb -webfrom annovar esp6500siv2_all humandb
-...
-```
+A wrapper is provided that will download automatically these databases. See the complete guide for how to proceed.
 
 **NOTE**: automated database download script is on its way. 
 
