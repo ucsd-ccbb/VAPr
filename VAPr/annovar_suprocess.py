@@ -1,8 +1,11 @@
+from __future__ import division, print_function
 import subprocess
 import shlex
+import os
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from collections import OrderedDict
+
 
 class AnnovarWrapper(object):
 
@@ -11,7 +14,7 @@ class AnnovarWrapper(object):
     def __init__(self, input_vcf, output_csv, annovar_path):
 
         self.input = input_vcf
-        self.output = output_csv + 'annotated'
+        self.output = output_csv + os.path.splitext(os.path.basename(self.input))[0] + '_annotated'
         self.output_csv_path = output_csv
         self.path = annovar_path
         self.down_dd = '-webfrom annovar'
@@ -24,8 +27,8 @@ class AnnovarWrapper(object):
                                                 'targetScanS': 'r',
                                                 'genomicSuperDups': 'r',
                                                 'esp6500siv2_all': 'f',
-                                                '1000g2015aug': 'f',
-                                                'popfreq_all_20150413': 'f',
+                                                #'1000g2015aug': 'f',
+                                                #'popfreq_all_20150413': 'f',
                                                 'clinvar_20161128': 'f',
                                                 'cosmic70': 'f',
                                                 'nci60': 'f',
@@ -72,6 +75,7 @@ class AnnovarWrapper(object):
     def download_dbs(self, all=True, dbs=None):
 
         list_commands = self.build_db_dl_command_str(all, dbs)
+        print(list_commands)
         for command in list_commands:
             args = shlex.split(command)
             p = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -106,7 +110,7 @@ class MyHandler(FileSystemEventHandler):
                 self.observer.stop()
 
         else:
-            if event.src_path.split('.')[-1] not in ["invalid_input", "log"]:
+            if event.src_path.split('.')[-1] not in ["invalid_input", "log", "avinput"]:
                 print("Currently working on VCF file: " + event.src_path.split('/')[-1].split('.')[0] + ", field " +\
                       event.src_path.split('/')[-1].split('.')[-1])
 

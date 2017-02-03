@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 import vcf
 import myvariant
 import csv
@@ -42,7 +43,6 @@ class VariantParsing(object):
                 offset = len(list_hgvs_ids) - self.chunksize
                 csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
 
-                print(len(myvariants_variants), len(csv_variants))
                 merged_list = []
                 for i, _ in enumerate(myvariants_variants):
                     merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
@@ -146,7 +146,6 @@ class TxtParser(object):
 
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
-        print(self.num_lines)
         self.chunksize = 600
         self.offset = 0
         self.columns = ['chr',
@@ -241,11 +240,11 @@ class AnnovarModels(object):
         genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
 
         gen_dic = {'genotype': genotype_to_fill.genotype,
-                   'filter_passing_reads_count': genotype_to_fill.filter_passing_reads_count,
-                   'genotype_lieklihoods': [genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent,
-                                            genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent,
-                                            genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent],
-                   'alleles': [genotype_to_fill.alleles[0].read_counts, genotype_to_fill.alleles[1].read_counts]
+                   'filter_passing_reads_count': int(genotype_to_fill.filter_passing_reads_count),
+                   'genotype_lieklihoods': [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
+                                            float(genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent),
+                                            float(genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)],
+                   'alleles': [int(genotype_to_fill.alleles[0].read_counts), int(genotype_to_fill.alleles[1].read_counts)]
                    }
 
         return gen_dic

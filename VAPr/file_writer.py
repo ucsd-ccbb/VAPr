@@ -27,7 +27,6 @@ class FileWriter(object):
 
         return 'Finished writing annotated CSV file'
 
-
     def generate_unfiltered_annotated_vcf(self, vcf_input_path, vcf_output_path, info_out=True):
         """
         :param vcf_input_path: template vcf file (inital vcf from which a new one will be created)
