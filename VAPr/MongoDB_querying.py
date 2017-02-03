@@ -24,12 +24,12 @@ class Filters(object):
         collection = getattr(db, self.collection_name)
 
         filtered = collection.find({"$and": [
-                                     {"$or": [{"ThousandGenomeAll": {"$lt": 0.05}}, {"ThousandGenomeAll": {"$exists": False}}]},
-                                     {"$or": [{"ESP6500siv2_all": { "$lt": 0.05}}, {"ESP6500siv2_all": {"$exists": False}}]},
-                                     {"$or": [{"Func_knownGene": "exonic"}, {"Func_knownGene": "splicing"}]},
-                                     {"ExonicFunc_knownGene": {"$ne": "synonymous SNV"}},
-                                     {"Genotype_Call.DP": {"$gte": 10}},
-                                     {"cosmic70": {"$exists": True}}
+                                   {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
+                                   {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
+                                   {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
+                                   {"genotype.filter_passing_reads_count": {"$gte": 10}},
+                                   {"cosmic70": {"$exists": True}},
+                                   {"1000g20XX": {"$lt": 0.05}}
         ]})
 
         filtered = list(filtered)
@@ -43,12 +43,12 @@ class Filters(object):
         collection = getattr(db, self.collection_name)
 
         filtered = collection.find({"$and": [
-                                   {"$or": [{"ThousandGenomeAll": {"$lt": 0.05}}, {"ThousandGenomeAll": {"$exists": False}}]},
-                                   {"$or": [{"ESP6500siv2_all": {"$lt": 0.05}}, {"ESP6500siv2_all": {"$exists": False}}]},
-                                   {"$or": [{"Func_knownGene": "exonic"}, {"Func_knownGene": "splicing"}]},
-                                   {"ExonicFunc_knownGene": {"$ne": "synonymous SNV"}},
-                                   {"Genotype_Call.DP": {"$gte": 10}},
+                                   {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
+                                   {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
+                                   {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
+                                   {"genotype.filter_passing_reads_count": {"$gte": 10}},
                                    {"cosmic70": {"$exists": True}},
+                                   {"1000g20XX": {"$lt": 0.05}},
                                    {"clinvar": {"$exists": True}} ##This is the change
 
        ]})
@@ -66,11 +66,11 @@ class Filters(object):
         collection = getattr(db, self.collection_name)
 
         filtered = collection.find({"$and": [
-                                   {"$or": [{"ThousandGenomeAll": {"$lt": 0.05}}, {"ThousandGenomeAll": {"$exists": False}}]},
-                                   {"$or": [{"ESP6500siv2_all": {"$lt": 0.05}}, {"ESP6500siv2_all": {"$exists": False}}]},
-                                   {"$or": [{"Func_knownGene": "exonic"}, {"Func_knownGene": "splicing"}]},
-                                   {"ExonicFunc_knownGene": {"$ne": "synonymous SNV"}},
-                                   {"Genotype_Call.DP": {"$gte": 10}},
+                                   {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
+                                   {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
+                                   {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
+                                   {"genotype.filter_passing_reads_count": {"$gte": 10}},
+                                   {"1000g20XX": {"$lt": 0.05}},
                                    {"cadd.phred": {"$gte": 15}}, ##This is the change CADD Phred score >= 15
                                    {"cosmic70": {"$exists": True}} ,
                                    {"clinvar": {"$exists": True}}  ##This is the change
