@@ -240,14 +240,22 @@ class AnnovarModels(object):
         genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
 
         gen_dic = {'genotype': genotype_to_fill.genotype,
-                   'filter_passing_reads_count': int(genotype_to_fill.filter_passing_reads_count),
+                   'filter_passing_reads_count': [self._to_int(genotype_to_fill.filter_passing_reads_count)],
                    'genotype_lieklihoods': [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
                                             float(genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent),
                                             float(genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)],
-                   'alleles': [int(genotype_to_fill.alleles[0].read_counts), int(genotype_to_fill.alleles[1].read_counts)]
+                   'alleles': [self._to_int(genotype_to_fill.alleles[0].read_counts),
+                               self._to_int(genotype_to_fill.alleles[1].read_counts)]
                    }
 
         return gen_dic
+
+    @staticmethod
+    def _to_int(val):
+        try:
+            int(val)
+        except:
+            pass
 
     def to_dict(self, key):
         as_dict = dict(item.split("=") for item in self.dictionary[key].split(";"))
