@@ -2,6 +2,9 @@ from __future__ import division, print_function
 import subprocess
 import shlex
 import os
+import csv
+import datetime
+import warnings
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from collections import OrderedDict
@@ -18,8 +21,24 @@ class AnnovarWrapper(object):
         self.output_csv_path = output_csv
         self.path = annovar_path
         self.down_dd = '-webfrom annovar'
-        self.annovar_hosted = ['knownGene', 'esp6500siv2_all', '1000g2015aug', 'nci60',
-                               'clinvar_20161128', 'popfreq_all_20150413', 'cosmic70']
+        self.annovar_hosted = OrderedDict({'knownGene': True,
+                                           'tfbsConsSites': False,
+                                           'cytoBand': False,
+                                           'targetScanS': False,
+                                           'genomicSuperDups': False,
+                                           'esp6500siv2_all': True,
+                                           '1000g2015aug': True,
+                                           'popfreq_all_20150413': True,
+                                           'clinvar_20161128': True,
+                                           'cosmic70': True,
+                                           'nci60': True,
+                                           'avdblist': True})
+
+        self.dl_list_command = 'avdblist'
+        self.manual_update = {'clinvar_20161128': [datetime.datetime(2016, 11, 28)],
+                              '1000g2015aug':  [datetime.datetime(2016, 8, 30)],
+                              'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)]
+                              }
 
         self.supported_databases = OrderedDict({'knownGene': 'g',
                                                 'tfbsConsSites': 'r',
@@ -27,8 +46,8 @@ class AnnovarWrapper(object):
                                                 'targetScanS': 'r',
                                                 'genomicSuperDups': 'r',
                                                 'esp6500siv2_all': 'f',
-                                                #'1000g2015aug': 'f',
-                                                #'popfreq_all_20150413': 'f',
+                                                '1000g2015aug': 'f',
+                                                'popfreq_all_20150413': 'f',
                                                 'clinvar_20161128': 'f',
                                                 'cosmic70': 'f',
                                                 'nci60': 'f',
@@ -64,7 +83,7 @@ class AnnovarWrapper(object):
         command_list = []
 
         for db in databases:
-            if db in self.annovar_hosted:
+            if self.annovar_hosted[db]:
                 command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-buildver', 'hg19', '-downdb',
                                     self.down_dd, db, self.path + 'humandb/']))
             else:
@@ -72,12 +91,30 @@ class AnnovarWrapper(object):
                                               db, self.path + 'humandb/']))
         return command_list
 
+    def check_for_database_updates(self):
+        self.download_dbs(all=False, dbs=['avdblist'])
+
+        with open(self.path + '/humandb/hg19_avdblist.txt', 'r') as db_list:
+            reader = csv.reader(db_list, delimiter='\t')
+            db_dict = {}
+            for i in reader:
+
+                if i[0][-6:] != 'idx.gz':
+                    db_dict[i[0][5:]] = [datetime.datetime(int(i[1][0:4]), int(i[1][4:6]), int(i[1][6:8])), i[2]]
+
+        for db in self.manual_update.keys():
+            for db_ in db_dict.keys():
+                if db_.startswith(db):
+                    if db_dict[db_][0] > self.manual_update[db][0]:
+                        print('Database %s outdated, will download newer version' % db_)
+                        self.download_dbs(all=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
+
     def download_dbs(self, all=True, dbs=None):
 
         list_commands = self.build_db_dl_command_str(all, dbs)
-        print(list_commands)
         for command in list_commands:
             args = shlex.split(command)
+
             p = subprocess.Popen(args, stdout=subprocess.PIPE)
             run_handler(self.path + 'humandb/', download=True)
 

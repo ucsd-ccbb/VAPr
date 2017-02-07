@@ -28,8 +28,8 @@ class Filters(object):
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
-                                   {"cosmic70": {"$exists": True}},
-                                   {"1000g20XX": {"$lt": 0.05}}
+                                   {"cosmic70": {"$exists": True}}
+                                   #{"1000g20XX": {"$lt": 0.05}}
         ]})
 
         filtered = list(filtered)

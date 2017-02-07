@@ -160,7 +160,7 @@ class TxtParser(object):
                         'tfbsconssites',
                         'cytoband',
                         'genomicsuperdups',
-                        '1000g20XX',
+                        '1000g_all',
                         'esp6500siv2_all',
                         'cosmic70',
                         'nci60',
@@ -192,8 +192,8 @@ class TxtParser(object):
         normalized = []
 
         for item in header:
-            if item.startswith('1000g20'):
-                normalized.append('1000g20XX')
+            if item.startswith('1000G_ALL'):
+                normalized.append('1000g_all')
             else:
                 normalized.append(item.lower().replace('.', '_'))
 
