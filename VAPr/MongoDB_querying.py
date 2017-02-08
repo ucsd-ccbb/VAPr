@@ -28,8 +28,9 @@ class Filters(object):
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
-                                   {"cosmic70": {"$exists": True}}
-                                   #{"1000g20XX": {"$lt": 0.05}}
+                                   {"cosmic70": {"$exists": True}},
+                                   {"1000g_all": {"$lt": 0.1}}
+
         ]})
 
         filtered = list(filtered)
@@ -48,7 +49,7 @@ class Filters(object):
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
                                    {"cosmic70": {"$exists": True}},
-                                   {"1000g20XX": {"$lt": 0.05}},
+                                   {"1000g_all": {"$lt": 0.1}},
                                    {"clinvar": {"$exists": True}} ##This is the change
 
        ]})
@@ -70,10 +71,10 @@ class Filters(object):
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
-                                   {"1000g20XX": {"$lt": 0.05}},
-                                   {"cadd.phred": {"$gte": 15}}, ##This is the change CADD Phred score >= 15
-                                   {"cosmic70": {"$exists": True}} ,
-                                   {"clinvar": {"$exists": True}}  ##This is the change
+                                   {"cosmic70": {"$exists": True}},
+                                   {"1000g_all": {"$lt": 0.1}},
+                                   {"clinvar": {"$exists": True}},
+                                   {"cadd.phred": {"$gte": 15}}      #This is the change CADD Phred score >= 15
 
          ]})
 
