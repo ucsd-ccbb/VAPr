@@ -61,7 +61,7 @@ class VariantParsing(object):
         client = MongoClient()
         db = getattr(client, self.db)
         collection = getattr(db, self.collection)
-        collection.insert_many(list_docs)
+        collection.insert_many(list_docs, ordered=False)
 
     @staticmethod
     def merge_dict_lists(*dict_args):
