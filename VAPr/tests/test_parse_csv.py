@@ -37,7 +37,7 @@ class OpenParseTest(unittest.TestCase):
              'tfbsconssites',
              'cytoband',
              'genomicsuperdups',
-             '1000g20XX',
+             '1000g2015aug_all',
              'esp6500siv2_all',
              'cosmic70',
              'nci60',
@@ -48,6 +48,7 @@ class OpenParseTest(unittest.TestCase):
             for key in list(dictionary.keys()):
                 self.assertTrue(key in l)
 
+    """
     def test_hgvs_parsing(self):
 
         step = 0
@@ -61,7 +62,7 @@ class OpenParseTest(unittest.TestCase):
         self.assertEqual(len(list_hgvs_ids), self.txt_len - 1) #to account for the header
 
 
-"""
+
     def test_csv_read_data_points(self):
         self.assertEqual(read_data(self.data)[1][7], '87')
 
@@ -71,7 +72,7 @@ class OpenParseTest(unittest.TestCase):
     def test_get_team(self):
         index_value = get_min_score_difference(self.parsed_data)
         self.assertEqual(get_team(index_value), 'Liverpool')
-"""
+    """
 
 if __name__ == '__main__':
     unittest.main()
