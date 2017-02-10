@@ -57,6 +57,7 @@ class AnnovarWrapper(object):
 
     def build_annovar_command_str(self):
         dbs = ",".join(list(self.supported_databases.keys()))
+        dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
         dbs_args = ",".join(list(self.supported_databases.values()))
         command = " ".join(['perl', self.path + 'table_annovar.pl', self.input,
                             self.path + 'humandb/', '-buildver', 'hg19', '-out',
