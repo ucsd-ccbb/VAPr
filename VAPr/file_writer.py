@@ -7,19 +7,19 @@ class FileWriter(object):
 
     #TODO: Tests for new classes.
     def __init__(self, db_name, collection_name):
+
         self.collection_name = collection_name
         self.db_name = db_name
+        self.client = MongoClient()
+        self.db = getattr(self.client, self.db_name)
+        self.collection = getattr(self.db, self.collection_name)
 
     def generate_unfiltered_annotated_csv(self, filepath):
         """
         :param filepath: filpath (including name of output file) to which the output will be written
         :return: annotated csv file
         """
-        client = MongoClient()
-        db = getattr(client, self.db_name)
-        collection = getattr(db, self.collection_name)
-        all_my_data = list(collection.find({}))
-
+        all_my_data = list(self.collection.find({}))
         df = pandas.DataFrame(all_my_data)
 
         with open(filepath, "w") as f:
@@ -34,28 +34,25 @@ class FileWriter(object):
         :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
         :return: writed vcf file to specified directory
         """
-        client = MongoClient()
-        db = getattr(client, self.db_name)
-        collection = getattr(db, self.collection_name)
-        all_my_data = list(collection.find({}))
 
+        all_my_data = list(self.collection.find({}))
         chr_vars = []
         location_vars_ant = []
         location_vars_pos = []
 
         for i in range(0, len(all_my_data)):
-            if all_my_data[i]['Chr'] == 'chrMT':
+            if all_my_data[i]['chr'] == 'chrMT':
                 chr_vars.append('chrM')
             else:
-                chr_vars.append(all_my_data[i]['Chr'].encode('ascii','ignore'))
-            location_vars_ant.append(all_my_data[i]['Start'] + 1)
-            location_vars_pos.append(all_my_data[i]['Start'] - 1)
+                chr_vars.append(all_my_data[i]['chr'])
+            location_vars_ant.append(all_my_data[i]['start'] + 1)
+            location_vars_pos.append(all_my_data[i]['start'] - 1)
 
         vcf_reader = vcf.Reader(filename=vcf_input_path)
         vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
 
         for i in range(0, len(chr_vars)):
-            for record in vcf_reader.fetch(chr_vars[i].encode('ascii','ignore'), location_vars_pos[i], location_vars_ant[i]):
+            for record in vcf_reader.fetch(chr_vars[i], location_vars_pos[i], location_vars_ant[i]):
                 if info_out is True:
                     record.INFO.update(all_my_data[i])
                     vcf_writer.write_record(record)
@@ -93,18 +90,18 @@ class FileWriter(object):
         location_vars_pos = []
 
         for i in range(0, len(joint_list)):
-            if joint_list[i]['Chr'] == 'chrMT':
+            if joint_list[i]['chr'] == 'chrMT':
                 chr_vars.append('chrM')
             else:
-                chr_vars.append(joint_list[i]['Chr'].encode('ascii','ignore'))
-            location_vars_ant.append(joint_list[i]['Start'] + 1)
-            location_vars_pos.append(joint_list[i]['Start'] - 1)
+                chr_vars.append(joint_list[i]['chr'])
+            location_vars_ant.append(joint_list[i]['start'] + 1)
+            location_vars_pos.append(joint_list[i]['start'] - 1)
 
         vcf_reader = vcf.Reader(filename=vcf_input_path)
         vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
 
         for i in range(0, len(chr_vars)):
-            for record in vcf_reader.fetch(chr_vars[i].encode('ascii','ignore'), location_vars_pos[i], location_vars_ant[i]):
+            for record in vcf_reader.fetch(chr_vars[i], location_vars_pos[i], location_vars_ant[i]):
                 if info_out is True:
                     record.INFO.update(joint_list[i])
                     vcf_writer.write_record(record)
