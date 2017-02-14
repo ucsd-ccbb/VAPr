@@ -83,7 +83,7 @@ class FileWriter(object):
         :param joint_list: list of dictionaties contatining annotations from ANNOVAR & myvariant
         :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
 
-        :return:
+        :return: None
         """
         chr_vars = []
         location_vars_ant = []
