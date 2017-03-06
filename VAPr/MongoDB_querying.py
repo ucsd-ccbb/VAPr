@@ -74,7 +74,7 @@ class Filters(object):
                                    {"cosmic70": {"$exists": True}},
                                    {"1000g2015aug_all": {"$lt": 0.1}},
                                    {"clinvar": {"$exists": True}},
-                                   {"cadd.phred": {"$gte": 15}}      #This is the change CADD Phred score >= 15
+                                   {"cadd.phred": {"$gte": 15}}      # This is the change CADD Phred score >= 15
 
          ]})
 

@@ -12,7 +12,7 @@ class VariantParsing(object):
 
     def __init__(self, vcf_file, collection_name, db_name, annotated_file=None):
 
-        self.chunksize = 600
+        self.chunksize = 950
         self.step = 0
         self.txt_file = annotated_file
         self.vcf_file = vcf_file
@@ -20,10 +20,13 @@ class VariantParsing(object):
         self.csv_parsing = TxtParser(self.txt_file)
         self.collection = collection_name
         self.db = db_name
+        self._buffer_len = 50000
+        self._last_round = False
 
-    def push_to_db(self):
+    def push_to_db(self, buffer=False):
 
         if not self.txt_file:
+
             while self.hgvs.num_lines > self.step * self.chunksize:
 
                 list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
@@ -36,19 +39,50 @@ class VariantParsing(object):
 
         else:
 
-            while self.csv_parsing.num_lines > self.step*self.chunksize:
+            if buffer:
+                variant_buffer = []
+                while self.csv_parsing.num_lines > self.step * self.chunksize:
 
-                list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
-                myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
-                offset = len(list_hgvs_ids) - self.chunksize
-                csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
+                    list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
+                    myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                    offset = len(list_hgvs_ids) - self.chunksize
+                    csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
 
-                merged_list = []
-                for i, _ in enumerate(myvariants_variants):
-                    merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+                    merged_list = []
+                    for i, _ in enumerate(myvariants_variants):
+                        merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
 
-                self.export(merged_list)
-                self.step += 1
+                    variant_buffer.extend(merged_list)
+                    self.step += 1
+
+                    if len(merged_list) < self.chunksize:
+                        self._last_round = True
+
+                    if (len(variant_buffer) > self._buffer_len) or self._last_round:
+                        print('Parsing Buffer...')
+                        self.export(variant_buffer)
+                        variant_buffer = []
+
+                        if self._last_round:
+                            return 'Done2'
+
+                return 'Done1'
+
+            else:
+
+                while self.csv_parsing.num_lines > self.step*self.chunksize:
+
+                    list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
+                    myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                    offset = len(list_hgvs_ids) - self.chunksize
+                    csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
+
+                    merged_list = []
+                    for i, _ in enumerate(myvariants_variants):
+                        merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+
+                    self.export(merged_list)
+                    self.step += 1
 
             return 'Done'
 
@@ -106,7 +140,7 @@ class HgvsParser(object):
 
         self.vcf = vcf_file
         self.num_lines = sum(1 for _ in open(self.vcf))
-        self.chunksize = 600
+        self.chunksize = 950
 
     def get_variants_from_vcf(self, step):
         """
@@ -146,7 +180,7 @@ class TxtParser(object):
 
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 600
+        self.chunksize = 950
         self.offset = 0
         self.columns = ['chr',
                         'start',

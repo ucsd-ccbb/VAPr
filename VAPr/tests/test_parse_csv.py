@@ -19,10 +19,11 @@ class OpenParseTest(unittest.TestCase):
         self.vcf_file = vcf_file
         self.step = 0
         self.txt_len = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 600
+        self.chunksize = 950
         self.hgvs = parser_models.HgvsParser(self.vcf_file)
         self.csv_parsing = parser_models.TxtParser(self.txt_file)
-locals()
+#locals()
+
     def test_csv_read_data_headers(self):
         dat = self.csv_parsing.open_and_parse_chunks(self.step)
         l = ['chr',
