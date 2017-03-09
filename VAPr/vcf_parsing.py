@@ -24,8 +24,7 @@ def ignore_field(info_value, genotype_info_to_fill, subkey):
 def fill_genotype(info_value, genotype_info_to_fill):
     alleles = info_value.split('/')
     if len(alleles) != 2:
-        pass
-        #raise ValueError("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
+        raise ValueError("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
     genotype_info_to_fill.genotype = info_value
     return genotype_info_to_fill
 
@@ -34,8 +33,7 @@ def fill_unfiltered_reads_counts(info_value, genotype_info_to_fill):
     delimiter = ','
     counts = info_value.split(delimiter)
     if len(counts) < 2:
-        pass
-        #raise ValueError("Found fewer than 2 alleles with unfiltered read counts in '{0}'".format(info_value))
+        raise ValueError("Found fewer than 2 alleles with unfiltered read counts in '{0}'".format(info_value))
     for curr_count in counts:
         new_allele = Allele(curr_count)
         genotype_info_to_fill.alleles.append(new_allele)
@@ -53,6 +51,7 @@ def fill_genotype_confidence(info_value, genotype_info_to_fill):
 
 
 def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
+    err = 0
     generate_alleles = False
     delimiter = ','
     likelihoods = info_value.split(delimiter)
@@ -71,19 +70,19 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
             allele_number += 1
             likelihood_number = 0
             if allele_number >= len(genotype_info_to_fill.alleles):
-                pass
-#                raise ValueError("Found {0} likelihoods but only {1} alleles".format(
-#                   len(likelihoods), num_expected_alleles))
+                err += 1
+                raise ValueError("Found {0} likelihoods but only {1} alleles".format(len(likelihoods),
+                                                                                     num_expected_alleles))
 
         new_likelihood = GenotypeLikelihood(likelihood_number, allele_number, likelihoods[index])
         genotype_info_to_fill.genotype_likelihoods.append(new_likelihood)
         likelihood_number += 1
 
     if allele_number < (num_expected_alleles-1) or likelihood_number < num_expected_alleles:
-        pass
-        #raise ValueError("Found {0} alleles but only {1} likelihoods".format(num_expected_alleles, len(likelihoods)))
+        err += 1
+        raise ValueError("Found {0} alleles but only {1} likelihoods".format(num_expected_alleles, len(likelihoods)))
 
-    return genotype_info_to_fill
+    return genotype_info_to_fill, err
 
 
 class VCFGenotypeInfo:
@@ -142,9 +141,8 @@ class GenotypeLikelihood:
     @staticmethod
     def _validate_allele_relationship(allele1_number, allele2_number):
         if allele1_number > allele2_number:
-            pass
-            #raise ValueError("VCF-format genotypes must have allele 2 number ({0}) "
-             #                "greater than or equal to allele 1 number ({1})".format(allele2_number, allele1_number))
+            raise ValueError("VCF-format genotypes must have allele 2 number ({0}) "
+                             "greater than or equal to allele 1 number ({1})".format(allele2_number, allele1_number))
 
     def __init__(self, allele1_number, allele2_number, likelihood_neg_exponent):
 

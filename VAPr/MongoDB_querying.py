@@ -50,7 +50,7 @@ class Filters(object):
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
                                    {"cosmic70": {"$exists": True}},
                                    {"1000g2015aug_all": {"$lt": 0.1}},
-                                   {"clinvar": {"$exists": True}} ##This is the change
+                                   {"clinvar": {"$exists": True}}
 
        ]})
 

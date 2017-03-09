@@ -23,7 +23,7 @@ class VariantParsing(object):
         self._buffer_len = 50000
         self._last_round = False
 
-    def push_to_db(self, buffer=False):
+    def annotate_and_save(self, buffer=False):
 
         if not self.txt_file:
 
@@ -271,7 +271,7 @@ class AnnovarModels(object):
         genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
         gen_dic = {'genotype': genotype_to_fill.genotype,
                    'filter_passing_reads_count': [self._to_int(genotype_to_fill.filter_passing_reads_count)],
-                   'genotype_lieklihoods': [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
+                   'genotype_likelihoods': [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
                                             float(genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent),
                                             float(genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)],
                    'alleles': [self._to_int(genotype_to_fill.alleles[0].read_counts),
