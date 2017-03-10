@@ -54,7 +54,7 @@ python setup.py install
 Sample code for all the methods supplied by the package is provided. 
 
 ###Quick-Startup Guide
-See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/Quick%20Start-Up%20Guide.ipynb) for sample usage; the complete guide can be found [here](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr%20Sample%20Usage.ipynb). 
+See this [iPython notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/Quick%20Start-Up%20Guide.ipynb) for a complete tour of the functionalities and installation procedures. 
 
 
 ###Workflow Overview
