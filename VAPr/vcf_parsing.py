@@ -51,7 +51,6 @@ def fill_genotype_confidence(info_value, genotype_info_to_fill):
 
 
 def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
-    err = 0
     generate_alleles = False
     delimiter = ','
     likelihoods = info_value.split(delimiter)
@@ -70,7 +69,6 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
             allele_number += 1
             likelihood_number = 0
             if allele_number >= len(genotype_info_to_fill.alleles):
-                err += 1
                 raise ValueError("Found {0} likelihoods but only {1} alleles".format(len(likelihoods),
                                                                                      num_expected_alleles))
 
@@ -79,10 +77,10 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
         likelihood_number += 1
 
     if allele_number < (num_expected_alleles-1) or likelihood_number < num_expected_alleles:
-        err += 1
+
         raise ValueError("Found {0} alleles but only {1} likelihoods".format(num_expected_alleles, len(likelihoods)))
 
-    return genotype_info_to_fill, err
+    return genotype_info_to_fill
 
 
 class VCFGenotypeInfo:

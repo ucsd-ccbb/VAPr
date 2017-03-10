@@ -3,6 +3,7 @@ import subprocess
 import shlex
 import os
 import csv
+import glob
 import datetime
 import warnings
 from watchdog.events import FileSystemEventHandler
@@ -68,6 +69,11 @@ class AnnovarWrapper(object):
 
     def run_annovar(self):
 
+        files = glob.glob(self.output_csv_path + '*')
+        for f in files:
+            if os.path.basename(f).startswith(os.path.basename(self.input).split('.')[0]):
+                os.remove(f)
+
         args = shlex.split(self.annovar_command_str)
         p = subprocess.Popen(args, stdout=subprocess.PIPE)
         run_handler(self.output_csv_path)
@@ -111,6 +117,10 @@ class AnnovarWrapper(object):
                         self.download_dbs(all=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
 
     def download_dbs(self, all=True, dbs=None):
+        if len(os.listdir(self.path + 'humandb/')) > 0:
+            files = glob.glob(self.path + 'humandb/*')
+            for f in files:
+                os.remove(f)
 
         list_commands = self.build_db_dl_command_str(all, dbs)
         for command in list_commands:
