@@ -48,9 +48,8 @@ class Filters(object):
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
-                                   {"cosmic70": {"$exists": True}},
-                                   {"1000g2015aug_all": {"$lt": 0.1}},
-                                   {"clinvar": {"$exists": True}} ##This is the change
+                                   {"$or": [{"cosmic70": {"$exists": True}}, {"clinvar": {"$exists": True}}]},
+                                   {"1000g2015aug_all": {"$lt": 0.1}}
 
        ]})
 
@@ -71,9 +70,8 @@ class Filters(object):
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                                    {"genotype.filter_passing_reads_count": {"$gte": 10}},
-                                   {"cosmic70": {"$exists": True}},
+                                   {"$or": [{"cosmic70": {"$exists": True}}, {"clinvar": {"$exists": True}}]},
                                    {"1000g2015aug_all": {"$lt": 0.1}},
-                                   {"clinvar": {"$exists": True}},
                                    {"cadd.phred": {"$gte": 15}}      #This is the change CADD Phred score >= 15
 
          ]})
