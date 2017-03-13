@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: VAPr
-Version: 1.0.6
+Version: 1.0.7
 Summary: Package for NoSQL variant data storage, annotation and prioritization.
 Home-page: https://github.com/ucsd-ccbb/VAPr
 Author: Carlo Mazzaferro

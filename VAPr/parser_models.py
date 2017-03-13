@@ -32,8 +32,14 @@ class VariantParsing(object):
                 list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
                 myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
 
-                self.export(myvariants_variants)
-                self.step += 1
+                if len(myvariants_variants) < self.chunksize:
+                    self._last_round = True
+
+                if self._last_round:
+                    return 'Done'
+                else:
+                    self.export(myvariants_variants)
+                    self.step += 1
 
             return 'Done'
 
