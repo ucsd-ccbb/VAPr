@@ -68,11 +68,12 @@ class AnnovarWrapper(object):
         return command
 
     def run_annovar(self):
-
+        """
         files = glob.glob(self.output_csv_path + '*')
         for f in files:
             if os.path.basename(f).startswith(os.path.basename(self.input).split('.')[0]):
                 os.remove(f)
+        """
 
         args = shlex.split(self.annovar_command_str)
         p = subprocess.Popen(args, stdout=subprocess.PIPE)

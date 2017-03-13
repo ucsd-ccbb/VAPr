@@ -81,8 +81,14 @@ class VariantParsing(object):
                     for i, _ in enumerate(myvariants_variants):
                         merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
 
-                    self.export(merged_list)
-                    self.step += 1
+                    if len(merged_list) < self.chunksize:
+                        self._last_round = True
+
+                    if self._last_round:
+                        return 'Done'
+                    else:
+                        self.export(merged_list)
+                        self.step += 1
 
             return 'Done'
 
