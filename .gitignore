@@ -15,6 +15,7 @@ notebooks/Untitled.ipynb
 .Python
 env/
 build/
+avdblist/
 develop-eggs/
 dist/
 downloads/

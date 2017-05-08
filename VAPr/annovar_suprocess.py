@@ -5,7 +5,6 @@ import os
 import csv
 import glob
 import datetime
-import warnings
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from collections import OrderedDict
