@@ -1,4 +1,0 @@
-pymongo
-myvariant
-pyvcf
-watchdog
