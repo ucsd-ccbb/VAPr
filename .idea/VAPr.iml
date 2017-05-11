@@ -4,15 +4,8 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="R User Library" level="project" />
     <orderEntry type="library" name="R Skeletons" level="application" />
-  </component>
-  <component name="PyDocumentationSettings">
-    <option name="myDocStringFormat" value="Google" />
-  </component>
-  <component name="ReSTService">
-    <option name="workdir" value="$MODULE_DIR$" />
-    <option name="DOC_DIR" value="$MODULE_DIR$" />
+    <orderEntry type="library" name="R User Library" level="project" />
   </component>
   <component name="TestRunnerService">
     <option name="projectConfiguration" value="Nosetests" />

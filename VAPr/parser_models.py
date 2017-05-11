@@ -10,7 +10,7 @@ import VAPr.vcf_parsing as vvp
 
 class VariantParsing(object):
 
-    def __init__(self, vcf_file, collection_name, db_name, annotated_file=None):
+    def __init__(self, vcf_file, project_data, annotated_file=None):
 
         self.chunksize = 950
         self.step = 0
@@ -18,8 +18,10 @@ class VariantParsing(object):
         self.vcf_file = vcf_file
         self.hgvs = HgvsParser(self.vcf_file)
         self.csv_parsing = TxtParser(self.txt_file)
-        self.collection = collection_name
-        self.db = db_name
+        self.collection = project_data['project_name']
+        self.db = project_data['db_name']
+        self.patient_id = project_data['patient_id']
+        self.sample_id = project_data['sample_id']
         self._buffer_len = 50000
         self._last_round = False
 
@@ -134,14 +136,16 @@ class VariantParsing(object):
         # This will retrieve a list of dictionaries
         variant_data = mv.getvariants(variant_list, as_dataframe=False)
         variant_data = self.remove_id_key(variant_data)
+
         return variant_data
 
-    @staticmethod
-    def remove_id_key(variant_data):
+    def remove_id_key(self, variant_data):
 
         for dic in variant_data:
             dic['hgvs_id'] = dic.pop("_id", None)
             dic['hgvs_id'] = dic.pop("query", None)
+            dic['patient_id'] = self.patient_id
+            dic['sample_id'] = self.sample_id
 
         return variant_data
 

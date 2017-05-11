@@ -4,11 +4,28 @@ import shlex
 import os
 import csv
 import glob
+import time
 import datetime
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from collections import OrderedDict
 
+
+"""
+# TODO:
+Add parameter to allow user to choose species and genome build. Should allow for all of those supported by ANNOVAR and generalize update script.
+Add Sample_ID, Patient_ID, Project_ID as keys in the documents. (one collection = project/analysis, each document is a variant with sample, patient, project keys)
+Add csv template to describe sampleid, patientid, projectid, etc
+--take a break and regroup----
+Work with Guorong for local caching of myvariant.info and wgs speed. Guorong will provide wes and wgs vcf files.
+--take a break and regroup----
+How to handle multisample VCFs (probably just a different parser)
+--take a break and regroup----
+Implement variant analysis functionality after discussing with Amanda & Katie (finding compound heterozygous variants that are both predicted deleterious, or finding de novo mutations from an offspring in a trio)
+--take a break and regroup----
+Test and provide run times for both WES and WGS VCF files (insert the run times into this document)
+
+"""
 
 class AnnovarWrapper(object):
 
@@ -40,8 +57,8 @@ class AnnovarWrapper(object):
                               'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)]
                               }
 
-        self.supported_databases = OrderedDict({'knownGene': 'g',
-                                                'tfbsConsSites': 'r',
+        self.supported_databases = OrderedDict({'knownGene': 'g',  # Ok all builds
+                                                'tfbsConsSites': 'r',  #
                                                 'cytoBand': 'r',
                                                 'targetScanS': 'r',
                                                 'genomicSuperDups': 'r',
@@ -55,12 +72,12 @@ class AnnovarWrapper(object):
 
         self.annovar_command_str = self.build_annovar_command_str()
 
-    def build_annovar_command_str(self):
+    def build_annovar_command_str(self, ):
         dbs = ",".join(list(self.supported_databases.keys()))
         dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
         dbs_args = ",".join(list(self.supported_databases.values()))
-        command = " ".join(['perl', self.path + 'table_annovar.pl', self.input,
-                            self.path + 'humandb/', '-buildver', 'hg19', '-out',
+        command = " ".join(['perl', os.path.join(self.path, 'table_annovar.pl'), self.input,
+                            os.path.join(self.path, 'humandb/'), '-buildver', 'hg19', '-out',
                             self.output, '-remove -protocol', dbs,  '-operation',
                             dbs_args, '-nastring .', '-otherinfo -vcfinput'])
 
@@ -80,28 +97,32 @@ class AnnovarWrapper(object):
 
         return 'Finished running ANNOVAR on {}'.format(self.input)
 
-    def build_db_dl_command_str(self, all, dbs):
+    def build_db_dl_command_str(self, all, dbs, buildver):
 
         if not all:
             databases = dbs
         else:
             databases = self.supported_databases.keys()
 
+        if not buildver:
+            buildver = 'hg19'
+
         command_list = []
 
         for db in databases:
             if self.annovar_hosted[db]:
-                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-buildver', 'hg19', '-downdb',
+                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-build', buildver, '-downdb',
                                     self.down_dd, db, self.path + 'humandb/']))
             else:
-                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-buildver', 'hg19', '-downdb',
+                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-build', buildver, '-downdb',
                                               db, self.path + 'humandb/']))
         return command_list
 
-    def check_for_database_updates(self):
-        self.download_dbs(all=False, dbs=['avdblist'])
+    def check_for_database_updates(self, buildver):
 
-        with open(self.path + '/humandb/hg19_avdblist.txt', 'r') as db_list:
+        self.download_dbs(all=False, dbs=['avdblist'], build_ver=buildver)
+
+        with open(os.path.join(self.path, '/humandb' + buildver + '_avdblist.txt'), 'r') as db_list:
             reader = csv.reader(db_list, delimiter='\t')
             db_dict = {}
             for i in reader:
@@ -116,15 +137,16 @@ class AnnovarWrapper(object):
                         print('Database %s outdated, will download newer version' % db_)
                         self.download_dbs(all=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
 
-    def download_dbs(self, all=True, dbs=None):
+    def download_dbs(self, all=True, dbs=None, build_ver=None):
         if len(os.listdir(self.path + 'humandb/')) > 0:
             files = glob.glob(self.path + 'humandb/*')
             for f in files:
                 os.remove(f)
 
-        list_commands = self.build_db_dl_command_str(all, dbs)
+        list_commands = self.build_db_dl_command_str(all, dbs, build_ver)
         for command in list_commands:
             args = shlex.split(command)
+            # print(args)
 
             p = subprocess.Popen(args, stdout=subprocess.PIPE)
             run_handler(self.path + 'humandb/', download=True)
@@ -148,6 +170,7 @@ class MyHandler(FileSystemEventHandler):
         if self.dl:
             dowloaded = ["annovar_date"]
             if event.src_path.split('.')[-1] not in dowloaded:
+                # print('EVENT', os.path.basename(event.src_path))
                 print("Currently downloading database file: " + event.src_path.split('/')[-1].split('.')[0])
                 dowloaded.append(event.src_path.split('/')[-1].split('.')[0])
 
