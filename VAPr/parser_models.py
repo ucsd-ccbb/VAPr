@@ -10,6 +10,8 @@ import VAPr.vcf_parsing as vvp
 
 class VariantParsing(object):
 
+    supported_build_vers = ['hg19', 'hg18', 'hg38']
+
     def __init__(self, vcf_file, project_data, annotated_file=None):
 
         self.chunksize = 950
@@ -25,8 +27,9 @@ class VariantParsing(object):
         self._buffer_len = 50000
         self._last_round = False
 
-    def annotate_and_save(self, buffer=False):
+    def annotate_and_save(self, build_ver='hg19', buffer=False):
 
+        build_ver = self.check_ver(build_ver)
         if not self.txt_file:
 
             while self.hgvs.num_lines > self.step * self.chunksize:
@@ -54,7 +57,7 @@ class VariantParsing(object):
                     list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
                     myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
                     offset = len(list_hgvs_ids) - self.chunksize
-                    csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
+                    csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, build_ver=build_ver, offset=offset)
 
                     merged_list = []
                     for i, _ in enumerate(myvariants_variants):
@@ -99,6 +102,20 @@ class VariantParsing(object):
                         self.step += 1
 
             return 'Done'
+
+    def check_ver(self, build_ver):
+        """ Checking user input validity for genome build version """
+
+        if not build_ver:
+            return 'hg19'  # Default genome build vesion
+
+        if build_ver not in self.supported_build_vers:
+            raise ValueError('Build version must not recognized. Supported builds are'
+                             ' %s, %s, %s' % (self.supported_build_vers[0],
+                                              self.supported_build_vers[1],
+                                              self.supported_build_vers[2]))
+        else:
+            return build_ver
 
     def export(self, list_docs):
         """
@@ -198,25 +215,44 @@ class TxtParser(object):
         self.num_lines = sum(1 for _ in open(self.txt_file))
         self.chunksize = 950
         self.offset = 0
-        self.columns = ['chr',
-                        'start',
-                        'end',
-                        'ref',
-                        'alt',
-                        'func_knowngene',
-                        'gene_knowngene',
-                        'genedetail_knowngene',
-                        'exonicfunc_knowngene',
-                        'tfbsconssites',
-                        'cytoband',
-                        'genomicsuperdups',
-                        '1000g2015aug_all',
-                        'esp6500siv2_all',
-                        'cosmic70',
-                        'nci60',
-                        'otherinfo']
+        self.hg_19_columns = ['chr',
+                              'start',
+                              'end',
+                              'ref',
+                              'alt',
+                              'func_knowngene',
+                              'gene_knowngene',
+                              'genedetail_knowngene',
+                              'exonicfunc_knowngene',
+                              'tfbsconssites',
+                              'cytoband',
+                              'genomicsuperdups',
+                              '1000g2015aug_all',
+                              'esp6500siv2_all',
+                              'cosmic70',
+                              'nci60',
+                              'otherinfo']
 
-    def open_and_parse_chunks(self, step, offset=0):
+        self.hg_18_columns = self.hg_19_columns
+
+        self.hg_38_columns = ['chr',
+                              'start',
+                              'end',
+                              'ref',
+                              'alt',
+                              'func_knowngene',
+                              'gene_knowngene',
+                              'genedetail_knowngene',
+                              'exonicfunc_knowngene',
+                              'cytoband',
+                              'genomicsuperdups',
+                              '1000g2015aug_all',
+                              'esp6500siv2_all',
+                              'cosmic70',
+                              'nci60',
+                              'otherinfo']
+
+    def open_and_parse_chunks(self, step, build_ver=None, offset=0):
 
         listofdicts = []
         with open(self.txt_file, 'r') as txt:
@@ -229,7 +265,11 @@ class TxtParser(object):
 
                 sparse_dict = dict(zip(header[0:len(header)-1], i[0:len(header)-1]))
                 sparse_dict['otherinfo'] = i[-2::]
-                dict_filled = {k: sparse_dict[k] for k in self.columns if sparse_dict[k] != '.'}
+                if build_ver == 'hg19' or 'hg18':
+                    dict_filled = {k: sparse_dict[k] for k in self.hg_18_columns if sparse_dict[k] != '.'}
+                else:
+                    dict_filled = {k: sparse_dict[k] for k in self.hg_38_columns if sparse_dict[k] != '.'}
+
                 modeled = AnnovarModels(dict_filled)
                 listofdicts.append(modeled.final_dict)
 

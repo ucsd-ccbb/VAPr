@@ -11,32 +11,19 @@ from watchdog.observers import Observer
 from collections import OrderedDict
 
 
-"""
-# TODO:
-Add parameter to allow user to choose species and genome build. Should allow for all of those supported by ANNOVAR and generalize update script.
-Add Sample_ID, Patient_ID, Project_ID as keys in the documents. (one collection = project/analysis, each document is a variant with sample, patient, project keys)
-Add csv template to describe sampleid, patientid, projectid, etc
---take a break and regroup----
-Work with Guorong for local caching of myvariant.info and wgs speed. Guorong will provide wes and wgs vcf files.
---take a break and regroup----
-How to handle multisample VCFs (probably just a different parser)
---take a break and regroup----
-Implement variant analysis functionality after discussing with Amanda & Katie (finding compound heterozygous variants that are both predicted deleterious, or finding de novo mutations from an offspring in a trio)
---take a break and regroup----
-Test and provide run times for both WES and WGS VCF files (insert the run times into this document)
-
-"""
-
 class AnnovarWrapper(object):
 
     """Run Annovar as subprocess"""
 
-    def __init__(self, input_vcf, output_csv, annovar_path):
+    supported_build_vers = ['hg19', 'hg18', 'hg38']
+
+    def __init__(self, input_vcf, output_csv, annovar_path, build_ver=None):
 
         self.input = input_vcf
         self.output = output_csv + os.path.splitext(os.path.basename(self.input))[0] + '_annotated'
         self.output_csv_path = output_csv
         self.path = annovar_path
+        self.buildver = self.check_ver(build_ver)
         self.down_dd = '-webfrom annovar'
         self.annovar_hosted = OrderedDict({'knownGene': True,
                                            'tfbsConsSites': False,
@@ -57,31 +44,57 @@ class AnnovarWrapper(object):
                               'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)]
                               }
 
-        self.supported_databases = OrderedDict({'knownGene': 'g',  # Ok all builds
-                                                'tfbsConsSites': 'r',  #
-                                                'cytoBand': 'r',
-                                                'targetScanS': 'r',
-                                                'genomicSuperDups': 'r',
-                                                'esp6500siv2_all': 'f',
-                                                '1000g2015aug': 'f',
-                                                'popfreq_all_20150413': 'f',
-                                                'clinvar_20161128': 'f',
-                                                'cosmic70': 'f',
-                                                'nci60': 'f',
-                                                })
+        self.hg_18_databases = OrderedDict({'knownGene': 'g',
+                                            'tfbsConsSites': 'r',
+                                            'cytoBand': 'r',
+                                            'targetScanS': 'r',
+                                            'genomicSuperDups': 'r',
+                                            'esp6500siv2_all': 'f',
+                                            '1000g2015aug': 'f',
+                                            'cosmic70': 'f',
+                                            'nci60': 'f',
+                                            })
 
+        self.hg_19_databases = OrderedDict({'knownGene': 'g',  # Ok all builds
+                                            'tfbsConsSites': 'r',  #
+                                            'cytoBand': 'r',
+                                            'targetScanS': 'r',
+                                            'genomicSuperDups': 'r',
+                                            'esp6500siv2_all': 'f',
+                                            '1000g2015aug': 'f',
+                                            'popfreq_all_20150413': 'f',
+                                            'clinvar_20161128': 'f',
+                                            'cosmic70': 'f',
+                                            'nci60': 'f',
+                                            })
+
+        self.hg_38_databases = OrderedDict({'knownGene': 'g',
+                                            'cytoBand': 'r',
+                                            'genomicSuperDups': 'r',
+                                            'esp6500siv2_all': 'f',
+                                            '1000g2015aug': 'f',
+                                            'clinvar_20161128': 'f',
+                                            'cosmic70': 'f',
+                                            'nci60': 'f',
+                                            })
+
+        self.databases = self.get_databases()
         self.annovar_command_str = self.build_annovar_command_str()
 
-    def build_annovar_command_str(self, ):
-        dbs = ",".join(list(self.supported_databases.keys()))
-        dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
-        dbs_args = ",".join(list(self.supported_databases.values()))
-        command = " ".join(['perl', os.path.join(self.path, 'table_annovar.pl'), self.input,
-                            os.path.join(self.path, 'humandb/'), '-buildver', 'hg19', '-out',
-                            self.output, '-remove -protocol', dbs,  '-operation',
-                            dbs_args, '-nastring .', '-otherinfo -vcfinput'])
+    def download_dbs(self, all_dbs=True, dbs=None):
 
-        return command
+        if len(os.listdir(self.path + 'humandb/')) > 0:
+            files = glob.glob(self.path + 'humandb/*')
+            for f in files:
+                os.remove(f)
+
+        list_commands = self.build_db_dl_command_str(all_dbs, dbs)
+        for command in list_commands:
+            args = shlex.split(command)
+            subprocess.Popen(args, stdout=subprocess.PIPE)
+            run_handler(self.path + 'humandb/', cmds=list_commands, download=True,  annovar_path=self.path)
+
+        return 'Finished downloading databases to {}'.format(self.path + 'humandb/')
 
     def run_annovar(self):
         """
@@ -92,37 +105,50 @@ class AnnovarWrapper(object):
         """
 
         args = shlex.split(self.annovar_command_str)
-        p = subprocess.Popen(args, stdout=subprocess.PIPE)
-        run_handler(self.output_csv_path)
+        subprocess.Popen(args, stdout=subprocess.PIPE)
+        run_handler(self.output_csv_path, annovar_path=self.path)
 
         return 'Finished running ANNOVAR on {}'.format(self.input)
 
-    def build_db_dl_command_str(self, all, dbs, buildver):
+    def build_annovar_command_str(self):
 
-        if not all:
-            databases = dbs
-        else:
-            databases = self.supported_databases.keys()
+        dbs = ",".join(list(self.databases.keys()))
+        dbs_args = ",".join(list(self.databases.values()))
 
-        if not buildver:
-            buildver = 'hg19'
+        if '1000g2015aug' in dbs:
+            dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
+        command = " ".join(['perl', os.path.join(self.path, 'table_annovar.pl'), self.input,
+                            os.path.join(self.path, 'humandb/'), '-buildver', self.buildver, '-out',
+                            self.output, '-remove -protocol', dbs,  '-operation',
+                            dbs_args, '-nastring .', '-otherinfo -vcfinput'])
+
+        return command
+
+    def build_db_dl_command_str(self, all_dbs, dbs):
+
+        if not all_dbs:
+            for db in dbs:
+                if db not in self.databases:
+                    raise ValueError('Database %s not supported for buil version %s' % (db, self.buildver))
+            self.databases = {db: self.databases[db] for db in dbs}
 
         command_list = []
 
-        for db in databases:
+        for db in self.databases:
+
             if self.annovar_hosted[db]:
-                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-build', buildver, '-downdb',
-                                    self.down_dd, db, self.path + 'humandb/']))
+                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-build', self.buildver,
+                                              '-downdb', self.down_dd, db, self.path + 'humandb/']))
             else:
-                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-build', buildver, '-downdb',
-                                              db, self.path + 'humandb/']))
+                command_list.append(" ".join(['perl', self.path + 'annotate_variation.pl', '-build', self.buildver,
+                                              '-downdb', db, self.path + 'humandb/']))
         return command_list
 
-    def check_for_database_updates(self, buildver):
+    def check_for_database_updates(self):
 
-        self.download_dbs(all=False, dbs=['avdblist'], build_ver=buildver)
+        self.download_dbs(all_dbs=False, dbs=['avdblist'])
 
-        with open(os.path.join(self.path, '/humandb' + buildver + '_avdblist.txt'), 'r') as db_list:
+        with open(os.path.join(self.path, '/humandb' + self.buildver + '_avdblist.txt'), 'r') as db_list:
             reader = csv.reader(db_list, delimiter='\t')
             db_dict = {}
             for i in reader:
@@ -135,23 +161,33 @@ class AnnovarWrapper(object):
                 if db_.startswith(db):
                     if db_dict[db_][0] > self.manual_update[db][0]:
                         print('Database %s outdated, will download newer version' % db_)
-                        self.download_dbs(all=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
+                        self.download_dbs(all_dbs=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
 
-    def download_dbs(self, all=True, dbs=None, build_ver=None):
-        if len(os.listdir(self.path + 'humandb/')) > 0:
-            files = glob.glob(self.path + 'humandb/*')
-            for f in files:
-                os.remove(f)
+    def check_ver(self, build_ver):
 
-        list_commands = self.build_db_dl_command_str(all, dbs, build_ver)
-        for command in list_commands:
-            args = shlex.split(command)
-            # print(args)
+        if not build_ver:
+            self.buildver = 'hg19'  # Default genome build vesion
 
-            p = subprocess.Popen(args, stdout=subprocess.PIPE)
-            run_handler(self.path + 'humandb/', download=True)
+        if build_ver not in self.supported_build_vers:
+            raise ValueError('Build version must not recognized. Supported builds are'
+                             ' %s, %s, %s' % (self.supported_build_vers[0],
+                                              self.supported_build_vers[1],
+                                              self.supported_build_vers[2]))
+        else:
+            self.buildver = build_ver
 
-        return 'Finished downloading databases to {}'.format(self.path + 'humandb/')
+        return self.buildver
+
+    def get_databases(self):
+
+        if self.buildver == 'hg18':
+            databases = self.hg_18_databases
+        elif self.buildver == 'hg19':
+            databases = self.hg_19_databases
+        else:
+            databases = self.hg_38_databases
+
+        return databases
 
 
 class MyHandler(FileSystemEventHandler):
@@ -160,41 +196,49 @@ class MyHandler(FileSystemEventHandler):
     and proceed to next file.
     """
 
-    def __init__(self, observer, download=False):
+    def __init__(self, observer, cmds=None,  download=False, annovar_path='ANNOVAR_PATH'):
 
         self.observer = observer
         self.dl = download
+        self.annovar = annovar_path
+        self.cmds = cmds
 
     def on_created(self, event):
 
         if self.dl:
-            dowloaded = ["annovar_date"]
-            if event.src_path.split('.')[-1] not in dowloaded:
-                # print('EVENT', os.path.basename(event.src_path))
-                print("Currently downloading database file: " + event.src_path.split('/')[-1].split('.')[0])
-                dowloaded.append(event.src_path.split('/')[-1].split('.')[0])
+
+            print('Downloading: ' + event.src_path)
+            """
+            dowloaded = ['annovar_date', '']
+
+            if os.path.basename(event.src_path).split('.')[0] not in dowloaded:
+                print("Currently downloading database file: " + os.path.basename(event.src_path).split('.')[0])
+
+            dowloaded.append(os.path.basename(event.src_path).split('.')[0])
 
             final = event.src_path[-3:]
             if final == 'txt':
-                print("\nAnnovar finished dowloading on file : " + event.src_path.split('/')[-1].split('.')[0] + \
-                      ". A .txt file has been created in the ANNOVAR_PATH directory\n")
+                print("\nAnnovar finished dowloading on file : " + os.path.basename(event.src_path).split('.')[0] +
+                      ". A .txt file has been created in the %s directory\n" % self.annovar)
+            """
+            if self.cmds[-1][-2] in event.src_path:
                 self.observer.stop()
 
         else:
             if event.src_path.split('.')[-1] not in ["invalid_input", "log", "avinput"]:
-                print("Currently working on VCF file: " + event.src_path.split('/')[-1].split('.')[0] + ", field " +\
+                print("Currently working on VCF file: " + event.src_path.split('/')[-1].split('.')[0] + ", field " +
                       event.src_path.split('/')[-1].split('.')[-1])
 
                 final = event.src_path[-3:]
                 if final == 'txt':
-                    print("\nAnnovar finished working on file : " + event.src_path.split('/')[-1].split('.')[0] +\
+                    print("\nAnnovar finished working on file : " + event.src_path.split('/')[-1].split('.')[0] +
                           ". A .txt file has been created in the OUT_PATH directory\n")
                     self.observer.stop()
 
 
-def run_handler(output_csv_path, download=False):
+def run_handler(output_csv_path, cmds=None, download=False, annovar_path='ANNOVAR_PATH'):
     observer = Observer()
-    event_handler = MyHandler(observer, download=download)
+    event_handler = MyHandler(observer, cmds=cmds, download=download, annovar_path=annovar_path)
     observer.schedule(event_handler, output_csv_path, recursive=True)
     observer.start()
     observer.join()
