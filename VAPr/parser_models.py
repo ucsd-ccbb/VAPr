@@ -3,23 +3,38 @@ import vcf
 import myvariant
 import csv
 import re
+import os
 import itertools
+import subprocess
+from multiprocessing import Pool
 from pymongo import MongoClient
+from VAPr.annovar_suprocess import AnnotationProject
 import VAPr.vcf_parsing as vvp
 
 
-class VariantParsing(object):
+class VariantParsing(AnnotationProject):
 
-    supported_build_vers = ['hg19', 'hg18', 'hg38']
+    def __init__(self,
+                 input_dir,
+                 output_dir,
+                 annovar_path,
+                 design_file=None,
+                 project_data=None,
+                 build_ver=None):
 
-    def __init__(self, vcf_file, project_data, annotated_file=None):
+        super().__init__(self,
+                         input_dir,
+                         output_dir,
+                         annovar_path,
+                         design_file=design_file,
+                         project_data=project_data,
+                         build_ver=build_ver)
+
+
+    # def __init__(self, vcf_file, project_data, annotated_file=None):
 
         self.chunksize = 950
         self.step = 0
-        self.txt_file = annotated_file
-        self.vcf_file = vcf_file
-        self.hgvs = HgvsParser(self.vcf_file)
-        self.csv_parsing = TxtParser(self.txt_file)
         self.collection = project_data['project_name']
         self.db = project_data['db_name']
         self.patient_id = project_data['patient_id']
@@ -29,79 +44,84 @@ class VariantParsing(object):
 
     def annotate_and_save(self, build_ver='hg19', buffer=False):
 
-        build_ver = self.check_ver(build_ver)
-        if not self.txt_file:
+        for csv, vcf in self.mapping.items():
 
-            while self.hgvs.num_lines > self.step * self.chunksize:
+            hgvs = HgvsParser(vcf)
+            csv_parsing = TxtParser(csv)
 
-                list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
-                myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+            build_ver = self.check_ver(build_ver)
+            if not csv:
 
-                if len(myvariants_variants) < self.chunksize:
-                    self._last_round = True
+                while hgvs.num_lines > self.step * self.chunksize:
 
-                if self._last_round:
-                    return 'Done'
-                else:
-                    self.export(myvariants_variants)
-                    self.step += 1
-
-            return 'Done'
-
-        else:
-
-            if buffer:
-                variant_buffer = []
-                while self.csv_parsing.num_lines > self.step * self.chunksize:
-
-                    list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
+                    list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
                     myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
-                    offset = len(list_hgvs_ids) - self.chunksize
-                    csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, build_ver=build_ver, offset=offset)
 
-                    merged_list = []
-                    for i, _ in enumerate(myvariants_variants):
-                        merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
-
-                    variant_buffer.extend(merged_list)
-                    self.step += 1
-
-                    if len(merged_list) < self.chunksize:
-                        self._last_round = True
-
-                    if (len(variant_buffer) > self._buffer_len) or self._last_round:
-                        print('Parsing Buffer...')
-                        self.export(variant_buffer)
-                        variant_buffer = []
-
-                        if self._last_round:
-                            return 'Done2'
-
-                return 'Done1'
-
-            else:
-
-                while self.csv_parsing.num_lines > self.step*self.chunksize:
-
-                    list_hgvs_ids = self.hgvs.get_variants_from_vcf(self.step)
-                    myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
-                    offset = len(list_hgvs_ids) - self.chunksize
-                    csv_variants = self.csv_parsing.open_and_parse_chunks(self.step, offset=offset)
-
-                    merged_list = []
-                    for i, _ in enumerate(myvariants_variants):
-                        merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
-
-                    if len(merged_list) < self.chunksize:
+                    if len(myvariants_variants) < self.chunksize:
                         self._last_round = True
 
                     if self._last_round:
                         return 'Done'
                     else:
-                        self.export(merged_list)
+                        self.export(myvariants_variants)
                         self.step += 1
 
-            return 'Done'
+                return 'Done'
+
+            else:
+
+                if buffer:
+                    variant_buffer = []
+                    while csv_parsing.num_lines > self.step * self.chunksize:
+
+                        list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
+                        myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                        offset = len(list_hgvs_ids) - self.chunksize
+                        csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=build_ver, offset=offset)
+
+                        merged_list = []
+                        for i, _ in enumerate(myvariants_variants):
+                            merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+
+                        variant_buffer.extend(merged_list)
+                        self.step += 1
+
+                        if len(merged_list) < self.chunksize:
+                            self._last_round = True
+
+                        if (len(variant_buffer) > self._buffer_len) or self._last_round:
+                            print('Parsing Buffer...')
+                            self.export(variant_buffer)
+                            variant_buffer = []
+
+                            if self._last_round:
+                                return 'Done2'
+
+                    return 'Done1'
+
+                else:
+
+                    while csv_parsing.num_lines > self.step*self.chunksize:
+
+                        list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
+                        myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                        offset = len(list_hgvs_ids) - self.chunksize
+                        csv_variants = csv_parsing.open_and_parse_chunks(self.step, offset=offset)
+
+                        merged_list = []
+                        for i, _ in enumerate(myvariants_variants):
+                            merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+
+                        if len(merged_list) < self.chunksize:
+                            self._last_round = True
+
+                        if self._last_round:
+                            return 'Done'
+                        else:
+                            self.export(merged_list)
+                            self.step += 1
+
+                return 'Done'
 
     def check_ver(self, build_ver):
         """ Checking user input validity for genome build version """
@@ -166,6 +186,76 @@ class VariantParsing(object):
 
         return variant_data
 
+
+class MultiThreadedParsing(VariantParsing):
+
+    def __init__(self, input_dir, project_data, csv_file_dir, build_ver='hg19'):
+
+        super().__init__(input_dir, project_data, csv_file_dir)
+        self.input = input_dir
+        self.output_csv_path = csv_file_dir
+        self.input_output_mapping = self.get_mapping()
+        self.buildver = build_ver
+        self.mapping = self.get_mapping()
+
+    def get_mapping(self):
+
+        vcf_fs = os.listdir(self.input)
+        csv_fs = os.listdir(self.output_csv_path)
+
+        vcfs = [vcf for vcf in vcf_fs if vcf.endswith('vcf')]
+        csvs = [csv for csv in csv_fs if csv.endswith('txt')]
+
+        mappings = []
+        for vcf in vcfs:
+            for csv in csvs:
+                if os.path.splitext(os.path.basename(vcf))[0] in csv:
+                    mappings.append((os.path.join(self.input, vcf), os.path.join(self.output_csv_path, csv)))
+        return mappings
+
+    def parallel_variant_parsing(self, n_processes):
+        self.pooling(n_processes, self._variant_parsing, self.mapping)
+
+    def _variant_parsing(self, mapping):
+
+        hgvs = HgvsParser(mapping[0])
+        csv_parsing = TxtParser(mapping[1])
+
+        variant_buffer = []
+        while csv_parsing.num_lines > self.step * self.chunksize:
+
+            list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
+            myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+            offset = len(list_hgvs_ids) - self.chunksize
+            csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=self.buildver, offset=offset)
+
+            merged_list = []
+            for i, _ in enumerate(myvariants_variants):
+                merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
+
+            variant_buffer.extend(merged_list)
+            self.step += 1
+
+            if len(merged_list) < self.chunksize:
+                self._last_round = True
+
+            if (len(variant_buffer) > self._buffer_len) or self._last_round:
+                print('Parsing Buffer...')
+                self.export(variant_buffer)
+                variant_buffer = []
+
+                if self._last_round:
+                    return 'Done2'
+
+        return 'Done1'
+
+    @staticmethod
+    def pooling(n_processes, input_1, input_2):
+
+        pool = Pool(processes=n_processes)
+        pool.map(input_1, input_2)
+        pool.close()
+        pool.join()
 
 class HgvsParser(object):
 
@@ -251,6 +341,7 @@ class TxtParser(object):
                               'cosmic70',
                               'nci60',
                               'otherinfo']
+
 
     def open_and_parse_chunks(self, step, build_ver=None, offset=0):
 
