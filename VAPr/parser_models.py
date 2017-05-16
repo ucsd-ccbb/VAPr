@@ -5,13 +5,15 @@ import csv
 import re
 import os
 import itertools
-import subprocess
+import sys
 from multiprocessing import Pool
 from pymongo import MongoClient
 from VAPr.base import AnnotationProject
 import VAPr.vcf_parsing as vvp
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.handlers[0].stream = sys.stdout
 
 
 class VariantParsing(AnnotationProject):
@@ -87,7 +89,7 @@ class VariantParsing(AnnotationProject):
                             self._last_round = True
 
                         if (len(variant_buffer) > self._buffer_len) or self._last_round:
-                            logging.INFO('Parsing Buffer...')
+                            logging.info('Parsing Buffer...')
                             self.export(variant_buffer)
                             variant_buffer = []
 
@@ -223,7 +225,7 @@ class VariantParsing(AnnotationProject):
                 self._last_round = True
 
             if (len(variant_buffer) > self._buffer_len) or self._last_round:
-                logging.INFO('Parsing Buffer...')
+                logging.info('Parsing Buffer...')
                 self.export(variant_buffer)
                 variant_buffer = []
 

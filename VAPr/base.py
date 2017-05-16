@@ -3,6 +3,7 @@ import subprocess
 import shlex
 import os
 import csv
+import sys
 import glob
 import pandas
 import datetime
@@ -11,7 +12,9 @@ from watchdog.observers import Observer
 from collections import OrderedDict
 from VAPr import parser_models
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.handlers[0].stream = sys.stdout
 
 
 class ProjectData(object):
@@ -226,15 +229,15 @@ class AnnovarWrapper(AnnotationProject):
             if os.path.basename(f).startswith(os.path.basename(self.input).split('.')[0]):
                 os.remove(f)
         """
+        num_commands = len(list(self.input_output_mapping.keys()))
         for vcf, csv in self.input_output_mapping.items():
             cmd_string = self.build_annovar_command_str(vcf, csv)
             args = shlex.split(cmd_string)
             subprocess.Popen(args, stdout=subprocess.PIPE)
 
-        logging.INFO('Annovar jobs submitted')
-        run_handler(self.output_csv_path, annovar_path=self.annovar, num_commands=len(self.input_output_mapping.keys()))
-
-        return 'Finished running ANNOVAR on {}'.format(self.input_dir)
+        logging.info('Annovar jobs submitted')
+        run_handler(self.output_csv_path, annovar_path=self.annovar, num_commands=num_commands)
+        logging.info('Finished running ANNOVAR on %s' % ' '.join(list(self.input_output_mapping.keys())))
 
     def build_annovar_command_str(self, vcf, csv):
 
@@ -286,7 +289,7 @@ class AnnovarWrapper(AnnotationProject):
             for db_ in db_dict.keys():
                 if db_.startswith(db):
                     if db_dict[db_][0] > self.manual_update[db][0]:
-                        logging.INFO('Database %s outdated, will download newer version' % db_)
+                        logging.info('Database %s outdated, will download newer version' % db_)
                         self.download_dbs(all_dbs=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
 
     def get_databases(self):
@@ -320,7 +323,7 @@ class MyHandler(FileSystemEventHandler):
         files_created = 0
         if self.dl:
 
-            logging.INFO('Downloading: ' + event.src_path)
+            logging.info('Downloading: ' + event.src_path)
 
             if self.cmds[-1][-2] in event.src_path:
                 self.observer.stop()
@@ -329,13 +332,15 @@ class MyHandler(FileSystemEventHandler):
             """
 
             if event.src_path.split('.')[-1] not in ["invalid_input", "log", "avinput"]:
-                logging.INFO("Currently working on VCF file: " + event.src_path.split('/')[-1].split('.')[0] + ", field " +
+                logging.info("Currently working on VCF file: " + event.src_path.split('/')[-1].split('.')[0] + ", field " +
                       event.src_path.split('/')[-1].split('.')[-1])
             """
             final = event.src_path[-3:]
             if final == 'txt':
                 files_created += 1
-                logging.INFO('\nAnnovar finished working on file : ' + event.src_path.split('/')[-1].split('.')[0] +
+                logging.info('File %i/%i: \nAnnovar finished working on file : ' % (files_created,
+                                                                                    self.num_commands) +
+                             event.src_path.split('/')[-1].split('.')[0] +
                              '. A .txt file has been created in the OUT_PATH directory\n')
 
                 if files_created == self.num_commands:

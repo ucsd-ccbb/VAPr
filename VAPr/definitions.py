@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import sys
 
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
@@ -40,7 +41,7 @@ ALL_GENOMES_FA_FILEPATH = os.path.join(SERVER_WORKSPACE, 'data/hairpin.fa')  # T
 INDICES_DIR = os.path.join(SERVER_WORKSPACE, 'data/indices')
 
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
 if __name__ == '__main__':
