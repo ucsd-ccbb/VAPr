@@ -8,54 +8,51 @@ import itertools
 import subprocess
 from multiprocessing import Pool
 from pymongo import MongoClient
-from VAPr.annovar_suprocess import AnnotationProject
+from VAPr.base import AnnotationProject
 import VAPr.vcf_parsing as vvp
+import logging
+logger = logging.getLogger(__name__)
 
 
 class VariantParsing(AnnotationProject):
 
     def __init__(self,
                  input_dir,
-                 output_dir,
+                 output_csv_path,
                  annovar_path,
+                 project_data,
                  design_file=None,
-                 project_data=None,
                  build_ver=None):
 
-        super().__init__(self,
-                         input_dir,
-                         output_dir,
-                         annovar_path,
-                         design_file=design_file,
-                         project_data=project_data,
-                         build_ver=build_ver)
-
-
-    # def __init__(self, vcf_file, project_data, annotated_file=None):
+        super(AnnotationProject, self).__init__(input_dir,
+                                                output_csv_path,
+                                                annovar_path,
+                                                project_data,
+                                                design_file=design_file,
+                                                build_ver=build_ver)
 
         self.chunksize = 950
         self.step = 0
+        self.csvs, self.vcfs = self.get_file_names()
         self.collection = project_data['project_name']
         self.db = project_data['db_name']
-        self.patient_id = project_data['patient_id']
-        self.sample_id = project_data['sample_id']
         self._buffer_len = 50000
         self._last_round = False
 
-    def annotate_and_save(self, build_ver='hg19', buffer=False):
+    def annotate_and_save(self, buffer=False):
 
-        for csv, vcf in self.mapping.items():
+        for csv, vcf in list(zip(self.csvs, self.vcfs)):
 
-            hgvs = HgvsParser(vcf)
             csv_parsing = TxtParser(csv)
+            hgvs = HgvsParser(vcf)
+            sample_id = os.path.splitext(os.path.basename(vcf))[0]
 
-            build_ver = self.check_ver(build_ver)
             if not csv:
 
                 while hgvs.num_lines > self.step * self.chunksize:
 
                     list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
-                    myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                    myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, sample_id)
 
                     if len(myvariants_variants) < self.chunksize:
                         self._last_round = True
@@ -75,9 +72,9 @@ class VariantParsing(AnnotationProject):
                     while csv_parsing.num_lines > self.step * self.chunksize:
 
                         list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
-                        myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                        myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, sample_id)
                         offset = len(list_hgvs_ids) - self.chunksize
-                        csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=build_ver, offset=offset)
+                        csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=self.buildver, offset=offset)
 
                         merged_list = []
                         for i, _ in enumerate(myvariants_variants):
@@ -90,7 +87,7 @@ class VariantParsing(AnnotationProject):
                             self._last_round = True
 
                         if (len(variant_buffer) > self._buffer_len) or self._last_round:
-                            print('Parsing Buffer...')
+                            logging.INFO('Parsing Buffer...')
                             self.export(variant_buffer)
                             variant_buffer = []
 
@@ -104,7 +101,7 @@ class VariantParsing(AnnotationProject):
                     while csv_parsing.num_lines > self.step*self.chunksize:
 
                         list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
-                        myvariants_variants = self.get_dict_myvariant(list_hgvs_ids)
+                        myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, sample_id)
                         offset = len(list_hgvs_ids) - self.chunksize
                         csv_variants = csv_parsing.open_and_parse_chunks(self.step, offset=offset)
 
@@ -122,6 +119,18 @@ class VariantParsing(AnnotationProject):
                             self.step += 1
 
                 return 'Done'
+
+    def get_file_names(self):
+        vcfs = [i[0] for i in self.mapping]
+        csvs = []
+        all_csvs = os.listdir(self.output_csv_path)
+
+        for csv in all_csvs:
+            for csv_init in [i[1] for i in self.mapping]:
+                if csv.startswith(csv_init):
+                    csvs.append(csv)
+
+        return vcfs, csvs
 
     def check_ver(self, build_ver):
         """ Checking user input validity for genome build version """
@@ -159,7 +168,7 @@ class VariantParsing(AnnotationProject):
             result.update(dictionary)
         return result
 
-    def get_dict_myvariant(self, variant_list):
+    def get_dict_myvariant(self, variant_list, sample_id):
         """
         Function designated to place the queries on myvariant.info servers.
 
@@ -172,49 +181,23 @@ class VariantParsing(AnnotationProject):
         mv = myvariant.MyVariantInfo()
         # This will retrieve a list of dictionaries
         variant_data = mv.getvariants(variant_list, as_dataframe=False)
-        variant_data = self.remove_id_key(variant_data)
+        variant_data = self.remove_id_key(variant_data, sample_id)
 
         return variant_data
 
-    def remove_id_key(self, variant_data):
+    def remove_id_key(self, variant_data, sample_id):
 
         for dic in variant_data:
             dic['hgvs_id'] = dic.pop("_id", None)
             dic['hgvs_id'] = dic.pop("query", None)
-            dic['patient_id'] = self.patient_id
-            dic['sample_id'] = self.sample_id
+            dic['sample_id'] = sample_id
 
         return variant_data
 
+    def parallel_annotation(self, n_processes):
 
-class MultiThreadedParsing(VariantParsing):
-
-    def __init__(self, input_dir, project_data, csv_file_dir, build_ver='hg19'):
-
-        super().__init__(input_dir, project_data, csv_file_dir)
-        self.input = input_dir
-        self.output_csv_path = csv_file_dir
-        self.input_output_mapping = self.get_mapping()
-        self.buildver = build_ver
-        self.mapping = self.get_mapping()
-
-    def get_mapping(self):
-
-        vcf_fs = os.listdir(self.input)
-        csv_fs = os.listdir(self.output_csv_path)
-
-        vcfs = [vcf for vcf in vcf_fs if vcf.endswith('vcf')]
-        csvs = [csv for csv in csv_fs if csv.endswith('txt')]
-
-        mappings = []
-        for vcf in vcfs:
-            for csv in csvs:
-                if os.path.splitext(os.path.basename(vcf))[0] in csv:
-                    mappings.append((os.path.join(self.input, vcf), os.path.join(self.output_csv_path, csv)))
-        return mappings
-
-    def parallel_variant_parsing(self, n_processes):
-        self.pooling(n_processes, self._variant_parsing, self.mapping)
+        mapping_tpls = [(k, v) for k, v in self.mapping.items()]
+        self.pooling(n_processes, self._variant_parsing, mapping_tpls)
 
     def _variant_parsing(self, mapping):
 
@@ -240,7 +223,7 @@ class MultiThreadedParsing(VariantParsing):
                 self._last_round = True
 
             if (len(variant_buffer) > self._buffer_len) or self._last_round:
-                print('Parsing Buffer...')
+                logging.INFO('Parsing Buffer...')
                 self.export(variant_buffer)
                 variant_buffer = []
 
@@ -256,6 +239,7 @@ class MultiThreadedParsing(VariantParsing):
         pool.map(input_1, input_2)
         pool.close()
         pool.join()
+
 
 class HgvsParser(object):
 
@@ -341,7 +325,6 @@ class TxtParser(object):
                               'cosmic70',
                               'nci60',
                               'otherinfo']
-
 
     def open_and_parse_chunks(self, step, build_ver=None, offset=0):
 
