@@ -5,6 +5,7 @@ import VAPr.validation
 
 __author__ = 'Birmingham'
 
+# TODO: Forgive mal-formatted vcf files. Log the error but dont break the annotation.
 
 # TODO: rewrite with lambdas or partials
 def ignore_pid(info_value, genotype_info_to_fill):
