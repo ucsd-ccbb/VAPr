@@ -109,22 +109,28 @@ class AnnovarWrapper(AnnotationProject):
     def run_annovar(self):
         """ Spawning Annovar jobs """
 
-        if len(os.listdir(self.output_csv_path)) > 0:
-            files = glob.glob(os.path.join(self.output_csv_path, '*'))
-            for f in files:
-                if '.txt' in f:
-                    raise Warning('Files in directory exist, cowardly refusing to overwrite them')
-                os.remove(f)
+        n_commands = 0
+        for sample in self.mapping.keys():
+            annotation_dir = os.path.join(self.output_csv_path, sample)
+            if os.path.isdir(annotation_dir):
+                raise IsADirectoryError('Directory already exists for %s. Aborting.' % annotation_dir)
+            else:
+                os.makedirs(annotation_dir)
 
-        num_commands = len(list(self.input_output_mapping.keys()))
-        for vcf, csv in self.input_output_mapping.items():
-            cmd_string = self.build_annovar_command_str(vcf, csv)
-            args = shlex.split(cmd_string)
-            subprocess.Popen(args, stdout=subprocess.PIPE)
+            # print(self.mapping[sample]['vcf_csv'])
 
-        logging.info('Annovar jobs submitted')
-        listen(self.output_csv_path, num_commands)
-        logging.info('Finished running ANNOVAR on %s' % ' '.join(list(self.input_output_mapping.keys())))
+            vcf_paths, csv_paths = [], []
+            for vcf, csv in self.mapping[sample]['vcf_csv']:
+                vcf_path = os.path.join(self.input_dir, os.path.join(sample, vcf))
+                csv_path = os.path.join(self.output_csv_path, os.path.join(sample, csv))
+                cmd_string = self.build_annovar_command_str(vcf_path, csv_path)
+                args = shlex.split(cmd_string)
+                n_commands += len(self.mapping[sample]['vcf_csv'])
+                subprocess.Popen(args, stdout=subprocess.PIPE)
+
+            logging.info('Annovar jobs submitted for sample %s' % sample)
+            listen(self.output_csv_path, n_commands)
+            logging.info('Finished running Annovar on sample %s' % sample)
 
     def build_annovar_command_str(self, vcf, csv):
 
@@ -198,15 +204,19 @@ def listen(out_path, n_files):
     while True:
 
         files = os.listdir(out_path)
-        txts = [i for i in files if i.endswith('txt')]
-        time.sleep(0.1)
-        files = os.listdir(out_path)
-        txts_2 = [i for i in files if i.endswith('txt')]
+        txts = sorted([i for i in files if i.endswith('txt')])
 
-        if len(txts_2) > len(txts):
+        time.sleep(5)
+
+        new_files = os.listdir(out_path)
+        new_txts = sorted([i for i in new_files if i.endswith('txt')])
+
+        newly_created = [x for x in new_txts if x not in txts]
+
+        if len(newly_created) > 0:
             added += 1
             logging.info('File %i/%i: Annovar finished working on file : ' % (added, n_files) +
-                         os.path.basename(txts_2[-1]) +
+                         os.path.basename(newly_created[0]) +
                          '.\n A text file has been created in the %s directory\n' % out_path)
 
         if added == n_files:
