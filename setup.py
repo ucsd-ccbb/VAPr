@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='VAPr',
-      version='1.6',
+      version='1.7',
       description='Package for NoSQL variant data storage, annotation and prioritization.',
       url='https://github.com/ucsd-ccbb/VAPr',
       author='Carlo Mazzaferro',
