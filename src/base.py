@@ -28,12 +28,10 @@ class ProjectData(object):
         self.output_csv_path = output_dir
         self.vcf_files = self.find_vcfs()
         self.design_file = design_file
-        self.input_output_mapping = self.get_mapping()
         self.annovar = annovar_path
         self.project_data = project_data
         self.buildver = build_ver
-        self.mapping = self.get_mapping()
-        self.mapping_2 = [(k, v['vcf']) for k, v in self.get_mapping().items()]
+        self.mapping = self.get_mapping() #[(k, v['vcf']) for k, v in self.get_mapping().items()]
 
     def get_mapping(self):
 
@@ -54,17 +52,16 @@ class ProjectData(object):
 
     def check_file_existance_return_mapping(self, design_df):
 
-        design_file_mapping = design_df.set_index('Sample').T.to_dict()
-        sample_names = design_file_mapping.keys()
-        combined = '\t'.join(self.vcf_files)
+        design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
+        for sample in design_file_mapping.keys():
+            if not os.path.exists(os.path.join(self.input_dir, sample)):
+                raise NotADirectoryError('Could not find directory named %s as provided in design file' % sample)
 
-        for sample in sample_names:
-            if sample not in combined:
-                raise FileNotFoundError('Sample %s does not have an associated vcf file' % sample)
+            vcf_files = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('.vcf')]
+            logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_files)), sample))
 
-            for vcf in self.vcf_files:
-                if sample in vcf:
-                    design_file_mapping[sample]['vcf'] = os.path.join(self.input_dir, vcf)
+            design_file_mapping[sample]['vcf_csv'] = [(vcf_file, os.path.splitext(os.path.basename(vcf_file))[0] +
+                                                      '_annotated') for vcf_file in vcf_files]  # God bless listcomps
 
         return design_file_mapping
 
