@@ -10,10 +10,13 @@ from collections import OrderedDict
 import logging
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from src.base import AnnotationProject
+from base import AnnotationProject
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logger.handlers[0].stream = sys.stdout
+try:
+    logger.handlers[0].stream = sys.stdout     # Enables logging on jupyter notebooks
+except:
+    pass
 
 
 class AnnovarWrapper(AnnotationProject):
@@ -109,27 +112,25 @@ class AnnovarWrapper(AnnotationProject):
     def run_annovar(self):
         """ Spawning Annovar jobs """
 
-        n_commands = 0
+        print(self.mapping)
         for sample in self.mapping.keys():
             annotation_dir = os.path.join(self.output_csv_path, sample)
             if os.path.isdir(annotation_dir):
-                raise IsADirectoryError('Directory already exists for %s. Aborting.' % annotation_dir)
+                raise TypeError('Directory already exists for %s. Aborting.' % annotation_dir)
             else:
                 os.makedirs(annotation_dir)
 
-            # print(self.mapping[sample]['vcf_csv'])
-
-            vcf_paths, csv_paths = [], []
             for vcf, csv in self.mapping[sample]['vcf_csv']:
                 vcf_path = os.path.join(self.input_dir, os.path.join(sample, vcf))
                 csv_path = os.path.join(self.output_csv_path, os.path.join(sample, csv))
                 cmd_string = self.build_annovar_command_str(vcf_path, csv_path)
                 args = shlex.split(cmd_string)
-                n_commands += len(self.mapping[sample]['vcf_csv'])
+
                 subprocess.Popen(args, stdout=subprocess.PIPE)
 
+            n_commands = len(self.mapping[sample]['vcf_csv'])
             logging.info('Annovar jobs submitted for sample %s' % sample)
-            listen(self.output_csv_path, n_commands)
+            listen(os.path.join(self.output_csv_path, sample), n_commands)
             logging.info('Finished running Annovar on sample %s' % sample)
 
     def build_annovar_command_str(self, vcf, csv):
@@ -220,7 +221,9 @@ def listen(out_path, n_files):
                          '.\n A text file has been created in the %s directory\n' % out_path)
 
         if added == n_files:
-            return None
+            break
+        if len(txts) >= n_files:
+            break
 
 
 class MyHandler(FileSystemEventHandler):

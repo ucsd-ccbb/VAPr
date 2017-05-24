@@ -3,16 +3,22 @@ from __future__ import division, print_function
 import myvariant
 import os
 import sys
-import tqdm
-from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 from pymongo import MongoClient
-from src.base import AnnotationProject
-from src.models import TxtParser, HgvsParser
+from base import AnnotationProject
+from models import TxtParser, HgvsParser
+from pathos.multiprocessing import Pool
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logger.handlers[0].stream = sys.stdout
+try:
+    logger.handlers[0].stream = sys.stdout
+except:
+    pass
+
+
+def _variant_parsing_parallel(varparse):
+    varparse._variant_parsing()
 
 
 class VariantParsing(AnnotationProject):
@@ -34,11 +40,13 @@ class VariantParsing(AnnotationProject):
 
         self.chunksize = 950
         self.step = 0
-        self.csvs, self.vcfs = self.get_file_names()
+        # self.csvs, self.vcfs = self.get_file_names()
         self.collection = project_data['project_name']
         self.db = project_data['db_name']
         self._buffer_len = 40000
         self._last_round = False
+        self.completed_jobs = {}
+        self.verbose = 0
 
     def annotate_and_save(self, buffer=False):
 
@@ -121,17 +129,6 @@ class VariantParsing(AnnotationProject):
 
                 return 'Done'
 
-    def get_file_names(self):
-        vcfs = [i[0] for i in self.mapping]
-        inits = [os.path.basename(i[1]) for i in self.mapping]
-        csvs = []
-        all_csvs = os.listdir(self.output_csv_path)
-        for csv in all_csvs:
-            for csv_init in inits:
-                if csv.startswith(csv_init):
-                    csvs.append(os.path.join(self.output_csv_path, csv))
-
-        return vcfs, csvs
 
     def check_ver(self, build_ver):
         """ Checking user input validity for genome build version """
@@ -182,7 +179,7 @@ class VariantParsing(AnnotationProject):
 
         return variant_data
 
-    def get_dict_myvariant(self, variant_list, sample_id):
+    def get_dict_myvariant(self, variant_list, verbose, sample_id):
         """
         Function designated to place the queries on myvariant.info servers.
 
@@ -192,9 +189,14 @@ class VariantParsing(AnnotationProject):
         :return: list of dictionaries. Each dictionary contains data about a single variant.
         """
 
+        if verbose >= 2:
+            verbose = True
+        else:
+            verbose = False
+
         mv = myvariant.MyVariantInfo()
         # This will retrieve a list of dictionaries
-        variant_data = mv.getvariants(variant_list, as_dataframe=False)
+        variant_data = mv.getvariants(variant_list, verbose=verbose, as_dataframe=False)
         variant_data = self.remove_id_key(variant_data, sample_id)
 
         return variant_data
@@ -222,15 +224,28 @@ class VariantParsing(AnnotationProject):
             list_of_dicts.append({key: self.mapping[key]})
         return list_of_dicts
 
-    def parallel_annotation(self, n_processes):
+    def parallel_annotation(self, n_processes, verbose=1):
 
-        list_tupls = []
-        mapping = self.add_csv_to_mapping()
-        for k in mapping:
-            key = list(k.keys())[0]
-            list_tupls.append((key, k[key]['vcf'], k[key]['csv']))
-
-        self.pooling(n_processes, self._variant_parsing, list_tupls)
+        self.verbose = verbose
+        samples = self.mapping.keys()
+        for sample in samples:
+            list_tupls = []
+            vcfs = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('vcf')]
+            for vcf in vcfs:
+                base_name = os.path.splitext(vcf)[0]
+                matching_csv = [i for i in os.listdir(os.path.join(self.output_csv_path, sample)) if
+                                i.startswith(base_name + '_annotated') and i.endswith('txt')]
+                if len(matching_csv) > 1:
+                    raise ValueError('Too many matching csvs')
+                if len(matching_csv) == 0:
+                    raise ValueError('Csv not found')
+                else:
+                    csv_path = os.path.join(self.output_csv_path, sample, matching_csv[0])
+                    vcf_path = os.path.join(self.input_dir, sample, vcf)
+                    list_tupls.append((sample, vcf_path, csv_path))
+            print(list_tupls)
+            self.pooling(n_processes, self._variant_parsing, list_tupls)
+            logger.info('Completed annotation and parsing for variants in sample %s' % sample)
 
     def _variant_parsing(self, maps):
 
@@ -238,16 +253,13 @@ class VariantParsing(AnnotationProject):
         csv_parsing = TxtParser(maps[2])
 
         variant_buffer = []
+        n_vars = 0
+
         while csv_parsing.num_lines > self.step * self.chunksize:
-            # print('LINE EXIT COND: %i, %i' % (csv_parsing.num_lines, self.step * self.chunksize))
-            # logging.info('Parsing %i/%i variants from file %s' % ((self.step + 1) * self.chunksize,
-            #                                                      csv_parsing.num_lines,
-            #                                                      os.path.basename(maps[1])))
 
             list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
-            # tpl = (maps[0], list_hgvs_ids)
+            myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, self.verbose, maps[0])
 
-            myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, maps[0]) #self.threading(8, self.get_dict_mv_parallel, tpl)
             offset = len(list_hgvs_ids) - self.chunksize
             csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=self.buildver, offset=offset)
 
@@ -256,23 +268,24 @@ class VariantParsing(AnnotationProject):
                 merged_list.append(self.merge_dict_lists(myvariants_variants[i], csv_variants[i]))
 
             variant_buffer.extend(merged_list)
+            n_vars += len(merged_list)
+            if self.verbose >= 1:
+                logger.info('Gathered %i variants so far for sample %s, vcf file %s' % (n_vars, maps[0], maps[1]))
             self.step += 1
-            # print(self._last_round)
 
             if len(merged_list) < self.chunksize:
                 self._last_round = True
 
-            # print(self._last_round)
             if (len(variant_buffer) > self._buffer_len) or self._last_round:
                 logging.info('Parsing Buffer...')
                 self.export(variant_buffer)
                 variant_buffer = []
 
                 if self._last_round:
-                    return 'Done2'
-            # print('LINE EXIT COND: %i, %i' % (csv_parsing.num_lines, self.step * self.chunksize))
+                    self.completed_jobs[maps[0]] += 1
+                    return self.completed_jobs
 
-        return 'Done1'
+        return self.completed_jobs
 
     @staticmethod
     def threading(n_threads, input_1, input_2):
@@ -286,7 +299,9 @@ class VariantParsing(AnnotationProject):
     @staticmethod
     def pooling(n_processes, input_1, input_2):
 
-        pool = Pool(processes=n_processes)
-        # rs = pool.imap(input_1, input_2)
-        for _ in tqdm.tqdm(pool.imap_unordered(input_1, input_2), total=len(input_2)):
-            pass
+        Pool(processes=n_processes).imap(input_1, input_2)
+
+
+
+
+

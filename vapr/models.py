@@ -3,7 +3,7 @@ import vcf
 import csv
 import re
 import itertools
-import src.vcf_parsing as vvp
+import vcf_parsing as vvp
 
 
 class HgvsParser(object):

@@ -5,7 +5,10 @@ import pandas
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logger.handlers[0].stream = sys.stdout
+try:
+    logger.handlers[0].stream = sys.stdout
+except:
+    pass
 
 
 class ProjectData(object):
@@ -55,7 +58,7 @@ class ProjectData(object):
         design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
         for sample in design_file_mapping.keys():
             if not os.path.exists(os.path.join(self.input_dir, sample)):
-                raise NotADirectoryError('Could not find directory named %s as provided in design file' % sample)
+                raise NameError('Could not find directory named %s as provided in design file' % sample)
 
             vcf_files = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('.vcf')]
             logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_files)), sample))
@@ -93,14 +96,14 @@ class AnnotationProject(ProjectData):
 
         """ Class that implements the API and the major annotation/saving methods  """
 
-        super().__init__(input_dir,
-                         output_dir,
-                         annovar_path,
-                         project_data,
-                         design_file=design_file,
-                         build_ver=build_ver)
+        super(AnnotationProject, self).__init__(input_dir,
+                                                output_dir,
+                                                annovar_path,
+                                                project_data,
+                                                design_file=design_file,
+                                                build_ver=build_ver)
 
-        from src.annovar import AnnovarWrapper
+        from annovar import AnnovarWrapper
         self.annovar_wrapper = AnnovarWrapper(self.input_dir,
                                               self.output_csv_path,
                                               self.annovar,
@@ -108,7 +111,7 @@ class AnnotationProject(ProjectData):
                                               design_file=self.design_file,
                                               build_ver=self.buildver)
 
-        from src.parsers import VariantParsing
+        from parsers import VariantParsing
         self.annotator_wrapper = VariantParsing(self.input_dir,
                                                 self.output_csv_path,
                                                 self.annovar,
@@ -128,6 +131,6 @@ class AnnotationProject(ProjectData):
         """ Wrapper around annotation runner  """
         self.annotator_wrapper.annotate_and_save(buffer=False)
 
-    def parallel_annotation_and_saving(self, n_processes=4):
+    def parallel_annotation_and_saving(self, n_processes=4, verbose=1):
         """ Wrapper around parallel annotation multiprocess runner  """
-        self.annotator_wrapper.parallel_annotation(n_processes=n_processes)
+        self.annotator_wrapper.parallel_annotation(n_processes=n_processes, verbose=verbose)

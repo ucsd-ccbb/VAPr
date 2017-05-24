@@ -1,11 +1,12 @@
 # standard libraries
 import logging
 
-import src.validation
+import validation
 
 __author__ = 'Birmingham'
 
 # TODO: Forgive mal-formatted vcf files. Log the error but dont break the annotation.
+
 
 # TODO: rewrite with lambdas or partials
 def ignore_pid(info_value, genotype_info_to_fill):
@@ -107,7 +108,7 @@ class VCFGenotypeInfo:
     @genotype_confidence.setter
     def genotype_confidence(self, value):
         # TODO: Determine if genotype confidence value is limited to being a positive or non-negative number
-        self._genotype_confidence = src.validation.convert_to_nullable(value, float)
+        self._genotype_confidence = validation.convert_to_nullable(value, float)
 
     @property
     def filter_passing_reads_count(self):
@@ -115,7 +116,7 @@ class VCFGenotypeInfo:
 
     @filter_passing_reads_count.setter
     def filter_passing_reads_count(self, value):
-        self._filter_passing_reads_count = src.validation.convert_to_nonneg_int(value, nullable=True)
+        self._filter_passing_reads_count = validation.convert_to_nonneg_int(value, nullable=True)
 
 
 class Allele:
@@ -133,7 +134,7 @@ class Allele:
 
     @read_counts.setter
     def read_counts(self, value):
-        self._read_counts = src.validation.convert_to_nonneg_int(value, nullable=True)
+        self._read_counts = validation.convert_to_nonneg_int(value, nullable=True)
 
 
 class GenotypeLikelihood:
@@ -159,7 +160,7 @@ class GenotypeLikelihood:
 
     @allele1_number.setter
     def allele1_number(self, value):
-        int_value = src.validation.convert_to_nonneg_int(value)
+        int_value = validation.convert_to_nonneg_int(value)
         if self.allele2_number is not None:
             self._validate_allele_relationship(int_value, self.allele2_number)
         self._allele1_number = int_value
@@ -170,7 +171,7 @@ class GenotypeLikelihood:
 
     @allele2_number.setter
     def allele2_number(self, value):
-        int_value = src.validation.convert_to_nonneg_int(value)
+        int_value = validation.convert_to_nonneg_int(value)
         if self.allele1_number is not None:
             self._validate_allele_relationship(self.allele1_number, int_value)
         self._allele2_number = int_value
@@ -181,7 +182,7 @@ class GenotypeLikelihood:
 
     @likelihood_neg_exponent.setter
     def likelihood_neg_exponent(self, value):
-        self._likelihood_neg_exponent = src.validation.convert_to_nullable(value, float)
+        self._likelihood_neg_exponent = validation.convert_to_nullable(value, float)
 
 
 class VCFGenotypeStrings:
