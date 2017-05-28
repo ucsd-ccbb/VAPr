@@ -3,7 +3,15 @@ import vcf
 import csv
 import re
 import itertools
+import logging
+import sys
 import vcf_parsing as vvp
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+try:
+    logger.handlers[0].stream = sys.stdout
+except:
+    pass
 
 
 class HgvsParser(object):
@@ -135,6 +143,7 @@ class AnnovarModels(object):
 
         self.dictionary = dictionary
         self.existing_keys = self.dictionary.keys()
+        self.errors = None
         self.final_dict = self.process()
 
     def process(self):
@@ -159,24 +168,42 @@ class AnnovarModels(object):
             if key == 'otherinfo':
                 self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
 
-        self.dictionary['genotype'] = self.parse_genotype()
+        self.dictionary['genotype'], self.errors = self.parse_genotype()
 
         return self.dictionary
 
     def parse_genotype(self):
 
+        read_depth_error = genotype_lik_error = allele_error = 0
         parser = vvp.VCFGenotypeStrings()
-        genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
-        gen_dic = {'genotype': genotype_to_fill.genotype,
-                   'filter_passing_reads_count': [self._to_int(genotype_to_fill.filter_passing_reads_count)],
-                   'genotype_likelihoods': [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
-                                            float(genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent),
-                                            float(genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)],
-                   'alleles': [self._to_int(genotype_to_fill.alleles[0].read_counts),
-                               self._to_int(genotype_to_fill.alleles[1].read_counts)]
-                   }
 
-        return gen_dic
+        genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
+
+        if not genotype_to_fill:
+            print('skipped')
+            return None
+        gen_dic = {'genotype': genotype_to_fill.genotype}
+
+        try:
+            gen_dic['filter_passing_reads_count'] = [genotype_to_fill.filter_passing_reads_count]
+        except ValueError:
+            read_depth_error += 1
+            # print('Read depth returned null value')
+
+        try:
+            gen_dic['genotype_likelihoods'] = [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
+                                               float(genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent),
+                                               float(genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)]
+        except IndexError:
+            genotype_lik_error += 1
+
+        try:
+            gen_dic['alleles'] = [genotype_to_fill.alleles[0].read_counts,
+                                  genotype_to_fill.alleles[1].read_counts]
+        except IndexError or ValueError:
+            allele_error += 1
+        errors = (read_depth_error, genotype_lik_error, allele_error)
+        return gen_dic, errors
 
     @staticmethod
     def _to_int(val):
