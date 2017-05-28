@@ -3,11 +3,10 @@ from __future__ import division, print_function
 import myvariant
 import os
 import sys
-from multiprocessing.dummy import Pool as ThreadPool
 from pymongo import MongoClient
 from base import AnnotationProject
 from models import TxtParser, HgvsParser
-from pathos.multiprocessing import Pool
+from multiprocessing import Pool
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -15,7 +14,6 @@ try:
     logger.handlers[0].stream = sys.stdout
 except:
     pass
-
 
 def _variant_parsing_parallel(varparse):
     varparse._variant_parsing()
@@ -129,7 +127,6 @@ class VariantParsing(AnnotationProject):
 
                 return 'Done'
 
-
     def check_ver(self, build_ver):
         """ Checking user input validity for genome build version """
 
@@ -201,7 +198,8 @@ class VariantParsing(AnnotationProject):
 
         return variant_data
 
-    def remove_id_key(self, variant_data, sample_id):
+    @staticmethod
+    def remove_id_key(variant_data, sample_id):
 
         for dic in variant_data:
             dic['hgvs_id'] = dic.pop("_id", None)
@@ -210,44 +208,56 @@ class VariantParsing(AnnotationProject):
 
         return variant_data
 
-    def add_csv_to_mapping(self):
+    def get_sample_csv_vcf_tuple(self, sample):
+        """ Locate files associated with a specific sample """
 
-        inits = self.mapping.keys()
-        all_csvs = os.listdir(self.output_csv_path)
-        list_of_dicts = []
-        for csv in all_csvs:
-            for init in inits:
-                if all([csv.startswith(init), csv.endswith('txt')]):
-                    self.mapping[init]['csv'] = os.path.join(self.output_csv_path, csv)
-                    # list_of_dicts.append({init: self.mapping.values()})
-        for key in self.mapping.keys():
-            list_of_dicts.append({key: self.mapping[key]})
-        return list_of_dicts
+        list_tupls = []
+        vcfs = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('vcf')]
+        for vcf in vcfs:
+            base_name = os.path.splitext(vcf)[0]
+            matching_csv = [i for i in os.listdir(os.path.join(self.output_csv_path, sample)) if
+                            i.startswith(base_name + '_annotated') and i.endswith('txt')]
+            if len(matching_csv) > 1:
+                raise ValueError('Too many matching csvs')
+            if len(matching_csv) == 0:
+                raise ValueError('Csv not found')
+            else:
+                csv_path = os.path.join(self.output_csv_path, sample, matching_csv[0])
+                vcf_path = os.path.join(self.input_dir, sample, vcf)
+                list_tupls.append((sample, vcf_path, csv_path))
+
+        return list_tupls
 
     def parallel_annotation(self, n_processes, verbose=1):
 
+        """
+        Set up variant parsing scheme. Since a functional programming style is required for parallel
+        processing, the input to the Pool.map function from the multiprocessing library must be
+        immutable. We use tuples of the type:
+
+            (samples, vcf_path, csv_path)
+
+        :param n_processes: number of cores to be used
+        :param verbose: verbosity level [0,1,2,3]
+        :return: None
+        """
+
         self.verbose = verbose
         samples = self.mapping.keys()
+
         for sample in samples:
-            list_tupls = []
-            vcfs = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('vcf')]
-            for vcf in vcfs:
-                base_name = os.path.splitext(vcf)[0]
-                matching_csv = [i for i in os.listdir(os.path.join(self.output_csv_path, sample)) if
-                                i.startswith(base_name + '_annotated') and i.endswith('txt')]
-                if len(matching_csv) > 1:
-                    raise ValueError('Too many matching csvs')
-                if len(matching_csv) == 0:
-                    raise ValueError('Csv not found')
-                else:
-                    csv_path = os.path.join(self.output_csv_path, sample, matching_csv[0])
-                    vcf_path = os.path.join(self.input_dir, sample, vcf)
-                    list_tupls.append((sample, vcf_path, csv_path))
-            print(list_tupls)
-            self.pooling(n_processes, self._variant_parsing, list_tupls)
+            list_tupls = self.get_sample_csv_vcf_tuple(sample)
+            self.pooling(n_processes, list_tupls)
             logger.info('Completed annotation and parsing for variants in sample %s' % sample)
 
     def _variant_parsing(self, maps):
+
+        """
+        Given a list of tuples, parse the hgvs IDS using HGVS class, and parse csv data through the
+        TxtParser classes. Query variants from MyVarinant.info and aggregate results in a dictionary,
+        to be exported to MongoDB
+
+        """
 
         hgvs = HgvsParser(maps[1])
         csv_parsing = TxtParser(maps[2])
@@ -287,19 +297,12 @@ class VariantParsing(AnnotationProject):
 
         return self.completed_jobs
 
-    @staticmethod
-    def threading(n_threads, input_1, input_2):
+    def __call__(self, x):
+        return self._variant_parsing(x)
 
-        pool = ThreadPool(n_threads)
-        results = pool.map(input_1, input_2)
-        pool.close()
-        pool.join()
-        return results
-
-    @staticmethod
-    def pooling(n_processes, input_1, input_2):
-
-        Pool(processes=n_processes).imap(input_1, input_2)
+    def pooling(self, n_processes, input_2):
+        """ Temporary hack to make instance method _variant_parsing 'pickleable' """
+        Pool(n_processes).map(self, input_2)
 
 
 
