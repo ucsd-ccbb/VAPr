@@ -25,7 +25,7 @@ def convert_to_nullable(input_val, cast_function):
     Raises:
         Error: whatever error is provided by cast_function if the cast fails.
     """
-    if input_val == '.':
+    if input_val in ['.', None, '']:
         result = 'NULL'
     else:
         result = cast_function(input_val)
