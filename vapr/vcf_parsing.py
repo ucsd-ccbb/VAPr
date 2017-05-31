@@ -34,7 +34,7 @@ def ignore_field(info_value, genotype_info_to_fill, subkey):
 def fill_genotype(info_value, genotype_info_to_fill):
     alleles = info_value.split('/')
     if len(alleles) != 2:
-        logger.info("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
+        pass# logger.info("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
     genotype_info_to_fill.genotype = info_value
     return genotype_info_to_fill
 
@@ -43,7 +43,7 @@ def fill_unfiltered_reads_counts(info_value, genotype_info_to_fill):
     delimiter = ','
     counts = info_value.split(delimiter)
     if len(counts) < 2:
-        logger.info("Found fewer than 2 alleles with unfiltered read counts in '{0}'".format(info_value))
+        pass# logger.info("Found fewer than 2 alleles with unfiltered read counts in '{0}'".format(info_value))
     for curr_count in counts:
         new_allele = Allele(curr_count)
         genotype_info_to_fill.alleles.append(new_allele)
