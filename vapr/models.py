@@ -19,8 +19,11 @@ class HgvsParser(object):
     def __init__(self, vcf_file):
 
         self.vcf = vcf_file
-        self.num_lines = sum(1 for _ in open(self.vcf))
-        self.chunksize = 950
+        # self.num_lines = sum(1 for _ in open(self.vcf))
+        self.chunksize = 10
+        self.reader = vcf.Reader(open(self.vcf, 'r'))
+        self.samples = self.reader.samples
+        self.num_samples = len(self.samples)
 
     def get_variants_from_vcf(self, step):
         """
@@ -29,9 +32,8 @@ class HgvsParser(object):
         :return: a list of variants formatted according to HGVS standards
         """
         list_ids = []
-        reader = vcf.Reader(open(self.vcf, 'r'))
 
-        for record in itertools.islice(reader, step * self.chunksize, (step + 1) * self.chunksize):
+        for record in itertools.islice(self.reader, step * self.chunksize, (step + 1) * self.chunksize):
             if len(record.ALT) > 1:
                 for alt in record.ALT:
                     list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
@@ -56,11 +58,12 @@ class HgvsParser(object):
 
 class TxtParser(object):
 
-    def __init__(self, txt_file):
+    def __init__(self, txt_file, samples=None):
 
+        self.samples = samples
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 950
+        self.chunksize = 10
         self.offset = 0
         self.hg_19_columns = ['chr',
                               'start',
@@ -106,12 +109,13 @@ class TxtParser(object):
 
             reader = csv.reader(txt, delimiter='\t')
             header = self._normalize_header(next(reader))
-
+            print(header, 'HEADER')
+            print(next(reader), 'FIRST LINE')
             for i in itertools.islice(reader, (step*self.chunksize) + self.offset,
                                       ((step+1)*self.chunksize) + offset + self.offset):
 
                 sparse_dict = dict(zip(header[0:len(header)-1], i[0:len(header)-1]))
-                sparse_dict['otherinfo'] = i[-2::]
+                sparse_dict['otherinfo'] = i[-1-len(self.samples)::]
 
                 if build_ver == 'hg19':
                     dict_filled = {k: sparse_dict[k] for k in self.hg_19_columns if sparse_dict[k] != '.'}
@@ -120,8 +124,8 @@ class TxtParser(object):
                 else:
                     dict_filled = {k: sparse_dict[k] for k in self.hg_38_columns if sparse_dict[k] != '.'}
 
-                modeled = AnnovarModels(dict_filled)
-                listofdicts.append(modeled.final_dict)
+                modeled = AnnovarModels(dict_filled, self.samples)
+                listofdicts.append(modeled.final_list_dict)
 
             self.offset += offset
 
@@ -139,12 +143,13 @@ class TxtParser(object):
 
 class AnnovarModels(object):
 
-    def __init__(self, dictionary):
+    def __init__(self, dictionary, samples):
 
         self.dictionary = dictionary
+        self.samples = samples
         self.existing_keys = self.dictionary.keys()
         self.errors = None
-        self.final_dict = self.process()
+        self.final_list_dict = self.process()
 
     def process(self):
         for key in self.dictionary.keys():
@@ -168,42 +173,48 @@ class AnnovarModels(object):
             if key == 'otherinfo':
                 self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
 
-        self.dictionary['genotype'], self.errors = self.parse_genotype()
+        final_annovar_list_of_dicts, self.errors = self.parse_genotype(self.dictionary)
 
-        return self.dictionary
+        return final_annovar_list_of_dicts
 
-    def parse_genotype(self):
+    def parse_genotype(self, dictionary):
 
         read_depth_error = genotype_lik_error = allele_error = 0
         parser = vvp.VCFGenotypeStrings()
+        # print(self.samples, 'SAMPLESSSS')
 
-        genotype_to_fill = parser.parse(self.dictionary['otherinfo'][0], self.dictionary['otherinfo'][1])
+        list_dictionaries = [] # [dictionary]*len(self.samples)
 
-        if not genotype_to_fill:
-            print('skipped')
-            return None
-        gen_dic = {'genotype': genotype_to_fill.genotype}
+        for index, sample in enumerate(self.samples):
+            sample_specific_dict = {k: v for k, v in dictionary.items()}  # make copy, propagate genotype info over alleles
 
-        try:
-            gen_dic['filter_passing_reads_count'] = [genotype_to_fill.filter_passing_reads_count]
-        except ValueError:
-            read_depth_error += 1
+            genotype_to_fill = parser.parse(dictionary['otherinfo'][0],
+                                            dictionary['otherinfo'][index + 1])
+
+            sample_specific_dict['sample_id'] = sample
+            sample_specific_dict['genotype'] = genotype_to_fill.genotype
+
+            try:
+                sample_specific_dict['filter_passing_reads_count'] = [genotype_to_fill.filter_passing_reads_count]
+            except ValueError:
+                read_depth_error += 1
             # print('Read depth returned null value')
+            try:
+                sample_specific_dict['genotype_likelihoods'] = [i.likelihood_neg_exponent for i in
+                                                                genotype_to_fill.genotype_likelihoods]
+            except IndexError:
+                genotype_lik_error += 1
 
-        try:
-            gen_dic['genotype_likelihoods'] = [float(genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent),
-                                               float(genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent),
-                                               float(genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)]
-        except IndexError:
-            genotype_lik_error += 1
+            try:
+                sample_specific_dict['alleles'] = [i.read_counts for i in genotype_to_fill.alleles]
+            except IndexError or ValueError:
+                allele_error += 1
 
-        try:
-            gen_dic['alleles'] = [genotype_to_fill.alleles[0].read_counts,
-                                  genotype_to_fill.alleles[1].read_counts]
-        except IndexError or ValueError:
-            allele_error += 1
+            list_dictionaries.append(sample_specific_dict)
+
         errors = (read_depth_error, genotype_lik_error, allele_error)
-        return gen_dic, errors
+
+        return list_dictionaries, errors
 
     @staticmethod
     def _to_int(val):

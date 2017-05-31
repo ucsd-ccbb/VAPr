@@ -3,6 +3,7 @@ import os
 import sys
 import pandas
 import logging
+import vcf
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -20,6 +21,7 @@ class ProjectData(object):
                  output_dir,
                  annovar_path,
                  project_data,
+                 split_vcf=False,
                  design_file=None,
                  build_ver=None):
 
@@ -29,12 +31,12 @@ class ProjectData(object):
 
         self.input_dir = input_dir
         self.output_csv_path = output_dir
-        self.vcf_files = self.find_vcfs()
         self.design_file = design_file
         self.annovar = annovar_path
         self.project_data = project_data
         self.buildver = build_ver
-        self.mapping = self.get_mapping() #[(k, v['vcf']) for k, v in self.get_mapping().items()]
+        self.mapping = self.get_mapping()
+        self.split = split_vcf
 
     def get_mapping(self):
 
@@ -43,15 +45,29 @@ class ProjectData(object):
             sample_to_vcf_map = self.check_file_existance_return_mapping(design_df)
 
         else:
-            sample_to_vcf_map = {os.path.splitext(os.path.basename(vcf))[0]: vcf for vcf in self.vcf_files}
+            sample_to_vcf_map = self.check_file_existance_return_mapping_no_design_file()
 
         return sample_to_vcf_map
-        # return {os.path.join(self.input_dir, vcf): self.output_csv_path + os.path.splitext(os.path.basename(vcf))[0] +
-        #        '_annotated' for vcf in sample_to_vcf_map.values()}
 
-    def find_vcfs(self):
-        vcf_files = os.listdir(self.input_dir)
-        return [vcf for vcf in vcf_files if vcf.endswith('vcf')]
+    def check_file_existance_return_mapping_no_design_file(self):
+
+        vcf_files = [vcf for vcf in os.listdir(self.input_dir) if vcf.endswith('vcf')]
+        if len(vcf_files) > 0:
+            samples = ['sample_1']
+            os.mkdir(os.path.join(self.input_dir, 'sample_1'))
+            for f in vcf_files:
+                print(os.path.join(self.input_dir, f), os.path.join(self.input_dir, 'sample_1', os.path.basename(f)))
+                os.rename(os.path.join(self.input_dir, f), os.path.join(self.input_dir, 'sample_1', os.path.basename(f)))
+        else:
+            samples = os.listdir(self.input_dir)
+
+        sample_to_vcf_map = dict.fromkeys(samples, {})
+
+        for sample in samples:
+            vcf_files = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('.vcf')]
+            sample_to_vcf_map[sample]['vcf_csv'] = [(vcf_file, os.path.splitext(os.path.basename(vcf_file))[0] +
+                                                     '_annotated') for vcf_file in vcf_files]  # God bless listcomps
+        return sample_to_vcf_map
 
     def check_file_existance_return_mapping(self, design_df):
 
@@ -82,6 +98,21 @@ class ProjectData(object):
             self.buildver = build_ver
 
         return self.buildver
+
+    def split_vcf(self):
+        if self.split:
+            new_input_dir = os.path.join(self.input_dir, 'split_files')
+            # self.input_dir = new_input_dir
+            os.mkdir(os.path.join(new_input_dir))
+            for sample in self.mapping.keys():
+                os.mkdir(os.path.join(new_input_dir, sample))
+                for file_pair in self.mapping[sample]['vcf_csv']:
+                    vcf_reader = vcf.Reader(filename=os.path.join(self.input_dir, sample, file_pair[0]))
+
+            vcf_writer = vcf.Writer(open('/dev/null', 'w'), vcf_reader)
+            for record in vcf_reader:
+                vcf_writer.write_record(record)
+
 
 
 class AnnotationProject(ProjectData):
@@ -123,9 +154,9 @@ class AnnotationProject(ProjectData):
         """ Wrapper around Annovar database downloading function """
         self.annovar_wrapper.download_dbs(all_dbs=all_dbs, dbs=dbs)
 
-    def run_annovar(self):
+    def run_annovar(self, multisample=False):
         """ Wrapper around multiprocess Annovar annotation  """
-        self.annovar_wrapper.run_annovar()
+        self.annovar_wrapper.run_annovar(multisample=multisample)
 
     def annotate_and_save(self):
         """ Wrapper around annotation runner  """
