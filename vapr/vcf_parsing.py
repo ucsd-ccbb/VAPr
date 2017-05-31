@@ -31,11 +31,29 @@ def ignore_field(info_value, genotype_info_to_fill, subkey):
     return genotype_info_to_fill
 
 
+def fill_genotype_class(alleles, genotype_info_to_fill):
+    genotype_class = "homozygous"
+    genotype_subclass = "reference"
+    alt_subclass_name = "alt"
+
+    if alleles[0] != alleles[1]:
+        genotype_class = "heterozygous"
+        alt_subclass_name = "compound"
+
+    if "0" not in alleles:
+        genotype_subclass = alt_subclass_name
+
+    result = {genotype_class: genotype_subclass}
+    genotype_info_to_fill.genotype_subclass_by_class = result
+    return result
+
+
 def fill_genotype(info_value, genotype_info_to_fill):
     alleles = info_value.split('/')
     if len(alleles) != 2:
         pass# logger.info("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
     genotype_info_to_fill.genotype = info_value
+    fill_genotype_class(alleles, genotype_info_to_fill)
     return genotype_info_to_fill
 
 
@@ -167,6 +185,7 @@ class GenotypeLikelihood:
         self.allele1_number = allele1_number
         self.allele2_number = allele2_number
         self.likelihood_neg_exponent = likelihood_neg_exponent
+        self.genotype_subclass_by_class = None
 
     @property
     def allele1_number(self):

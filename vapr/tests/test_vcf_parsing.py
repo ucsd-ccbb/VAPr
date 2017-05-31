@@ -19,6 +19,7 @@ class TestFunctions(unittest.TestCase):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
         vcf_parsing.fill_genotype('0/2', genotype_to_fill)
         self.assertEqual('0/2',genotype_to_fill.genotype)
+        self.assertEqual({"heterozygous": "reference"}, genotype_to_fill.genotype_subclass_by_class)
 
     def test_fill_genotype_error(self):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
@@ -114,6 +115,37 @@ class TestFunctions(unittest.TestCase):
                                     vcf_parsing.Allele(13)]
         with self.assertRaises(ValueError):
             vcf_parsing.fill_genotype_likelihoods('495,162,123,213,129,175,67,0,46', genotype_to_fill)
+
+    # endregion
+
+    # region fill_genotype_confidence tests
+    def test_fill_genotype_class_hom_ref(self):
+        genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
+        alleles = ["0", "0"]
+
+        vcf_parsing.fill_genotype_class(alleles, genotype_to_fill)
+        self.assertEqual({"homozygous": "reference"}, genotype_to_fill.genotype_subclass_by_class)
+
+    def test_fill_genotype_class_het_ref(self):
+        genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
+        alleles = ["0", "1"]
+
+        vcf_parsing.fill_genotype_class(alleles, genotype_to_fill)
+        self.assertEqual({"heterozygous": "reference"}, genotype_to_fill.genotype_subclass_by_class)
+
+    def test_fill_genotype_class_hom_alt(self):
+        genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
+        alleles = ["1", "1"]
+
+        vcf_parsing.fill_genotype_class(alleles, genotype_to_fill)
+        self.assertEqual({"homozygous": "alt"}, genotype_to_fill.genotype_subclass_by_class)
+
+    def test_fill_genotype_class_het_compound(self):
+        genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
+        alleles = ["1", "2"]
+
+        vcf_parsing.fill_genotype_class(alleles, genotype_to_fill)
+        self.assertEqual({"heterozygous": "compound"}, genotype_to_fill.genotype_subclass_by_class)
 
     # endregion
 
