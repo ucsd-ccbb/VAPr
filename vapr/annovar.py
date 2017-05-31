@@ -109,7 +109,7 @@ class AnnovarWrapper(AnnotationProject):
 
         return 'Finished downloading databases to {}'.format(os.path.join(self.annovar, 'humandb/'))
 
-    def run_annovar(self):
+    def run_annovar(self, multisample=False):
         """ Spawning Annovar jobs """
 
         print(self.mapping)
@@ -123,7 +123,7 @@ class AnnovarWrapper(AnnotationProject):
             for vcf, csv in self.mapping[sample]['vcf_csv']:
                 vcf_path = os.path.join(self.input_dir, os.path.join(sample, vcf))
                 csv_path = os.path.join(self.output_csv_path, os.path.join(sample, csv))
-                cmd_string = self.build_annovar_command_str(vcf_path, csv_path)
+                cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
                 args = shlex.split(cmd_string)
 
                 subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -133,7 +133,7 @@ class AnnovarWrapper(AnnotationProject):
             listen(os.path.join(self.output_csv_path, sample), n_commands)
             logging.info('Finished running Annovar on sample %s' % sample)
 
-    def build_annovar_command_str(self, vcf, csv):
+    def build_annovar_command_str(self, vcf, csv, multisample=False):
 
         dbs = ",".join(list(self.databases.keys()))
         dbs_args = ",".join(list(self.databases.values()))
@@ -144,6 +144,8 @@ class AnnovarWrapper(AnnotationProject):
                             os.path.join(self.annovar, 'humandb/'), '-buildver', self.buildver, '-out',
                             csv, '-remove -protocol', dbs,  '-operation',
                             dbs_args, '-nastring .', '-otherinfo -vcfinput'])
+        if multisample:
+            command += ' -format vcf4 -allsample -withfreq'
 
         return command
 
