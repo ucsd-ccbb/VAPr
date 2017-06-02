@@ -4,7 +4,7 @@ import os
 import csv
 import myvariant
 #quick and dirty way of importing functions
-from VAPr import parser_models
+from vapr import models as parser_models
 
 sys.path.append('/Users/carlomazzaferro/Documents/Code/variant-annotation/variantannotation')
 vcf_file = os.path.dirname(os.path.realpath('__file__')) + '/Normal_targeted_seq.vcf'
