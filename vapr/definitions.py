@@ -2,53 +2,63 @@ import os
 import json
 import logging
 import sys
+from collections import OrderedDict
+import datetime
 
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
-# ------ # ------ # ------ # LOCAL FILES CONFIG # ------ # ------ # ------ #
-ROOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir) # This is your Project Root
-DATA_DIR = os.path.join(ROOT_DIR, 'data')
-CONFIG_PATH = os.path.join(ROOT_DIR, 'config/config')
-TOOL_SPECIFIC_CONFIG = os.path.join(ROOT_DIR, 'config/tool_specific_config')
-MODES_PATH = os.path.join(DATA_DIR, 'modes')
-AWS_DIR = os.path.join(ROOT_DIR, 'awsCluster')
-TEST_DIR = os.path.join(AWS_DIR, 'tests')
-ANALISYS_STEPS = ["fastqc", "bwa-alignment", "post-alignment", "gatk-haplotype"]
-
-with open(MODES_PATH) as f:
-    MODES = json.load(f)
-
-# MODELS_DIR = os.path.join(ROOT_DIR, 'models')
-# RESUTLS_DIR = os.path.join(ROOT_DIR, 'reports')
-
-# ------ # ------ # ------ # SERVER FILES CONFIG # ------ # ------ # ------ #
-
-SERVER_WORKSPACE = '/shared/workspace/'
-SOFTWARE_DIR = os.path.join(SERVER_WORKSPACE, 'software')
-SERVER_DATA_DIR = os.path.join(SERVER_WORKSPACE, 'data_archive/')
-
-# ------ # ------ # ------ # SOFTWARE TOOLS PATHS # ------ # ------ # ------ #
-
-KALLISTO = os.path.join(SOFTWARE_DIR, 'kallisto_linux-v0.42.1/kallisto')
-KALLISTO_INDEX = os.path.join(SOFTWARE_DIR, 'kallisto_linux-v0.42.1/kallisto_index/kallisto_index')
-BT2_HOME = os.path.join(SOFTWARE_DIR, 'bowtie2-2.3.0-legacy')
-ADAPTER = 'TGGAATTCTCGGGTGCCAAGG'
-INDEX = 'Homo sapiens'
-FASTQC_PATH = os.path.join(SOFTWARE_DIR, 'FastQC/fastqc')
-TRIMMO_PATH = os.path.join(SOFTWARE_DIR, 'Trimmomatic-0.36/trimmomatic-0.36.jar')
-CUTADAPT_PATH = os.path.join(SOFTWARE_DIR, 'cutadapt-1.12/bin/cutadapt')
-ALL_GENOMES_FA_FILEPATH = os.path.join(SERVER_WORKSPACE, 'data/hairpin.fa')  # TODO: add this fie, can't be found in server
-INDICES_DIR = os.path.join(SERVER_WORKSPACE, 'data/indices')
-
-
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+chunk_size = 20000
 
 
-if __name__ == '__main__':
-    import yaml
+# ------ #  ANNOVAR CONFIG # ------ #
 
-    with open(TOOL_SPECIFIC_CONFIG + "/BWA.yaml", 'r') as stream:
-        try:
-            print(yaml.load(stream))
-        except yaml.YAMLError as exc:
-            print(exc)
+down_dd = '-webfrom annovar'
+annovar_hosted = OrderedDict({'knownGene': True,
+                                   'tfbsConsSites': False,
+                                   'cytoBand': False,
+                                   'targetScanS': False,
+                                   'genomicSuperDups': False,
+                                   'esp6500siv2_all': True,
+                                   '1000g2015aug': True,
+                                   'popfreq_all_20150413': True,
+                                   'clinvar_20161128': True,
+                                   'cosmic70': True,
+                                   'nci60': True,
+                                   'avdblist': True})
+
+dl_list_command = 'avdblist'
+manual_update = {'clinvar_20161128': [datetime.datetime(2016, 11, 28)],
+                      '1000g2015aug': [datetime.datetime(2016, 8, 30)],
+                      'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)] }
+
+hg_18_databases = OrderedDict({'knownGene': 'g',
+                                    'tfbsConsSites': 'r',
+                                    'cytoBand': 'r',
+                                    'targetScanS': 'r',
+                                    'genomicSuperDups': 'r',
+                                    'esp6500siv2_all': 'f',
+                                    '1000g2015aug': 'f',
+                                    'cosmic70': 'f',
+                                    'nci60': 'f'})
+
+hg_19_databases = OrderedDict({'knownGene': 'g',
+                                    'tfbsConsSites': 'r',
+                                    'cytoBand': 'r',
+                                    'targetScanS': 'r',
+                                    'genomicSuperDups': 'r',
+                                    'esp6500siv2_all': 'f',
+                                    '1000g2015aug': 'f',
+                                    'popfreq_all_20150413': 'f',
+                                    'clinvar_20161128': 'f',
+                                    'cosmic70': 'f',
+                                    'nci60': 'f'})
+
+hg_38_databases = OrderedDict({'knownGene': 'g',
+                                    'cytoBand': 'r',
+                                    'genomicSuperDups': 'r',
+                                    'esp6500siv2_all': 'f',
+                                    '1000g2015aug': 'f',
+                                    'clinvar_20161128': 'f',
+                                    'cosmic70': 'f',
+                                    'nci60': 'f'})
