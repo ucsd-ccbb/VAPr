@@ -4,7 +4,7 @@ import unittest
 # personal libraries
 
 # project-specific libraries
-from VAPr import vcf_parsing
+from vapr import vcf_parsing
 
 __author__ = 'Birmingham'
 
@@ -124,6 +124,9 @@ class TestFunctions(unittest.TestCase):
         alleles = ["0", "0"]
 
         vcf_parsing.fill_genotype_class(alleles, genotype_to_fill)
+
+        # print(genotype_to_fill.genotype_subclass_by_class, 'AAAAAAAAAAAAA')
+
         self.assertEqual({"homozygous": "reference"}, genotype_to_fill.genotype_subclass_by_class)
 
     def test_fill_genotype_class_het_ref(self):
