@@ -10,7 +10,8 @@ from collections import OrderedDict
 import logging
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from base import AnnotationProject
+from vapr import definitions
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -19,7 +20,7 @@ except:
     pass
 
 
-class AnnovarWrapper(AnnotationProject):
+class AnnovarWrapper:
 
     """ Wrapper around Annovar download and annotation functions """
 
@@ -28,70 +29,26 @@ class AnnovarWrapper(AnnotationProject):
                  output_csv_path,
                  annovar_path,
                  project_data,
+                 mapping,
                  design_file=None,
                  build_ver=None):
 
-        super(AnnotationProject, self).__init__(input_dir,
-                                                output_csv_path,
-                                                annovar_path,
-                                                project_data,
-                                                design_file=design_file,
-                                                build_ver=build_ver)
-
-        self.down_dd = '-webfrom annovar'
-        self.annovar_hosted = OrderedDict({'knownGene': True,
-                                           'tfbsConsSites': False,
-                                           'cytoBand': False,
-                                           'targetScanS': False,
-                                           'genomicSuperDups': False,
-                                           'esp6500siv2_all': True,
-                                           '1000g2015aug': True,
-                                           'popfreq_all_20150413': True,
-                                           'clinvar_20161128': True,
-                                           'cosmic70': True,
-                                           'nci60': True,
-                                           'avdblist': True})
-
-        self.dl_list_command = 'avdblist'
-        self.manual_update = {'clinvar_20161128': [datetime.datetime(2016, 11, 28)],
-                              '1000g2015aug':  [datetime.datetime(2016, 8, 30)],
-                              'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)]
-                              }
-
-        self.hg_18_databases = OrderedDict({'knownGene': 'g',
-                                            'tfbsConsSites': 'r',
-                                            'cytoBand': 'r',
-                                            'targetScanS': 'r',
-                                            'genomicSuperDups': 'r',
-                                            'esp6500siv2_all': 'f',
-                                            '1000g2015aug': 'f',
-                                            'cosmic70': 'f',
-                                            'nci60': 'f',
-                                            })
-
-        self.hg_19_databases = OrderedDict({'knownGene': 'g',
-                                            'tfbsConsSites': 'r',
-                                            'cytoBand': 'r',
-                                            'targetScanS': 'r',
-                                            'genomicSuperDups': 'r',
-                                            'esp6500siv2_all': 'f',
-                                            '1000g2015aug': 'f',
-                                            'popfreq_all_20150413': 'f',
-                                            'clinvar_20161128': 'f',
-                                            'cosmic70': 'f',
-                                            'nci60': 'f',
-                                            })
-
-        self.hg_38_databases = OrderedDict({'knownGene': 'g',
-                                            'cytoBand': 'r',
-                                            'genomicSuperDups': 'r',
-                                            'esp6500siv2_all': 'f',
-                                            '1000g2015aug': 'f',
-                                            'clinvar_20161128': 'f',
-                                            'cosmic70': 'f',
-                                            'nci60': 'f',
-                                            })
-
+        """ Project data """
+        self.input_dir = input_dir
+        self.output_csv_path = output_csv_path
+        self.annovar = annovar_path
+        self.project_data = project_data
+        self.design_file = design_file
+        self.buildver = build_ver
+        self.mapping = mapping
+        """ Databases data """
+        self.down_dd = definitions.down_dd
+        self.annovar_hosted = definitions.annovar_hosted
+        self.dl_list_command = definitions.dl_list_command
+        self.manual_update = definitions.manual_update
+        self.hg_18_databases = definitions.hg_18_databases
+        self.hg_19_databases = definitions.hg_19_databases
+        self.hg_38_databases = definitions.hg_38_databases
         self.databases = self.get_databases()
 
     def download_dbs(self, all_dbs=True, dbs=None):
@@ -112,7 +69,7 @@ class AnnovarWrapper(AnnotationProject):
     def run_annovar(self, multisample=False):
         """ Spawning Annovar jobs """
 
-        print(self.mapping)
+        # print(self.mapping)
         for sample in self.mapping.keys():
             annotation_dir = os.path.join(self.output_csv_path, sample)
             if os.path.isdir(annotation_dir):
