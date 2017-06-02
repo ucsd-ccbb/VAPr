@@ -1,7 +1,7 @@
 # standard libraries
 import logging
 import sys
-import validation
+from vapr import validation
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -27,7 +27,7 @@ def ignore_pgt(info_value, genotype_info_to_fill):
 
 
 def ignore_field(info_value, genotype_info_to_fill, subkey):
-    print("Ignored subkey '{0}' with value '{1}'".format(subkey, info_value))
+    # print("Ignored subkey '{0}' with value '{1}'".format(subkey, info_value))
     return genotype_info_to_fill
 
 
@@ -97,14 +97,14 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
             allele_number += 1
             likelihood_number = 0
             if allele_number >= len(genotype_info_to_fill.alleles):
-                print("Found {0} likelihoods but only {1} alleles".format(len(likelihoods),
-                                                                                   num_expected_alleles))
+                pass #print("Found {0} likelihoods but only {1} alleles".format(len(likelihoods),
+                      #                                                             num_expected_alleles))
         new_likelihood = GenotypeLikelihood(likelihood_number, allele_number, likelihoods[index])
         genotype_info_to_fill.genotype_likelihoods.append(new_likelihood)
         likelihood_number += 1
 
     if allele_number < (num_expected_alleles-1) or likelihood_number < num_expected_alleles:
-        print("Found {0} alleles but only {1} likelihoods".format(num_expected_alleles, len(likelihoods)))
+        pass # print("Found {0} alleles but only {1} likelihoods".format(num_expected_alleles, len(likelihoods)))
 
     return genotype_info_to_fill
 
@@ -112,7 +112,7 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
 def fill_base_quality(info_value, genotype_info_to_fill):
     alleles = info_value.split('/')
     if len(alleles) != 2:
-        print("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
+        pass # print("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
     genotype_info_to_fill.genotype = info_value
     return genotype_info_to_fill
 
