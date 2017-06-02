@@ -5,7 +5,8 @@ import re
 import itertools
 import logging
 import sys
-import vcf_parsing as vvp
+import vapr.vcf_parsing as vvp
+import vapr.definitions as definitions
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -20,10 +21,24 @@ class HgvsParser(object):
 
         self.vcf = vcf_file
         # self.num_lines = sum(1 for _ in open(self.vcf))
-        self.chunksize = 10
+        self.chunksize = definitions.chunk_size
         self.reader = vcf.Reader(open(self.vcf, 'r'))
         self.samples = self.reader.samples
         self.num_samples = len(self.samples)
+
+    def get_all_variants_from_vcf(self):
+        list_ids = []
+
+        for record in self.reader:
+            if len(record.ALT) > 1:
+                for alt in record.ALT:
+                    list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+                                                          record.REF, str(alt)))
+            else:
+                list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+                                                      record.REF, str(record.ALT[0])))
+
+        return self.complete_chromosome(list_ids)
 
     def get_variants_from_vcf(self, step):
         """
@@ -52,7 +67,7 @@ class HgvsParser(object):
                 two = expanded_list[i].split(':')[1]
                 if 'MT' not in one:
                     one = 'chrMT'
-                expanded_list[i] = one + ':' + two
+                expanded_list[i] = "".join([one, ':', two])
         return expanded_list
 
 
@@ -63,7 +78,7 @@ class TxtParser(object):
         self.samples = samples
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 10
+        self.chunksize = definitions.chunk_size
         self.offset = 0
         self.hg_19_columns = ['chr',
                               'start',
@@ -109,8 +124,7 @@ class TxtParser(object):
 
             reader = csv.reader(txt, delimiter='\t')
             header = self._normalize_header(next(reader))
-            print(header, 'HEADER')
-            print(next(reader), 'FIRST LINE')
+
             for i in itertools.islice(reader, (step*self.chunksize) + self.offset,
                                       ((step+1)*self.chunksize) + offset + self.offset):
 
@@ -195,20 +209,25 @@ class AnnovarModels(object):
             sample_specific_dict['genotype'] = genotype_to_fill.genotype
 
             try:
-                sample_specific_dict['filter_passing_reads_count'] = [genotype_to_fill.filter_passing_reads_count]
+                sample_specific_dict['filter_passing_reads_count'] = [float(genotype_to_fill.filter_passing_reads_count)]
             except ValueError:
                 read_depth_error += 1
             # print('Read depth returned null value')
             try:
-                sample_specific_dict['genotype_likelihoods'] = [i.likelihood_neg_exponent for i in
+                sample_specific_dict['genotype_likelihoods'] = [float(i.likelihood_neg_exponent) for i in
                                                                 genotype_to_fill.genotype_likelihoods]
             except IndexError:
                 genotype_lik_error += 1
 
             try:
-                sample_specific_dict['alleles'] = [i.read_counts for i in genotype_to_fill.alleles]
+                sample_specific_dict['alleles'] = [float(i.read_counts) for i in genotype_to_fill.alleles]
             except IndexError or ValueError:
                 allele_error += 1
+
+            if sample_specific_dict['genotype'] is not None:
+                genotype_class_to_fill = vvp.VCFGenotypeInfo('')
+                vvp.fill_genotype_class(sample_specific_dict['genotype'], genotype_class_to_fill)
+                sample_specific_dict['genotype_subclass_by_class'] = genotype_class_to_fill.genotype_subclass_by_class
 
             list_dictionaries.append(sample_specific_dict)
 
