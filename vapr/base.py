@@ -4,6 +4,8 @@ import sys
 import pandas
 import logging
 import vcf
+from vapr.annovar import AnnovarWr apper
+from vapr.parsers import VariantParsing
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -34,7 +36,8 @@ class ProjectData(object):
         self.design_file = design_file
         self.annovar = annovar_path
         self.project_data = project_data
-        self.buildver = build_ver
+        self.buildver = self.check_ver(build_ver)
+        self.times_called = 0
         self.mapping = self.get_mapping()
         self.split = split_vcf
 
@@ -50,20 +53,40 @@ class ProjectData(object):
         return sample_to_vcf_map
 
     def check_file_existance_return_mapping_no_design_file(self):
+        self.times_called += 1
+        print(self.times_called)
 
-        vcf_files = [vcf for vcf in os.listdir(self.input_dir) if vcf.endswith('vcf')]
-        if len(vcf_files) > 0:
-            samples = ['sample_1']
-            os.mkdir(os.path.join(self.input_dir, 'sample_1'))
-            for f in vcf_files:
-                print(os.path.join(self.input_dir, f), os.path.join(self.input_dir, 'sample_1', os.path.basename(f)))
-                os.rename(os.path.join(self.input_dir, f), os.path.join(self.input_dir, 'sample_1', os.path.basename(f)))
-        else:
-            samples = os.listdir(self.input_dir)
+        vcf_files = [_vcf for _vcf in os.listdir(self.input_dir) if _vcf.endswith('vcf')]
+        samples_available = []
 
-        sample_to_vcf_map = dict.fromkeys(samples, {})
+        if len(vcf_files) < 1:
+            raise IOError('No files found in input dir')
 
-        for sample in samples:
+        for vcf_file in vcf_files:
+
+            vcf_reader = vcf.Reader(filename=os.path.join(self.input_dir, vcf_file))
+            samples = vcf_reader.samples
+            if len(samples) > 1:
+                logging.info('File %s is a multisample VCF, %i samples detected' % (vcf_file, len(samples)))
+                dir_name = '_'.join(['samples'] + samples)
+
+            else:
+                dir_name = '_'.join(['sample'] + samples)
+
+            samples_available.append(dir_name)
+
+            try:
+                os.mkdir(os.path.join(self.input_dir, dir_name))
+            except OSError as e:
+                logging.info("OS error: {0}, moving vcf file to existing directory".format(e))
+
+            os.rename(os.path.join(self.input_dir, vcf_file), os.path.join(self.input_dir,
+                                                                           dir_name,
+                                                                           os.path.basename(vcf_file)))
+
+        sample_to_vcf_map = dict.fromkeys(samples_available, {})
+
+        for sample in samples_available:
             vcf_files = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('.vcf')]
             sample_to_vcf_map[sample]['vcf_csv'] = [(vcf_file, os.path.splitext(os.path.basename(vcf_file))[0] +
                                                      '_annotated') for vcf_file in vcf_files]  # God bless listcomps
@@ -99,7 +122,8 @@ class ProjectData(object):
 
         return self.buildver
 
-    def split_vcf(self):
+    """
+        def split_vcf(self):
         if self.split:
             new_input_dir = os.path.join(self.input_dir, 'split_files')
             # self.input_dir = new_input_dir
@@ -112,7 +136,7 @@ class ProjectData(object):
             vcf_writer = vcf.Writer(open('/dev/null', 'w'), vcf_reader)
             for record in vcf_reader:
                 vcf_writer.write_record(record)
-
+    """
 
 
 class AnnotationProject(ProjectData):
@@ -134,19 +158,19 @@ class AnnotationProject(ProjectData):
                                                 design_file=design_file,
                                                 build_ver=build_ver)
 
-        from annovar import AnnovarWrapper
         self.annovar_wrapper = AnnovarWrapper(self.input_dir,
                                               self.output_csv_path,
                                               self.annovar,
                                               self.project_data,
+                                              self.mapping,
                                               design_file=self.design_file,
                                               build_ver=self.buildver)
 
-        from parsers import VariantParsing
         self.annotator_wrapper = VariantParsing(self.input_dir,
                                                 self.output_csv_path,
                                                 self.annovar,
                                                 self.project_data,
+                                                self.mapping,
                                                 design_file=self.design_file,
                                                 build_ver=self.buildver)
 
@@ -158,9 +182,9 @@ class AnnotationProject(ProjectData):
         """ Wrapper around multiprocess Annovar annotation  """
         self.annovar_wrapper.run_annovar(multisample=multisample)
 
-    def annotate_and_save(self):
+    def annotate_and_save(self, buffer_vars=False, verbose=2):
         """ Wrapper around annotation runner  """
-        self.annotator_wrapper.annotate_and_save(buffer=False)
+        self.annotator_wrapper.annotate_and_saving(buffer_vars=buffer_vars, verbose=verbose)
 
     def parallel_annotation_and_saving(self, n_processes=4, verbose=1):
         """ Wrapper around parallel annotation multiprocess runner  """
