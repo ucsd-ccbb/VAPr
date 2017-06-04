@@ -51,62 +51,61 @@ class VariantParsing:
     def annotate_and_saving(self, buffer_vars=False, verbose=2):
 
         self.verbose = verbose
-        samples = self.mapping.keys()
-        print(samples)
-        for sample in samples:
-            list_tupls = self.get_sample_csv_vcf_tuple(sample)
-            print(list_tupls)
 
-            for tpl in list_tupls:
-                hgvs = HgvsParser(tpl[1])
-                csv_parsing = TxtParser(tpl[2], samples=hgvs.samples)
+        list_tupls = self.get_sample_csv_vcf_tuple()
+
+        for tpl in list_tupls:
+            hgvs = HgvsParser(tpl[1])
+            test = hgvs.get_variants_from_vcf(1)
+            print(len(test))
+            csv_parsing = TxtParser(tpl[2], samples=hgvs.samples)
+            variant_buffer = []
+            self.step = 0
+            num_parsed = 0
+
+            while csv_parsing.num_lines > self.step * self.chunksize:
+
+                print('STEP: %i, CHNKSIZE: %i, MULT: %i' % (self.step, self.chunksize, self.step * self.chunksize))
+                list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
+                all_ids = hgvs.get_all_variants_from_vcf()
+                print('Len List HGVC ID: %i, ALL IDS: %i' % (len(list_hgvs_ids), len(all_ids)),
+                      'Num Lines: %i' % csv_parsing.num_lines)
+
+                myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, verbose, tpl[0])
+                num_parsed += len(list_hgvs_ids)
+
+                offset = len(list_hgvs_ids) - self.chunksize
+                csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=self.buildver,
+                                                                 offset=offset)
+
+                print('CSV_VARIANTS: %i' % len(csv_variants))
+                if self.verbose >= 1:
+                    logger.info('Gathered %i variants so far for sample %s, vcf file %s' % (num_parsed,
+                                                                                            tpl[0],
+                                                                                            tpl[1]))
+                merged_list = []
+                for i, _ in enumerate(myvariants_variants):
+                    for dict_from_sample in csv_variants[i]:
+                        merged_list.append(self.merge_dict_lists(myvariants_variants[i], dict_from_sample))
+
+                variant_buffer.extend(merged_list)
+                print('VARBUFFLEN: %i' % len(variant_buffer))
+                logging.info('Parsing Buffer...')
+                if len(variant_buffer) == 0:
+                    print('VarBuff Len == 0, no clue why')
+                else:
+                    self.collection.insert_many(variant_buffer, ordered=False)
                 variant_buffer = []
-                self.step = 0
-                num_parsed = 0
-                while csv_parsing.num_lines > self.step * self.chunksize:
+                self.step += 1
 
-                    print('STEP: %i, CHNKSIZE: %i, MULT: %i' % (self.step, self.chunksize, self.step * self.chunksize))
-                    list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
-                    all_ids = hgvs.get_all_variants_from_vcf()
-                    print('Len List HGVC ID: %i, ALL IDS: %i' % (len(list_hgvs_ids), len(all_ids)),
-                          'Num Lines: %i' % csv_parsing.num_lines)
+                if len(list_hgvs_ids) < self.chunksize:
+                    self._last_round = True
 
-                    myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, verbose, tpl[0])
-                    num_parsed += len(list_hgvs_ids)
-
-                    offset = len(list_hgvs_ids) - self.chunksize
-                    csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=self.buildver,
-                                                                     offset=offset)
-
-                    print('CSV_VARIANTS: %i' % len(csv_variants))
-                    if self.verbose >= 1:
-                        logger.info('Gathered %i variants so far for sample %s, vcf file %s' % (num_parsed,
-                                                                                                tpl[0],
-                                                                                                tpl[1]))
-                    merged_list = []
-                    for i, _ in enumerate(myvariants_variants):
-                        for dict_from_sample in csv_variants[i]:
-                            merged_list.append(self.merge_dict_lists(myvariants_variants[i], dict_from_sample))
-
-                    variant_buffer.extend(merged_list)
-                    print('VARBUFFLEN: %i' % len(variant_buffer))
-                    logging.info('Parsing Buffer...')
-                    if len(variant_buffer) == 0:
-                        print('VarBuff Len == 0, no clue why')
-                    else:
-                        self.collection.insert_many(variant_buffer, ordered=False)
-                    variant_buffer = []
-                    self.step += 1
-
-                    if len(list_hgvs_ids) < self.chunksize:
-                        self._last_round = True
-
-                    if self._last_round:    # or (len(variant_buffer) > self._buffer_len):
-                        logging.info('Done parsing variants for file pair %s, %s' % (tpl[1], tpl[2]))
-                        return 'Done'
+                if self._last_round:    # or (len(variant_buffer) > self._buffer_len):
+                    logging.info('Done parsing variants for file pair %s, %s' % (tpl[1], tpl[2]))
+                    return 'Done'
 
         return 'Done'
-
     """
             if not csv:
 
@@ -196,25 +195,29 @@ class VariantParsing:
 
         return variant_data
 
-    def get_sample_csv_vcf_tuple(self, sample):
+    def get_sample_csv_vcf_tuple(self):
         """ Locate files associated with a specific sample """
-
         list_tupls = []
-        vcfs = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('vcf')]
-        for vcf in vcfs:
-            base_name = os.path.splitext(vcf)[0]
-            matching_csv = [i for i in os.listdir(os.path.join(self.output_csv_path, sample)) if
-                            i.startswith(base_name + '_annotated') and i.endswith('txt')]
-            matching_vcf = [i for i in os.listdir(os.path.join(self.output_csv_path, sample)) if
-                            i.startswith(base_name + '_annotated') and i.endswith('vcf')]
+
+        for _map in self.mapping:
+            base_name = os.path.splitext(os.path.basename(_map['vcf_file']))[0]
+
+            matching_csv = [i for i in os.listdir(_map['annotation_dir'])
+                            if i.startswith(base_name + '_annotated') and i.endswith('txt')]
+
+            matching_vcf = [i for i in os.listdir(_map['annotation_dir'])
+                            if i.startswith(base_name + '_annotated') and i.endswith('vcf')]
+
+            print(base_name, matching_vcf, matching_csv)
+
             if len(matching_csv) > 1 or len(matching_vcf) > 1:
                 raise ValueError('Too many matching csvs')
-            elif len(matching_csv) == 0 or len(matching_vcf):
+            elif len(matching_csv) == 0 or len(matching_vcf) == 0:
                 raise ValueError('Csv not found')
             else:
-                csv_path = os.path.join(self.output_csv_path, sample, matching_csv[0])
-                vcf_path = os.path.join(self.output_csv_path, sample, matching_vcf[0])
-                list_tupls.append((sample, vcf_path, csv_path))
+                csv_path = os.path.join(_map['annotation_dir'], matching_csv[0])
+                vcf_path = os.path.join(_map['annotation_dir'], matching_vcf[0])
+                list_tupls.append((_map['samples'], vcf_path, csv_path))
 
         return list_tupls
 
@@ -296,7 +299,30 @@ class VariantParsing:
         """ Temporary hack to make instance method _variant_parsing 'pickleable' """
         Pool(n_processes).map(self, input_2)
 
+if __name__ == '__main__':
+    # Directory of input files to be annotated
+    IN_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/"
 
+    # Output file directory
+    OUT_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/"
+    # Location of your annovar dowload. The folder should contain the following files/directories:
+    ANNOVAR_PATH = '/Volumes/Carlo_HD1/CCBB/annovar/'
 
+    # Design File (optional)
+    # design_file = '/Volumes/Carlo_HD1/CCBB/VAPr_files/guorong_single_sample.csv'
 
+    # Databse and Collection names (optional)
+    proj_data = {'db_name': 'VariantDBMultiBenchmark',
+                 'project_name': 'collect'}
+    mapping = [{'annotation_dir': '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/samples_BC001_BC001_MOM_BC001_SIS',
+                  'csv_file': 'BC001_family.g_annotated',
+                  'path_to_dir': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/samples_BC001_BC001_MOM_BC001_SIS',
+                  'samples': ['BC001', 'BC001_MOM', 'BC001_SIS'],
+                  'vcf_file': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/samples_BC001_BC001_MOM_BC001_SIS/BC001_family.g.vcf'}]
 
+    annotator =  VariantParsing(IN_PATH,
+                                OUT_PATH,
+                                ANNOVAR_PATH,
+                                proj_data,
+                                mapping)
+    annotator.annotate_and_saving(verbose=2)
