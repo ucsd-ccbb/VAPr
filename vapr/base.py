@@ -3,9 +3,9 @@ import os
 import sys
 import pandas
 import logging
-import vcf
-from vapr.annovar import AnnovarWr apper
+from vapr.annovar import AnnovarWrapper
 from vapr.parsers import VariantParsing
+from vapr.ingester import Ingester
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -52,60 +52,20 @@ class ProjectData(object):
 
         return sample_to_vcf_map
 
+    @staticmethod
+    def listdir_fullpath(d):
+        return [os.path.join(d, f) for f in os.listdir(d)]
+
     def check_file_existance_return_mapping_no_design_file(self):
-        self.times_called += 1
-        print(self.times_called)
-
-        vcf_files = [_vcf for _vcf in os.listdir(self.input_dir) if _vcf.endswith('vcf')]
-        samples_available = []
-
-        if len(vcf_files) < 1:
-            raise IOError('No files found in input dir')
-
-        for vcf_file in vcf_files:
-
-            vcf_reader = vcf.Reader(filename=os.path.join(self.input_dir, vcf_file))
-            samples = vcf_reader.samples
-            if len(samples) > 1:
-                logging.info('File %s is a multisample VCF, %i samples detected' % (vcf_file, len(samples)))
-                dir_name = '_'.join(['samples'] + samples)
-
-            else:
-                dir_name = '_'.join(['sample'] + samples)
-
-            samples_available.append(dir_name)
-
-            try:
-                os.mkdir(os.path.join(self.input_dir, dir_name))
-            except OSError as e:
-                logging.info("OS error: {0}, moving vcf file to existing directory".format(e))
-
-            os.rename(os.path.join(self.input_dir, vcf_file), os.path.join(self.input_dir,
-                                                                           dir_name,
-                                                                           os.path.basename(vcf_file)))
-
-        sample_to_vcf_map = dict.fromkeys(samples_available, {})
-
-        for sample in samples_available:
-            vcf_files = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('.vcf')]
-            sample_to_vcf_map[sample]['vcf_csv'] = [(vcf_file, os.path.splitext(os.path.basename(vcf_file))[0] +
-                                                     '_annotated') for vcf_file in vcf_files]  # God bless listcomps
-        return sample_to_vcf_map
+        organizer = Ingester(self.input_dir, self.output_csv_path)
+        organizer.walk()
+        return organizer.mapping_list
 
     def check_file_existance_return_mapping(self, design_df):
 
-        design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
-        for sample in design_file_mapping.keys():
-            if not os.path.exists(os.path.join(self.input_dir, sample)):
-                raise NameError('Could not find directory named %s as provided in design file' % sample)
-
-            vcf_files = [i for i in os.listdir(os.path.join(self.input_dir, sample)) if i.endswith('.vcf')]
-            logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_files)), sample))
-
-            design_file_mapping[sample]['vcf_csv'] = [(vcf_file, os.path.splitext(os.path.basename(vcf_file))[0] +
-                                                      '_annotated') for vcf_file in vcf_files]  # God bless listcomps
-
-        return design_file_mapping
+        organizer = Ingester(self.input_dir, self.output_csv_path)
+        organizer.digest_design_file(design_df)
+        return organizer.mapping_list
 
     def check_ver(self, build_ver):
 
@@ -189,3 +149,38 @@ class AnnotationProject(ProjectData):
     def parallel_annotation_and_saving(self, n_processes=4, verbose=1):
         """ Wrapper around parallel annotation multiprocess runner  """
         self.annotator_wrapper.parallel_annotation(n_processes=n_processes, verbose=verbose)
+
+
+if __name__ == '__main__':
+
+    IN_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_files/multi_sample/"
+    OUT_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample_2/"
+    ing = Ingester(IN_PATH, OUT_PATH)
+    ing.walk()
+    print(ing.mapping_list)
+
+
+    """
+
+    # Directory of input files to be annotated
+    IN_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_files/multi_sample/"
+
+    # Output file directory
+    OUT_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/"
+    # Location of your annovar dowload. The folder should contain the following files/directories:
+    ANNOVAR_PATH = '/Volumes/Carlo_HD1/CCBB/annovar/'
+
+    # Design File (optional)
+    # design_file = '/Volumes/Carlo_HD1/CCBB/VAPr_files/guorong_single_sample.csv'
+
+    # Databse and Collection names (optional)
+    proj_data = {'db_name': 'VariantDBMultiBenchmark',
+                 'project_name': 'collect'}
+
+    Project = AnnotationProject(IN_PATH,
+                                OUT_PATH,
+                                ANNOVAR_PATH,
+                                proj_data,
+                                # design_file=design_file,
+                                build_ver='hg19')
+    """
