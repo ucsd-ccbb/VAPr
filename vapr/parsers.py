@@ -6,7 +6,7 @@ import sys
 from pymongo import MongoClient
 import vapr.definitions as definitions
 from vapr.models import TxtParser, HgvsParser
-
+import tqdm
 from multiprocessing import Pool
 import logging
 logger = logging.getLogger()
@@ -47,12 +47,14 @@ class VariantParsing:
         # self.completed_jobs = dict.fromkeys(list(self.mapping.keys()), 0)
         self.verbose = 0
         self.collection = self.mongo_client_setup()
+        self.n_vars = 0
 
     def annotate_and_saving(self, buffer_vars=False, verbose=2):
 
         self.verbose = verbose
 
         list_tupls = self.get_sample_csv_vcf_tuple()
+        print(list_tupls)
 
         for tpl in list_tupls:
             hgvs = HgvsParser(tpl[1])
@@ -150,19 +152,6 @@ class VariantParsing:
             result.update(dictionary)
         return result
 
-    def get_dict_mv_parallel(self, mapping):
-        """
-        Function designated to place the queries on myvariant.info servers.
-        """
-        sample_id = mapping[0]
-        ids = mapping[1]
-        mv = myvariant.MyVariantInfo()
-        # This will retrieve a list of dictionaries
-        variant_data = mv.getvariants(ids, as_dataframe=False)
-        variant_data = self.remove_id_key(variant_data, sample_id)
-
-        return variant_data
-
     def get_dict_myvariant(self, variant_list, verbose, sample_id):
         """
         Function designated to place the queries on myvariant.info servers.
@@ -200,24 +189,23 @@ class VariantParsing:
         list_tupls = []
 
         for _map in self.mapping:
-            base_name = os.path.splitext(os.path.basename(_map['vcf_file']))[0]
 
-            matching_csv = [i for i in os.listdir(_map['annotation_dir'])
-                            if i.startswith(base_name + '_annotated') and i.endswith('txt')]
+            matching_csv = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
+                            and i.endswith('txt')]
 
-            matching_vcf = [i for i in os.listdir(_map['annotation_dir'])
-                            if i.startswith(base_name + '_annotated') and i.endswith('vcf')]
+            matching_vcf = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
+                            and i.endswith('vcf')]
 
-            print(base_name, matching_vcf, matching_csv)
+            print(matching_vcf, matching_csv)
 
             if len(matching_csv) > 1 or len(matching_vcf) > 1:
                 raise ValueError('Too many matching csvs')
             elif len(matching_csv) == 0 or len(matching_vcf) == 0:
                 raise ValueError('Csv not found')
             else:
-                csv_path = os.path.join(_map['annotation_dir'], matching_csv[0])
-                vcf_path = os.path.join(_map['annotation_dir'], matching_vcf[0])
-                list_tupls.append((_map['samples'], vcf_path, csv_path))
+                csv_path = os.path.join(_map['csv_file_full_path'], matching_csv[0])
+                vcf_path = os.path.join(_map['csv_file_full_path'], matching_vcf[0])
+                list_tupls.append((_map['sample_names'], vcf_path, csv_path))
 
         return list_tupls
 
@@ -236,93 +224,93 @@ class VariantParsing:
         """
 
         self.verbose = verbose
-        samples = self.mapping.keys()
+        list_tupls = self.get_sample_csv_vcf_tuple()
+        print(list_tupls)
+        for tpl in list_tupls:
 
-        for sample in samples:
-            list_tupls = self.get_sample_csv_vcf_tuple(sample)
-            self.pooling(n_processes, list_tupls)
-            logger.info('Completed annotation and parsing for variants in sample %s' % sample)
+            hgvs = HgvsParser(tpl[1])
+            # list_hgvs_ids = hgvs.get_all_variants_from_vcf()
+            csv_parsing = TxtParser(tpl[2], samples=hgvs.samples)
+            num_lines = csv_parsing.num_lines
+            print(num_lines, self.chunksize)
+            n_steps = int(num_lines/self.chunksize) + 1
+            print(n_steps)
+            map_job = self.assign_step_to_tuple(tpl, n_steps)
+            pool = Pool(n_processes)
+            for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
+                    pass
 
-    def _variant_parsing(self, maps):
+            # pool.imap_unordered(parse_by_step, map_job)
+            # self.pooling(n_processes, map_job)
+            logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
-        """
-        Given a list of tuples, parse the hgvs IDS using HGVS class, and parse csv data through the
-        TxtParser classes. Query variants from MyVarinant.info and aggregate results in a dictionary,
-        to be exported to MongoDB
+    @staticmethod
+    def assign_step_to_tuple(_tuple, n_steps):
+        new_tuple_list = []
+        for i in range(n_steps):
+            sample = _tuple[0]
+            vcf_file = _tuple[1]
+            csv_file = _tuple[2]
+            step = i
+            new_tuple_list.append((sample, vcf_file, csv_file, step))
+        return new_tuple_list
 
-        """
 
-        hgvs = HgvsParser(maps[1])
-        csv_parsing = TxtParser(maps[2], samples=hgvs.samples)
+def parse_by_step(maps):
+    db_name = 'VariantDBMultiBenchmark'
+    collection_name = 'test_collection_small_vcf'
 
-        variant_buffer = []
-        n_vars = 0
+    client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
+    db = getattr(client, db_name)
+    collection = getattr(db, collection_name)
+    hgvs = HgvsParser(maps[1])
+    csv_parsing = TxtParser(maps[2], samples=hgvs.samples)
 
-        while csv_parsing.num_lines > self.step * self.chunksize:
+    list_hgvs_ids = hgvs.get_variants_from_vcf(maps[3])
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 2, maps[0])
 
-            list_hgvs_ids = hgvs.get_variants_from_vcf(self.step)
-            myvariants_variants = self.get_dict_myvariant(list_hgvs_ids, self.verbose, maps[0])
+    csv_variants = csv_parsing.open_and_parse_chunks(maps[3], build_ver='hg19')
 
-            offset = len(list_hgvs_ids) - self.chunksize
-            csv_variants = csv_parsing.open_and_parse_chunks(self.step, build_ver=self.buildver, offset=offset)
+    merged_list = []
+    for i, _ in enumerate(myvariants_variants):
+        for dict_from_sample in csv_variants[i]:
+            merged_list.append(merge_dict_lists(myvariants_variants[i], dict_from_sample))
 
-            merged_list = []
-            for i, _ in enumerate(myvariants_variants):
+    logging.info('Parsing Buffer...')
+    collection.insert_many(merged_list, ordered=False)
 
-                for dict_from_sample in csv_variants[i]:
-                    merged_list.append(self.merge_dict_lists(myvariants_variants[i], dict_from_sample))
 
-            variant_buffer.extend(merged_list)
-            n_vars += len(merged_list)
-            if self.verbose >= 1:
-                logger.info('Gathered %i variants so far for sample %s, vcf file %s' % (n_vars, maps[0], maps[1]))
-            self.step += 1
+def merge_dict_lists(*dict_args):
+    """
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
 
-            if len(merged_list) < self.chunksize:
-                self._last_round = True
 
-            if (len(variant_buffer) > self._buffer_len) or self._last_round:
-                logging.info('Parsing Buffer...')
-                self.export(variant_buffer)
-                variant_buffer = []
+def get_dict_myvariant(variant_list, verbose, sample_id):
 
-                if self._last_round:
-                    self.completed_jobs[maps[0]] += 1
-                    return self.completed_jobs
+    if verbose >= 2:
+        verbose = True
+    else:
+        verbose = False
 
-        return self.completed_jobs
+    mv = myvariant.MyVariantInfo()
+    # This will retrieve a list of dictionaries
+    variant_data = mv.getvariants(variant_list, verbose=verbose, as_dataframe=False)
+    variant_data = remove_id_key(variant_data, sample_id)
 
-    def __call__(self, x):
-        return self._variant_parsing(x)
+    return variant_data
 
-    def pooling(self, n_processes, input_2):
-        """ Temporary hack to make instance method _variant_parsing 'pickleable' """
-        Pool(n_processes).map(self, input_2)
 
-if __name__ == '__main__':
-    # Directory of input files to be annotated
-    IN_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/"
+def remove_id_key(variant_data, sample_id):
 
-    # Output file directory
-    OUT_PATH = "/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/"
-    # Location of your annovar dowload. The folder should contain the following files/directories:
-    ANNOVAR_PATH = '/Volumes/Carlo_HD1/CCBB/annovar/'
+    for dic in variant_data:
+        dic['hgvs_id'] = dic.pop("_id", None)
+        dic['hgvs_id'] = dic.pop("query", None)
+        dic['sample_id'] = sample_id
 
-    # Design File (optional)
-    # design_file = '/Volumes/Carlo_HD1/CCBB/VAPr_files/guorong_single_sample.csv'
-
-    # Databse and Collection names (optional)
-    proj_data = {'db_name': 'VariantDBMultiBenchmark',
-                 'project_name': 'collect'}
-    mapping = [{'annotation_dir': '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/samples_BC001_BC001_MOM_BC001_SIS',
-                  'csv_file': 'BC001_family.g_annotated',
-                  'path_to_dir': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/samples_BC001_BC001_MOM_BC001_SIS',
-                  'samples': ['BC001', 'BC001_MOM', 'BC001_SIS'],
-                  'vcf_file': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/samples_BC001_BC001_MOM_BC001_SIS/BC001_family.g.vcf'}]
-
-    annotator =  VariantParsing(IN_PATH,
-                                OUT_PATH,
-                                ANNOVAR_PATH,
-                                proj_data,
-                                mapping)
-    annotator.annotate_and_saving(verbose=2)
+    return variant_data
