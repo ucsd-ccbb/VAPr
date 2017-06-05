@@ -47,8 +47,8 @@ class Ingester:
                 full_path_single_file = os.path.join(os.path.abspath(folder), _file)
                 self.digest_single(full_path_single_file)
 
-    def digest_single(self, single):
-        ingested = self.atomic_ingester(single, self.base_dir, self.out_dir)
+    def digest_single(self, single, sample='infer'):
+        ingested = self.atomic_ingester(single, self.base_dir, self.out_dir, sample=sample)
         self.mapping_list.append(ingested.mapping)
         self.mapping_list = list({v['raw_vcf_file_full_path']: v for v in self.mapping_list}.values())
 
@@ -56,26 +56,27 @@ class Ingester:
 
         design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
         for sample in design_file_mapping.keys():
-            if not os.path.exists(os.path.join(self.base_dir, sample)):
+            sample_dir = os.path.join(self.base_dir, sample)
+            if not os.path.exists(sample_dir):
                 raise NameError('Could not find directory named %s as provided in design file' % sample)
 
-            vcf_files = [i for i in os.listdir(os.path.join(self.base_dir, sample)) if i.endswith('.vcf')]
+            vcf_files = [i for i in os.listdir(sample_dir) if i.endswith('.vcf')]
             logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_files)), sample))
 
-            design_file_mapping[sample]['vcf_csv'] = [(vcf_file, os.path.splitext(os.path.basename(vcf_file))[0] +
-                                                       '_annotated') for vcf_file in vcf_files]  # God bless listcomps
-
-        return design_file_mapping
+            for vcf_file in vcf_files:
+                full_path_single_file = os.path.join(os.path.abspath(sample_dir), vcf_file)
+                self.digest_single(full_path_single_file, sample=sample)
 
 
 class SingleInstance:
 
-    def __init__(self, single_instance, input_dir, out_dir):
+    def __init__(self, single_instance, input_dir, out_dir, sample='infer'):
 
         self.instance = single_instance
         self.out_dir = out_dir
         self.input_dir = input_dir
         self.reader = vcf.Reader(open(single_instance, 'r'))
+        self.sample = sample
 
         self.mapping = {'raw_vcf_file_full_path': self.fill_input_vcf_path(),
                         'vcf_file_basename': self.fill_vcf_file_basename(),
@@ -95,7 +96,11 @@ class SingleInstance:
         return len(self.reader.samples)
 
     def fill_sample_names(self):
-        return self.reader.samples
+
+        if self.sample == 'infer':
+            return self.reader.samples
+        else:
+            return self.sample
 
     def sample_dir_name(self):
         return '_'.join(['sample'] + self.fill_sample_names())
