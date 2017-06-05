@@ -22,16 +22,14 @@ class Filters(object):
         client = MongoClient()
         db = getattr(client, self.db_name)
         collection = getattr(db, self.collection_name)
-
+        #
         filtered = collection.find({"$and": [
-                                   {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
-                                   {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
-                                   {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                                   {"genotype.filter_passing_reads_count": {"$gte": 10}},
-                                   {"cosmic70": {"$exists": True}},
-                                   {"1000g2015aug_all": {"$lt": 0.1}}
-
-        ]})
+            {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
+            {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
+            {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
+            {"filter_passing_reads_count": {"$gte": 10}},
+            {"cosmic70": {"$exists": True}},
+            {"1000g2015aug_all": {"$lt": 0.1}}]})
 
         filtered = list(filtered)
         print('Variants found that match rarity criteria: {}'.format(len(filtered)))
@@ -47,7 +45,7 @@ class Filters(object):
                                    {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                                   {"genotype.filter_passing_reads_count": {"$gte": 10}},
+                                   {"filter_passing_reads_count": {"$gte": 10}},
                                    {"$or": [{"cosmic70": {"$exists": True}}, {"clinvar": {"$exists": True}}]},
                                    {"1000g2015aug_all": {"$lt": 0.1}}
 
@@ -69,17 +67,28 @@ class Filters(object):
                                    {"$or": [{"esp6500siv2_all": {"$lt": 0.05}}, {"esp6500siv2_all": {"$exists": False}}]},
                                    {"$or": [{"func_knowngene": "exonic"}, {"func_knowngene": "splicing"}]},
                                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                                   {"genotype.filter_passing_reads_count": {"$gte": 10}},
+                                   {"filter_passing_reads_count": {"$gte": 10}},
                                    {"$or": [{"cosmic70": {"$exists": True}}, {"clinvar": {"$exists": True}}]},
                                    {"1000g2015aug_all": {"$lt": 0.1}},
                                    {"cadd.phred": {"$gte": 15}}      #This is the change CADD Phred score >= 15
 
          ]})
 
-
         filtered = list(filtered)
         print('Variants found that match rarity criteria: {}'.format(len(filtered)))
         return filtered
 
+    def deleterious_compound_heterozygote(self):
 
+        client = MongoClient()
 
+        db = getattr(client, self.db_name)
+        collection = getattr(db, self.collection_name)
+
+        filtered = collection.find({"$and": [
+            {"genotype_subclass_by_class.heterozygous": "compound"},
+            {"cadd.phred": {"$gte": 10}}]})
+
+        filtered = list(filtered)
+        print('Variants found that match rarity criteria: {}'.format(len(filtered)))
+        return filtered
