@@ -69,26 +69,28 @@ class AnnovarWrapper:
     def run_annovar(self, multisample=False):
         """ Spawning Annovar jobs """
 
-        # print(self.mapping)
-        for sample in self.mapping.keys():
-            annotation_dir = os.path.join(self.output_csv_path, sample)
+        print(self.mapping)
+
+        for index, _map in enumerate(self.mapping):
+            annotation_dir = _map['csv_file_full_path']
+
             if os.path.isdir(annotation_dir):
-                raise TypeError('Directory already exists for %s. Aborting.' % annotation_dir)
+                logging.info('Directory already exists for %s. '
+                             'Writing output files there for file %s.' % (annotation_dir, _map['raw_vcf_file_full_path']))
             else:
                 os.makedirs(annotation_dir)
 
-            for vcf, csv in self.mapping[sample]['vcf_csv']:
-                vcf_path = os.path.join(self.input_dir, os.path.join(sample, vcf))
-                csv_path = os.path.join(self.output_csv_path, os.path.join(sample, csv))
-                cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
-                args = shlex.split(cmd_string)
+            vcf_path = _map['raw_vcf_file_full_path']
+            csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
+            cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
+            args = shlex.split(cmd_string)
 
-                subprocess.Popen(args, stdout=subprocess.PIPE)
+            subprocess.Popen(args, stdout=subprocess.PIPE)
 
-            n_commands = len(self.mapping[sample]['vcf_csv'])
-            logging.info('Annovar jobs submitted for sample %s' % sample)
-            listen(os.path.join(self.output_csv_path, sample), n_commands)
-            logging.info('Finished running Annovar on sample %s' % sample)
+        n_commands = len(self.mapping)
+        logging.info('Annovar jobs submitted for files %s' % ', '.join([i['raw_vcf_file_full_path'] for i in self.mapping]))
+        listen(annotation_dir, n_commands)
+        logging.info('Finished running Annovar on all files')
 
     def build_annovar_command_str(self, vcf, csv, multisample=False):
 
