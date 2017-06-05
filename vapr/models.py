@@ -22,21 +22,21 @@ class HgvsParser(object):
         self.vcf = vcf_file
         # self.num_lines = sum(1 for _ in open(self.vcf))
         self.chunksize = definitions.chunk_size
-        self.reader = vcf.Reader(open(self.vcf, 'r'))
-        self.samples = self.reader.samples
+        self.samples = vcf.Reader(open(self.vcf, 'r')).samples
         self.num_samples = len(self.samples)
 
     def get_all_variants_from_vcf(self):
         list_ids = []
 
-        for record in self.reader:
-            if len(record.ALT) > 1:
-                for alt in record.ALT:
-                    list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-                                                          record.REF, str(alt)))
-            else:
-                list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-                                                      record.REF, str(record.ALT[0])))
+        reader = vcf.Reader(open(self.vcf, 'r'))
+        for record in reader:
+            #if len(record.ALT) > 1:
+            #    for alt in record.ALT:
+            #        list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+            #                                                  record.REF, str(alt)))
+            #else:
+            list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+                                                  record.REF, str(record.ALT[0])))
 
         return self.complete_chromosome(list_ids)
 
@@ -46,16 +46,17 @@ class HgvsParser(object):
         :param step: ...
         :return: a list of variants formatted according to HGVS standards
         """
+        reader = vcf.Reader(open(self.vcf, 'r'))
         list_ids = []
 
-        for record in itertools.islice(self.reader, step * self.chunksize, (step + 1) * self.chunksize):
-            if len(record.ALT) > 1:
-                for alt in record.ALT:
-                    list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-                                                          record.REF, str(alt)))
-            else:
-                list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-                                                      record.REF, str(record.ALT[0])))
+        for record in itertools.islice(reader, step * self.chunksize, (step + 1) * self.chunksize):
+           # if len(record.ALT) > 1:
+           #     for alt in record.ALT:
+           #         list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+           #                                               record.REF, str(alt)))
+           # else:
+            list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
+                                                  record.REF, str(record.ALT[0])))
 
         return self.complete_chromosome(list_ids)
 
@@ -171,7 +172,7 @@ class AnnovarModels(object):
             if self.dictionary['chr'] == 'chrM':
                 self.dictionary['chr'] = 'chrMT'
 
-            if key in ['1000g2015aug_all', 'esp6500si_all', 'nci60']:
+            if key in ['1000g2015aug_all', 'esp6500siv2_all', 'nci60']:
                 self.dictionary[key] = float(self.dictionary[key])
 
             if key in ['start', 'end']:
@@ -274,3 +275,9 @@ class CytoBand(object):
         if '.' in spliced:
             processed['Sub_Band'] = spliced[-1]
         return processed
+
+if __name__ == '__main__':
+    vc = '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/samples_BC001_BC001_MOM_BC001_SIS/BC001_family.g.vcf'
+    hgvs = HgvsParser(vc)
+    a = hgvs.get_variants_from_vcf(1)
+    print(len(a))
