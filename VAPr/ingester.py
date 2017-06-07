@@ -9,6 +9,8 @@ try:
 except:
     pass
 
+__author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
+
 
 class Ingester:
 
@@ -16,7 +18,6 @@ class Ingester:
 
         self.base_dir = input_dir
         self.out_dir = output_dir
-        #self.is_base_dir = self.check_contents()
         self.mapping_list = []
         self.atomic_ingester = SingleInstance
 
@@ -25,6 +26,7 @@ class Ingester:
         return [os.path.join(d, f) for f in os.listdir(d)]
 
     def check_contents(self):
+        """ Basic checker for input files """
         types = {'files': [], 'dirs': [], 'other': 0}
         contents = self.listdir_fullpath(self.base_dir)
 
@@ -40,26 +42,32 @@ class Ingester:
             raise IOError('Files and dir')
 
     def walk(self):
+        """ Walks the files, subdirs and dirs in input directory"""
         walker = os.walk(self.base_dir)
         for folder, subfolders, files in walker:
             for _file in files:
-                print(_file)
                 full_path_single_file = os.path.join(os.path.abspath(folder), _file)
                 self.digest_single(full_path_single_file)
 
     def digest_single(self, single, sample='infer'):
+        """ Digests input data from input directory """
+
         ingested = self.atomic_ingester(single, self.base_dir, self.out_dir, sample=sample)
         self.mapping_list.append(ingested.mapping)
         self.mapping_list = list({v['raw_vcf_file_full_path']: v for v in self.mapping_list}.values())
 
     def digest_design_file(self, design_df):
+        """ Digests input data from csv file """
 
         design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
         for sample in design_file_mapping.keys():
             sample_dir = os.path.join(self.base_dir, sample)
-            if not os.path.exists(sample_dir):
-                raise NameError('Could not find directory named %s as provided in design file' % sample)
-
+            sample_dir_preprocessed = os.path.join(self.base_dir, 'sample_' + sample)
+            if not os.path.exists(sample_dir) or os.listdir(sample_dir) == []:
+                if not os.path.exists(sample_dir_preprocessed):
+                    raise NameError('Could not find directory named %s as provided in design file' % sample)
+                else:
+                    sample_dir = sample_dir_preprocessed
             vcf_files = [i for i in os.listdir(sample_dir) if i.endswith('.vcf')]
             logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_files)), sample))
 
@@ -69,6 +77,8 @@ class Ingester:
 
 
 class SingleInstance:
+
+    """ Process data of single vcf file, populates dictionary """
 
     def __init__(self, single_instance, input_dir, out_dir, sample='infer'):
 
@@ -100,7 +110,7 @@ class SingleInstance:
         if self.sample == 'infer':
             return self.reader.samples
         else:
-            return self.sample
+            return [self.sample]
 
     def sample_dir_name(self):
         return '_'.join(['sample'] + self.fill_sample_names())
@@ -121,6 +131,7 @@ class SingleInstance:
         return os.path.join(self.input_dir, self.sample_dir_name())
 
     def create_path(self):
+        """ Creates directory named after the sample in a vcf file """
         try:
             os.mkdir(self.mapping['csv_file_full_path'])
         except OSError:
@@ -131,6 +142,7 @@ class SingleInstance:
             logging.info('Vcf input dir %s for sample exists, moving files there' % self.mapping['vcf_sample_dir'])
 
     def move_file(self):
+        """ Moves files to newly created directory """
         try:
             os.rename(self.mapping['raw_vcf_file_full_path'], os.path.join(self.mapping['vcf_sample_dir'],
                                                                            self.mapping['vcf_file_basename']))

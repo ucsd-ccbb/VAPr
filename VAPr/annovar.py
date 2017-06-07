@@ -10,7 +10,7 @@ from collections import OrderedDict
 import logging
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from vapr import definitions
+from VAPr import definitions
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -18,6 +18,8 @@ try:
     logger.handlers[0].stream = sys.stdout     # Enables logging on jupyter notebooks
 except:
     pass
+
+__author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
 
 class AnnovarWrapper:
@@ -52,6 +54,12 @@ class AnnovarWrapper:
         self.databases = self.get_databases()
 
     def download_dbs(self, all_dbs=True, dbs=None):
+        """
+        Implementation of the wrapper around annotate_variation.pl with -downdb as optional arg
+        First, it cleans up the humandb/ directory to avoid conflicts, then gets newest versions of databases
+        by spawning the jobs using subprocesses
+
+        """
 
         if len(os.listdir(os.path.join(self.annovar, 'humandb/'))) > 0:
             files = glob.glob(os.path.join(self.annovar, 'humandb/*'))
@@ -61,38 +69,50 @@ class AnnovarWrapper:
         list_commands = self.build_db_dl_command_str(all_dbs, dbs)
         for command in list_commands:
             args = shlex.split(command)
+            # Spawn subprocesses
             subprocess.Popen(args, stdout=subprocess.PIPE)
             run_handler(os.path.join(self.annovar, 'humandb/'), cmds=list_commands, annovar_path=self.annovar)
 
         return 'Finished downloading databases to {}'.format(os.path.join(self.annovar, 'humandb/'))
 
-    def run_annovar(self, multisample=False):
-        """ Spawning Annovar jobs """
+    def run_annovar(self, batch_jobs=10, multisample=False):
+        """ Spawning Annovar jobs in batches of five files at a time to prevent memory overflow """
 
-        print(self.mapping)
+        chunks = int(len(self.mapping)/batch_jobs) + 1
+        n_job_splits = [(i*batch_jobs, (i+1)*batch_jobs) for i in range(chunks)]
+        n_files_created = 0
 
-        for index, _map in enumerate(self.mapping):
-            annotation_dir = _map['csv_file_full_path']
+        for index, job in enumerate(n_job_splits):
+            logging.info('Job %i/%i sent for processing' % (index + 1 , len(n_job_splits)))
+            n_files_created += len(self.mapping[job[0]:job[1]])
 
-            if os.path.isdir(annotation_dir):
-                logging.info('Directory already exists for %s. '
-                             'Writing output files there for file %s.' % (annotation_dir, _map['raw_vcf_file_full_path']))
-            else:
-                os.makedirs(annotation_dir)
+            for index, _map in enumerate(self.mapping[job[0]:job[1]]):
+                annotation_dir = _map['csv_file_full_path']
 
-            vcf_path = _map['raw_vcf_file_full_path']
-            csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
-            cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
-            args = shlex.split(cmd_string)
+                if os.path.isdir(annotation_dir):
+                    logging.info('Directory already exists for %s. '
+                                 'Writing output files there for file %s.' % (annotation_dir,
+                                                                              _map['raw_vcf_file_full_path']))
+                else:
+                    os.makedirs(annotation_dir)
 
-            subprocess.Popen(args, stdout=subprocess.PIPE)
+                vcf_path = _map['raw_vcf_file_full_path']
+                csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
+                cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
+                args = shlex.split(cmd_string)
 
-        n_commands = len(self.mapping)
-        logging.info('Annovar jobs submitted for files %s' % ', '.join([i['raw_vcf_file_full_path'] for i in self.mapping]))
-        listen(annotation_dir, n_commands)
+                subprocess.Popen(args, stdout=subprocess.PIPE)
+
+            logging.info('Annovar jobs submitted for files %s' %
+                         ', '.join([i['raw_vcf_file_full_path'] for i in self.mapping]))
+
+            listen(self.output_csv_path, batch_jobs, job[1])
+            logging.info('Finished running Annovar on this batch')
+
         logging.info('Finished running Annovar on all files')
 
     def build_annovar_command_str(self, vcf, csv, multisample=False):
+        """ Concatenate command string arguments for Annovar jobs """
 
         dbs = ",".join(list(self.databases.keys()))
         dbs_args = ",".join(list(self.databases.values()))
@@ -109,11 +129,12 @@ class AnnovarWrapper:
         return command
 
     def build_db_dl_command_str(self, all_dbs, dbs):
+        """ Concatenate command string arguments for Annovar download database jobs """
 
         if not all_dbs:
             for db in dbs:
                 if db not in self.databases:
-                    raise ValueError('Database %s not supported for buil version %s' % (db, self.buildver))
+                    raise ValueError('Database %s not supported for build version %s' % (db, self.buildver))
             self.databases = {db: self.databases[db] for db in dbs}
 
         command_list = []
@@ -129,6 +150,7 @@ class AnnovarWrapper:
         return command_list
 
     def check_for_database_updates(self):
+        """ Deprecated """
 
         self.download_dbs(all_dbs=False, dbs=['avdblist'])
 
@@ -159,21 +181,29 @@ class AnnovarWrapper:
         return databases
 
 
-def listen(out_path, n_files):
+def listen(out_path, batch_jobs, n_files):
+    """ Little function to check for newly created annotated files """
 
     added = 0
 
     while True:
-
-        files = os.listdir(out_path)
-        txts = sorted([i for i in files if i.endswith('txt')])
+        txts = []
+        walker = os.walk(out_path)
+        for folder, subfolders, files in walker:
+            for _file in files:
+                if _file.endswith('txt'):
+                    txts.append(_file)
 
         time.sleep(5)
 
-        new_files = os.listdir(out_path)
-        new_txts = sorted([i for i in new_files if i.endswith('txt')])
+        new_files = []
+        walker = os.walk(out_path)
+        for folder, subfolders, files in walker:
+            for _file in files:
+                if _file.endswith('txt'):
+                    new_files.append(_file)
 
-        newly_created = [x for x in new_txts if x not in txts]
+        newly_created = [x for x in new_files if x not in txts]
 
         if len(newly_created) > 0:
             added += 1
@@ -181,7 +211,7 @@ def listen(out_path, n_files):
                          os.path.basename(newly_created[0]) +
                          '.\n A text file has been created in the %s directory\n' % out_path)
 
-        if added == n_files:
+        if added == batch_jobs:
             break
         if len(txts) >= n_files:
             break

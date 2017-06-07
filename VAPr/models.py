@@ -5,8 +5,8 @@ import re
 import itertools
 import logging
 import sys
-import vapr.vcf_parsing as vvp
-import vapr.definitions as definitions
+import VAPr.vcf_parsing as vvp
+import VAPr.definitions as definitions
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -17,6 +17,8 @@ except:
 
 class HgvsParser(object):
 
+    """ Class that process vcf files and extracts their hgvs ids"""
+
     def __init__(self, vcf_file):
 
         self.vcf = vcf_file
@@ -25,16 +27,16 @@ class HgvsParser(object):
         self.samples = vcf.Reader(open(self.vcf, 'r')).samples
         self.num_samples = len(self.samples)
 
+    def get_num_lines(self):
+        return sum(1 for _ in open(self.vcf))
+
     def get_all_variants_from_vcf(self):
+        """ For debugging mostly """
+
         list_ids = []
 
         reader = vcf.Reader(open(self.vcf, 'r'))
         for record in reader:
-            #if len(record.ALT) > 1:
-            #    for alt in record.ALT:
-            #        list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-            #                                                  record.REF, str(alt)))
-            #else:
             list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
                                                   record.REF, str(record.ALT[0])))
 
@@ -43,18 +45,13 @@ class HgvsParser(object):
     def get_variants_from_vcf(self, step):
         """
         Retrieves variant names from a LARGE vcf file.
-        :param step: ...
+        :param step: tells the parallel processing where to start and end the hgvs id creation
         :return: a list of variants formatted according to HGVS standards
         """
         reader = vcf.Reader(open(self.vcf, 'r'))
         list_ids = []
 
         for record in itertools.islice(reader, step * self.chunksize, (step + 1) * self.chunksize):
-           # if len(record.ALT) > 1:
-           #     for alt in record.ALT:
-           #         list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-           #                                               record.REF, str(alt)))
-           # else:
             list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
                                                   record.REF, str(record.ALT[0])))
 
@@ -62,6 +59,8 @@ class HgvsParser(object):
 
     @staticmethod
     def complete_chromosome(expanded_list):
+        """ Ensuring syntax consistency """
+
         for i in range(0, len(expanded_list)):
             if 'M' in expanded_list[i]:
                 one = expanded_list[i].split(':')[0]
@@ -73,6 +72,8 @@ class HgvsParser(object):
 
 
 class TxtParser(object):
+
+    """ Class that process an Annovar created csv file """
 
     def __init__(self, txt_file, samples=None):
 
@@ -120,6 +121,18 @@ class TxtParser(object):
 
     def open_and_parse_chunks(self, step, build_ver=None, offset=0):
 
+        """
+        Parsing function that retrieves data from a specific location from a csv file.
+        It will process every (significant) data field in an annovar-annotated csv and
+        conveniently return it into a dictionary
+
+        :param step: tells the parallel processing where to start and end the hgvs id creation
+        :param build_ver: genome build version
+        :param offset: deprecated, optional argument may be used later. Used to spot discrepancies between
+                       csv and vcf file
+        :return: list of dictionaries, where each dictionary is a variant document
+        """
+
         listofdicts = []
         with open(self.txt_file, 'r') as txt:
 
@@ -148,6 +161,8 @@ class TxtParser(object):
 
     @staticmethod
     def _normalize_header(header):
+        """ Ensuring syntax consistency """
+
         normalized = []
 
         for item in header:
@@ -157,6 +172,12 @@ class TxtParser(object):
 
 
 class AnnovarModels(object):
+
+    """
+    The actuall class that process a single annovar-annotated variant.
+    It performs specific and necessary manipulations to ensure that the data will be parsed appropriately
+    and can be queried easily from MongoDB. Basically our ODM (Object Data Model) for the Annovar data.
+    """
 
     def __init__(self, dictionary, samples):
 
@@ -193,12 +214,12 @@ class AnnovarModels(object):
         return final_annovar_list_of_dicts
 
     def parse_genotype(self, dictionary):
+        """ Implements the genotype parsing scheme. Many thanks to Amanada Birmingham """
 
         read_depth_error = genotype_lik_error = allele_error = 0
         parser = vvp.VCFGenotypeStrings()
-        # print(self.samples, 'SAMPLESSSS')
 
-        list_dictionaries = [] # [dictionary]*len(self.samples)
+        list_dictionaries = []
 
         for index, sample in enumerate(self.samples):
             sample_specific_dict = {k: v for k, v in dictionary.items()}  # make copy, propagate genotype info over alleles
@@ -238,6 +259,7 @@ class AnnovarModels(object):
 
     @staticmethod
     def _to_int(val):
+        """ This is.... Bad """
         try:
             val = int(val)
         except:
@@ -251,6 +273,8 @@ class AnnovarModels(object):
 
 
 class CytoBand(object):
+
+    """ Gets its own class cause it is particularly pesky to parse"""
 
     def __init__(self, cyto_band_name):
 
@@ -276,8 +300,3 @@ class CytoBand(object):
             processed['Sub_Band'] = spliced[-1]
         return processed
 
-if __name__ == '__main__':
-    vc = '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_multisample/samples_BC001_BC001_MOM_BC001_SIS/BC001_family.g.vcf'
-    hgvs = HgvsParser(vc)
-    a = hgvs.get_variants_from_vcf(1)
-    print(len(a))

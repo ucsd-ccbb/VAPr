@@ -1,7 +1,7 @@
 # standard libraries
 import logging
 import sys
-from vapr import validation
+from VAPr import validation
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
