@@ -1,16 +1,37 @@
-## VAPr 
-### Variant Annotation and Prioritization package
+# VAPr 
+## Variant Annotation and Prioritization package
 
 This package is aimed at providing a way of retrieving variant information using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL database (MongoDB solely at the moment). 
 
+# Updates and Latest Improvements
 
-### Requirements
+1. Optimizations
+
+- Variant querying from MyVariant.info with asynchronous requests 
+- Parallel parsing to MongoDB using multiprocessing library
+
+These improvements resulted in a 4-10x speedup for the entire processing pipeline.
+ 
+2. Usability
+
+- Possibility of providing any number of vcf files in a folder and sub-folders with auto-detection of samples/sample names in each file
+- Usage of a design file for users that have their vcf files grouped by sample name
+- Multi-sample vcf files support
+
+3. Features Added
+
+- Filters for deleterious heterozygote variants
+- Trio analysis filters for de novo mutations
+
+
+
+## Requirements
 
 - [MongoDB installation](https://docs.mongodb.com/getting-started/python/)
-- Python 3 and pip3 for installation 
-- [Annovar](http://annovar.openbioinformatics.org/en/latest/user-guide/download/)
+- Python (2.7 and 3.5 currently supported and tested)
+- [Annovar](http://annovar.openbioinformatics.org/en/latest/user-guide/download/) (optional)
 
-### Background
+## Background
 
 VAPr was developed to simplify the steps required to get mutation data from a VCF file to a downstream analysis process.
  A query system was implemented allowing users to quickly slice the genomic variant (GV) data and select variants 
@@ -21,7 +42,7 @@ VAPr was developed to simplify the steps required to get mutation data from a VC
 The package can also be installed and used without having to download ANNOVAR. In that case, variant data can be 
 retrieved solely by MyVariant.info and rapidly parsed to the MongoDB instance. 
 
-#### Notes
+### Notes
 
 
 ANNOVAR, alongside with some of their data sets, should to be installed. We can not provide it with this package since
@@ -117,9 +138,9 @@ entries that will be found in the document will be the following:
     }
 
 
-### Filtering 
+## Filtering 
 
-Three different pre-made filters that allow for the retrieval of specific variants have been implemented. The filters 
+Five different pre-made filters that allow for the retrieval of specific variants have been implemented. The filters 
 are in the form of MongoDB queries, and are designed to provide the user with a set of relevant variants. In case the 
 user would like to define its own querying, a template is provided. 
 The output of the queries is a list of dictionaries (JSON documents), where each dictionary contains data relative to 
@@ -207,10 +228,10 @@ rare_disease_variants = filter_collection.rare_disease_variant()
 - filter 7: Clinvar data is present 
 - filter 8: cadd.phred > 10
 
-
-    filter_collection = MongoDB_querying.Filters(db_name, collection_name)
-    rare_high_impact_variants = filter_collection.rare_high_impact_variants()
-
+```python
+filter_collection = MongoDB_querying.Filters(db_name, collection_name)
+rare_high_impact_variants = filter_collection.rare_high_impact_variants()
+```
 
 ### Create your own filter
 
