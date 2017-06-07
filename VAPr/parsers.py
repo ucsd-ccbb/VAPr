@@ -169,19 +169,23 @@ class VariantParsing:
 def parse_by_step(maps):
     """ The function that implements the parsing """
 
+    sample = maps[0]
+    vcf_file = maps[1]
+    csv_file = maps[2]
     db_name = maps[3]
     collection_name = maps[4]
+    step = maps[5]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-    hgvs = HgvsParser(maps[1])
-    csv_parsing = TxtParser(maps[2], samples=hgvs.samples)
+    hgvs = HgvsParser(vcf_file)
+    csv_parsing = TxtParser(csv_file, samples=hgvs.samples)
 
-    list_hgvs_ids = hgvs.get_variants_from_vcf(maps[3])
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 2, maps[0])
+    list_hgvs_ids = hgvs.get_variants_from_vcf(step)
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 2, sample)
 
-    csv_variants = csv_parsing.open_and_parse_chunks(maps[3], build_ver='hg19')
+    csv_variants = csv_parsing.open_and_parse_chunks(step, build_ver='hg19')
 
     merged_list = []
     for i, _ in enumerate(myvariants_variants):
@@ -209,6 +213,9 @@ def parallel_get_dict_mv(maps):
     db_name = maps[1]
     collection_name = maps[2]
     step = maps[3]
+
+
+    print(vcf_path, db_name, collection_name, step)
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
