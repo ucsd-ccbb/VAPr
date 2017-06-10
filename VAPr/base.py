@@ -6,6 +6,7 @@ import logging
 from VAPr.annovar import AnnovarWrapper
 from VAPr.parsers import VariantParsing
 from VAPr.ingester import Ingester
+from VAPr.file_writer import FileWriter
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -138,6 +139,8 @@ class AnnotationProject(ProjectData):
                                                 self.mapping,
                                                 design_file=self.design_file,
                                                 build_ver=self.buildver)
+
+        self.writer_wrapper = FileWriter
 
     def download_dbs(self, all_dbs=True, dbs=None):
         """ Wrapper around Annovar database downloading function """

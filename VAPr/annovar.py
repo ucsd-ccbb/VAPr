@@ -114,6 +114,8 @@ class AnnovarWrapper:
     def build_annovar_command_str(self, vcf, csv, multisample=False):
         """ Concatenate command string arguments for Annovar jobs """
 
+        #TODO: check for newer version of databases
+
         dbs = ",".join(list(self.databases.keys()))
         dbs_args = ",".join(list(self.databases.values()))
 

@@ -222,6 +222,8 @@ class GenotypeLikelihood:
 # AD BQ DP FA GQ GT PL SS
 
 class VCFGenotypeStrings:
+    #TODO: Parser for Mutect files
+
     _DELIMITER = ':'
     _PARSER_FUNCS = {'GT': fill_genotype,
                      'AD': fill_unfiltered_reads_counts,
