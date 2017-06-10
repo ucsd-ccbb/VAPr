@@ -161,33 +161,64 @@ class Filters(object):
         print('Variants found that match rarity criteria: {}'.format(len(filtered)))
         return filtered
 
-    def get_de_novo(self, de_novo_sample):
-
+    def get_de_novo(self, sample1, sample2, sample3, multisample=True):
         client = MongoClient()
         db = getattr(client, self.db_name)
         collection = getattr(db, self.collection_name)
+        if multisample:
+            filtered_hgvs = collection.distinct("hgvs_id",
+                                                {
+                                                    "$or": [
+                                                            {"$and": [
+                                                                {"alleles": [0, 0]},
+                                                                {"sample_id": sample1}
+                                                            ]
+                                                            },
+                                                            {"$and": [
+                                                                {"alleles": [0, 0]},
+                                                                {"sample_id": sample2}
+                                                            ]
+                                                            },
+                                                        ]
+                                                }
+                                                )
 
-        filtered = collection.find(
-            {
-                "$and":
-                    [
-                        {"alleles": [0, 0]},
-                        {"sample_id": de_novo_sample}
-                    ]
-            }
-        )
+            de_novo = collection.find(
+                {
+                    "$and":
+                        [
+                            {"hgvs_id": {"$in": filtered_hgvs}},
+                            {"alleles": {"$ne": [0, 0]}},
+                            {"sample_id": sample3}
+                        ]
 
-        de_novo_vars = []
+                }
+            )
+        else:
+            filtered_hgvs = collection. collection.aggregate(
+                [
+                    {"$group":
+                        {"_id": "$hgvs_id",
+                         "samples": {"$addToSet": "$sample_id"}
+                         }
+                     },
+                    {"$redact": {
+                        "$cond": {
+                            "if": {
+                                "$and": [
+                                    {"$in": ["ABC", "$samples"]},
+                                    {"$eq": [{"$size": "$samples"}, 1]}
+                                ]
+                            },
+                            "then": "$$KEEP",
+                            "else": "$$PRUNE"
+                        }
+                    }}
+                ]
+            )
 
-        for var in filtered:
-            de_novo_counter = 0
-            others = list(collection.find({'hgvs_id': var['hgvs_id']}))
-            for other in others:
-                if (other['sample_id'] != de_novo_sample) and (other['alleles'] != [0, 0]):
-                    de_novo_counter += 1
-                if de_novo_counter == 2:
-                    de_novo_vars.append(var)
-        print('Variants found that match criteria: {}'.format(len(de_novo_vars)))
+            as_hgvs_list = [i['_id'] for i in filtered_hgvs]
+            de_novo = collection.find({'hgvs_id': {'$in': as_hgvs_list}})
 
-        return de_novo_vars
-
+        print('Variants found that match rarity criteria: {}'.format(len(de_novo)))
+        return list(de_novo)
