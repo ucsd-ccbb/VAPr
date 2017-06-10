@@ -1,7 +1,7 @@
 
 if __name__ == '__main__':
 
-    
+
     mapping = [{'csv_file_basename': 'BC001.final_annotated',
                 'csv_file_full_path': '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_benchmark/sample_BC001',
                 'num_samples_in_csv': 1,
