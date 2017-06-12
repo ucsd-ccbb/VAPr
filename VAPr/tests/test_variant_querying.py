@@ -1,7 +1,6 @@
 import unittest
 import sys
 import os
-#quick and dirty way of importing functions
 
 
 
