@@ -54,6 +54,7 @@ class Ingester:
 
         ingested = self.atomic_ingester(single, self.base_dir, self.out_dir, sample=sample, ingester_type=ingester_type,
                                         extra_data=extra_data)
+        ingested.mapping['extra_data'] = extra_data
         self.mapping_list.append(ingested.mapping)
         self.mapping_list = list({v['raw_vcf_file_full_path']: v for v in self.mapping_list}.values())
 

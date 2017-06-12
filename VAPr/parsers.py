@@ -60,8 +60,6 @@ class VariantParsing:
             matching_vcf = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
                             and i.endswith('vcf')]
 
-            print(matching_vcf, matching_csv)
-
             if len(matching_csv) > 1 or len(matching_vcf) > 1:
                 raise ValueError('Too many matching csvs')
             elif len(matching_csv) == 0 or len(matching_vcf) == 0:
@@ -73,7 +71,8 @@ class VariantParsing:
                                    vcf_path,
                                    csv_path,
                                    self.db,
-                                   self.collection))
+                                   self.collection,
+                                   _map['extra_data']))
 
         return list_tupls
 
@@ -98,15 +97,12 @@ class VariantParsing:
 
         self.verbose = verbose
         list_tupls = self.get_sample_csv_vcf_tuple()
-        print(list_tupls)
         for tpl in list_tupls:
 
             hgvs = HgvsParser(tpl[1])
-            csv_parsing = TxtParser(tpl[2], samples=hgvs.samples)
+            csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
-            print(num_lines, self.chunksize)
             n_steps = int(num_lines/self.chunksize) + 1
-            print(n_steps)
             map_job = self.parallel_annotator_mapper(tpl, n_steps)
             pool = Pool(n_processes)
             for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):

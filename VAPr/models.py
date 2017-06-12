@@ -75,13 +75,14 @@ class TxtParser(object):
 
     """ Class that process an Annovar created csv file """
 
-    def __init__(self, txt_file, samples=None):
+    def __init__(self, txt_file, samples=None, extra_data=None):
 
         self.samples = samples
         self.txt_file = txt_file
         self.num_lines = sum(1 for _ in open(self.txt_file))
         self.chunksize = definitions.chunk_size
         self.offset = 0
+        self.extra_data = extra_data
         self.hg_19_columns = ['chr',
                               'start',
                               'end',
@@ -153,7 +154,7 @@ class TxtParser(object):
                 else:
                     dict_filled = {k: sparse_dict[k] for k in self.hg_38_columns if sparse_dict[k] != '.'}
 
-                modeled = AnnovarModels(dict_filled, self.samples)
+                modeled = AnnovarModels(dict_filled, self.samples, extra_data=self.extra_data)
                 listofdicts.append(modeled.final_list_dict)
 
             self.offset += offset
@@ -180,12 +181,16 @@ class AnnovarModels(object):
     and can be queried easily from MongoDB. Basically our ODM (Object Data Model) for the Annovar data.
     """
 
-    def __init__(self, dictionary, samples):
+    def __init__(self, dictionary, samples, extra_data=None):
 
-        self.dictionary = dictionary
+        if extra_data:
+            self.dictionary = dict(extra_data.items() + dictionary.items())
+        else:
+            self.dictionary = dictionary
         self.samples = samples
         self.existing_keys = self.dictionary.keys()
         self.errors = None
+        self.extra_data = extra_data
         self.final_list_dict = self.process()
 
     def process(self):
@@ -215,7 +220,7 @@ class AnnovarModels(object):
         return final_annovar_list_of_dicts
 
     def parse_genotype(self, dictionary):
-        """ Implements the genotype parsing scheme. Many thanks to Amanada Birmingham """
+        """ Implements the genotype parsing scheme. Many thanks to Amanda Birmingham """
 
         read_depth_error = genotype_lik_error = allele_error = 0
         parser = vvp.VCFGenotypeStrings()
