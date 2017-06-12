@@ -222,3 +222,4 @@ class Filters(object):
 
         print('Variants found that match rarity criteria: {}'.format(len(de_novo)))
         return list(de_novo)
+    
