@@ -134,6 +134,7 @@ class TxtParser(object):
         """
 
         listofdicts = []
+
         with open(self.txt_file, 'r') as txt:
 
             reader = csv.reader(txt, delimiter='\t')

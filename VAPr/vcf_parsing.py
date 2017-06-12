@@ -10,6 +10,7 @@ logger.setLevel(logging.INFO)
 #except:
 #    pass
 
+GLOBAL_ERROR_COUNT = 0
 
 __author__ = 'Birmingham'
 
@@ -27,7 +28,6 @@ def ignore_pgt(info_value, genotype_info_to_fill):
 
 
 def ignore_field(info_value, genotype_info_to_fill, subkey):
-    # print("Ignored subkey '{0}' with value '{1}'".format(subkey, info_value))
     return genotype_info_to_fill
 
 
@@ -49,19 +49,21 @@ def fill_genotype_class(alleles, genotype_info_to_fill):
 
 
 def fill_genotype(info_value, genotype_info_to_fill):
+    global GLOBAL_ERROR_COUNT
     alleles = info_value.split('/')
     if len(alleles) != 2:
-        pass# logger.info("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
+        GLOBAL_ERROR_COUNT += 1
     genotype_info_to_fill.genotype = info_value
     fill_genotype_class(alleles, genotype_info_to_fill)
     return genotype_info_to_fill
 
 
 def fill_unfiltered_reads_counts(info_value, genotype_info_to_fill):
+    global GLOBAL_ERROR_COUNT
     delimiter = ','
     counts = info_value.split(delimiter)
     if len(counts) < 2:
-        pass# logger.info("Found fewer than 2 alleles with unfiltered read counts in '{0}'".format(info_value))
+        GLOBAL_ERROR_COUNT += 1
     for curr_count in counts:
         new_allele = Allele(curr_count)
         genotype_info_to_fill.alleles.append(new_allele)
@@ -79,6 +81,7 @@ def fill_genotype_confidence(info_value, genotype_info_to_fill):
 
 
 def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
+    global GLOBAL_ERROR_COUNT
     generate_alleles = False
     delimiter = ','
     likelihoods = info_value.split(delimiter)
@@ -97,23 +100,14 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
             allele_number += 1
             likelihood_number = 0
             if allele_number >= len(genotype_info_to_fill.alleles):
-                pass #print("Found {0} likelihoods but only {1} alleles".format(len(likelihoods),
-                      #                                                             num_expected_alleles))
+                GLOBAL_ERROR_COUNT += 1
         new_likelihood = GenotypeLikelihood(likelihood_number, allele_number, likelihoods[index])
         genotype_info_to_fill.genotype_likelihoods.append(new_likelihood)
         likelihood_number += 1
 
     if allele_number < (num_expected_alleles-1) or likelihood_number < num_expected_alleles:
-        pass # print("Found {0} alleles but only {1} likelihoods".format(num_expected_alleles, len(likelihoods)))
+        GLOBAL_ERROR_COUNT += 1
 
-    return genotype_info_to_fill
-
-
-def fill_base_quality(info_value, genotype_info_to_fill):
-    alleles = info_value.split('/')
-    if len(alleles) != 2:
-        pass # print("Did not detect exactly two alleles in genotype '{0}'".format(info_value))
-    genotype_info_to_fill.genotype = info_value
     return genotype_info_to_fill
 
 
@@ -127,6 +121,7 @@ class VCFGenotypeInfo:
         self.raw_string = raw_string
         self.alleles = []  # 0 for ref, 1 for first alt, etc
         self.genotype_likelihoods = []
+        self.errors = GLOBAL_ERROR_COUNT
 
     @property
     def is_null_call(self):
@@ -148,7 +143,8 @@ class VCFGenotypeInfo:
 
     @filter_passing_reads_count.setter
     def filter_passing_reads_count(self, value):
-        self._filter_passing_reads_count = validation.convert_to_nonneg_int(value, nullable=True)
+        self._filter_passing_reads_count = validation.convert_to_nonneg_int(value, nullable=True)[0]
+        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
 
 
 class Allele:
@@ -159,6 +155,7 @@ class Allele:
             self.read_counts = read_counts
         else:
             self._read_counts = 'NULL'
+        self.errors = GLOBAL_ERROR_COUNT
 
     @property
     def read_counts(self):
@@ -166,15 +163,16 @@ class Allele:
 
     @read_counts.setter
     def read_counts(self, value):
-        self._read_counts = validation.convert_to_nonneg_int(value, nullable=True)
+        self._read_counts = validation.convert_to_nonneg_int(value, nullable=True)[0]
+        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
 
 
 class GenotypeLikelihood:
     @staticmethod
     def _validate_allele_relationship(allele1_number, allele2_number):
+        global GLOBAL_ERROR_COUNT
         if allele1_number > allele2_number:
-            print("VCF-format genotypes must have allele 2 number ({0}) "
-                             "greater than or equal to allele 1 number ({1})".format(allele2_number, allele1_number))
+            GLOBAL_ERROR_COUNT += 1
 
     def __init__(self, allele1_number, allele2_number, likelihood_neg_exponent):
 
@@ -186,6 +184,7 @@ class GenotypeLikelihood:
         self.allele2_number = allele2_number
         self.likelihood_neg_exponent = likelihood_neg_exponent
         self.genotype_subclass_by_class = None
+        self.errors = GLOBAL_ERROR_COUNT
 
     @property
     def allele1_number(self):
@@ -193,7 +192,8 @@ class GenotypeLikelihood:
 
     @allele1_number.setter
     def allele1_number(self, value):
-        int_value = validation.convert_to_nonneg_int(value, nullable=True)
+        int_value = validation.convert_to_nonneg_int(value, nullable=True)[0]
+        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
         if self.allele2_number is not None:
             self._validate_allele_relationship(int_value, self.allele2_number)
         self._allele1_number = int_value
@@ -204,7 +204,8 @@ class GenotypeLikelihood:
 
     @allele2_number.setter
     def allele2_number(self, value):
-        int_value = validation.convert_to_nonneg_int(value, nullable=True)
+        int_value = validation.convert_to_nonneg_int(value, nullable=True)[0]
+        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
         if self.allele1_number is not 'NULL':
             self._validate_allele_relationship(self.allele1_number, int_value)
         self._allele2_number = int_value
@@ -241,25 +242,6 @@ class VCFGenotypeStrings:
 
         mutect_formats = ['BQ', 'FA', 'SS']
         possible_string_formats = ['GT:GQ:PL', 'GT:AD:GQ:PL', 'GT:AD:DP:GQ:PL', 'GT:AD:DP:GQ:PGT:PID:PL']
-
-        #if format_string not in possible_string_formats:
-        #    return None
-        """
-        for mut_keys in mutect_formats:
-            if mut_keys in format_string:
-
-                logger.info('Mutect format detected, keeping only standard values')
-                index_error = format_string.find(mut_keys)
-                info_string = info_string[:index_error] + info_string[index_error+2:]
-                info_string = info_string.replace('::', ':')
-                format_string = format_string.replace(mut_keys, '')
-                format_string = format_string.replace('::', ':')
-                if info_string[-1] == ':':
-                    info_string = info_string[:-1]
-                if format_string[-1] == ':':
-                    format_string = format_string[:-1]
-        """
-
         result = VCFGenotypeInfo(info_string)
 
         if not result.is_null_call:

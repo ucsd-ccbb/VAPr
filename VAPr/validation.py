@@ -47,18 +47,16 @@ def convert_to_nonneg_int(input_val, nullable=False):
     Raises:
         ValueError: if the input cannot be successfully converted to a non-negative integer (or null, if nullable=True)
     """
-    try:
-        if nullable:
-            result = convert_to_nullable(input_val, float)
-            if result == 'NULL':
-                return result
-        else:
-            result = float(input_val)
+    err_count = 0
+    if nullable:
+        result = convert_to_nullable(input_val, float)
+        if result == 'NULL':
+            return result
+    else:
+        result = float(input_val)
 
-        if not result.is_integer():
-            raise ValueError()
-        if result < 0:
-            raise ValueError()
-        return int(result)
-    except ValueError:
-        raise ValueError("Input ({0}) must be a non-negative integer".format(input_val))
+    if not result.is_integer():
+        err_count += 1
+    if result < 0:
+        err_count += 1
+    return int(result, err_count)
