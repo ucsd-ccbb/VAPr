@@ -206,7 +206,7 @@ class Filters(object):
                         "$cond": {
                             "if": {
                                 "$and": [
-                                    {"$in": ["ABC", "$samples"]},
+                                    {"$in": [sample1, "$samples"]},
                                     {"$eq": [{"$size": "$samples"}, 1]}
                                 ]
                             },
@@ -222,4 +222,3 @@ class Filters(object):
 
         print('Variants found that match rarity criteria: {}'.format(len(de_novo)))
         return list(de_novo)
-    
