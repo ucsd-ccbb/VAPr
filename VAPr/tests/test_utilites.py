@@ -2,7 +2,7 @@ import unittest
 import sys
 import os
 sys.path.append("/Users/carlomazzaferro/Documents/Code/variantannotation-master/variantannotation")
-from vapr import models as parser_models
+from VAPr import models as parser_models
 
 
 file_name = os.path.dirname(os.path.realpath('__file__')) + '/test_file.csv'
