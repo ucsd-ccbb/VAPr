@@ -140,7 +140,7 @@ class AnnotationProject(ProjectData):
                                                 design_file=self.design_file,
                                                 build_ver=self.buildver)
 
-        self.writer_wrapper = FileWriter
+        self.writer_wrapper = FileWriter(self.project_data)
 
     def download_dbs(self, all_dbs=True, dbs=None):
         """ Wrapper around Annovar database downloading function """
@@ -151,7 +151,7 @@ class AnnotationProject(ProjectData):
         self.annovar_wrapper.run_annovar(batch_jobs=batch_jobs, multisample=multisample)
 
     def annotate_and_save(self, buffer_vars=False, verbose=2):
-        """ Wrapper around annotation runner. Deprecated in favour of parallel parsing  """
+        """ Wrapper around annotation runner. Deprecated in favour of parallel parsing """
         self.annotator_wrapper.annotate_and_saving(buffer_vars=buffer_vars, verbose=verbose)
 
     def parallel_annotation_and_saving(self, n_processes=4, verbose=1):
@@ -159,4 +159,25 @@ class AnnotationProject(ProjectData):
         self.annotator_wrapper.parallel_annotation(n_processes=n_processes, verbose=verbose)
 
     def quick_annotate_and_save(self, n_processes=8):
+        """ Wrapper around parallel annotation multiprocess runner using MyVariant solely """
         self.annotator_wrapper.quick_annotate_and_save(n_processes=n_processes)
+
+    def write_unfiltered_annotated_csv(self, filepath):
+        """ Wrapper around file writing class method. See file_writer module for more information """
+        return self.writer_wrapper.generate_unfiltered_annotated_csv(filepath)
+
+    def write_unfiltered_annotated_vcf(self, vcf_input_path, vcf_output_path, info_out=True):
+        """ Wrapper around file writing class method. See file_writer module for more information """
+        return self.writer_wrapper.generate_unfiltered_annotated_vcf(vcf_input_path, vcf_output_path, info_out=info_out)
+
+    def write_annotated_csv(self, list_dictionaries, filepath):
+        """ Wrapper around file writing class method. See file_writer module for more information """
+        return self.writer_wrapper.generate_annotated_csv(list_dictionaries, filepath)
+
+    def write_annotated_vcf(self, joint_list, vcf_input_path, vcf_output_path, info_out=True):
+        """ Wrapper around file writing class method. See file_writer module for more information """
+        return self.writer_wrapper.generate_annotated_vcf(joint_list, vcf_input_path, vcf_output_path, info_out=info_out)
+
+    def return_pandas_df(self):
+        """ Wrapper around file writing class method. See file_writer module for more information """
+        return self.writer_wrapper.generate_pandas_df()

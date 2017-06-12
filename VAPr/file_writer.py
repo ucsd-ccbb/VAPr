@@ -5,11 +5,10 @@ from pymongo import MongoClient
 
 class FileWriter(object):
 
-    #TODO: Tests for new classes.
-    def __init__(self, db_name, collection_name):
+    def __init__(self, project_data):
 
-        self.collection_name = collection_name
-        self.db_name = db_name
+        self.collection_name = project_data['project_name']
+        self.db_name = project_data['db_name']
         self.client = MongoClient()
         self.db = getattr(self.client, self.db_name)
         self.collection = getattr(self.db, self.collection_name)
@@ -60,7 +59,6 @@ class FileWriter(object):
                     vcf_writer.write_record(record)
 
         return 'Finished writing annotated VCF file'
-
 
     @staticmethod
     def generate_annotated_csv(list_dictionaries, filepath):
