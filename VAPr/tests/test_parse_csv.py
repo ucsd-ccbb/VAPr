@@ -4,12 +4,11 @@ import os
 import csv
 import myvariant
 #quick and dirty way of importing functions
-from vapr import models as parser_models
+from VAPr import models as parser_models
 
-sys.path.append('/Users/carlomazzaferro/Documents/Code/variant-annotation/variantannotation')
-vcf_file = os.path.dirname(os.path.realpath('__file__')) + '/Normal_targeted_seq.vcf'
+vcf_file = os.path.join(os.getcwd(), 'test_files/Normal_targeted_seq.vcf')
 
-txt_file = os.path.dirname(os.path.realpath('__file__')) + '/annotated.hg19_multianno.txt'
+txt_file = os.path.join(os.getcwd(), 'test_files/annotated.hg19_multianno.txt')
 
 
 class OpenParseTest(unittest.TestCase):
@@ -19,13 +18,12 @@ class OpenParseTest(unittest.TestCase):
         self.vcf_file = vcf_file
         self.step = 0
         self.txt_len = sum(1 for _ in open(self.txt_file))
-        self.chunksize = 950
+        self.chunksize = 10
         self.hgvs = parser_models.HgvsParser(self.vcf_file)
-        self.csv_parsing = parser_models.TxtParser(self.txt_file)
-#locals()
+        self.csv_parsing = parser_models.TxtParser(self.txt_file, samples='SAMPLE')
 
     def test_csv_read_data_headers(self):
-        dat = self.csv_parsing.open_and_parse_chunks(self.step)
+        dat = self.csv_parsing.open_and_parse_chunks(self.step, build_ver='hg19')
         l = ['chr',
              'start',
              'end',
@@ -44,7 +42,7 @@ class OpenParseTest(unittest.TestCase):
              'nci60',
              'otherinfo',
              'genotype']
-
+        print(dat)
         for dictionary in dat:
             for key in list(dictionary.keys()):
                 self.assertTrue(key in l)
@@ -60,19 +58,7 @@ class OpenParseTest(unittest.TestCase):
             list_hgvs_ids.extend(self.hgvs.get_variants_from_vcf(step))
             step += 1
 
-        self.assertEqual(len(list_hgvs_ids), self.txt_len - 1) #to account for the header
-
-
-
-    def test_csv_read_data_points(self):
-        self.assertEqual(read_data(self.data)[1][7], '87')
-
-    def test_get_min_score_difference(self):
-        self.assertEqual(get_min_score_difference(self.parsed_data), 1)
-
-    def test_get_team(self):
-        index_value = get_min_score_difference(self.parsed_data)
-        self.assertEqual(get_team(index_value), 'Liverpool')
+        self.assertEqual(len(list_hgvs_ids), self.txt_len - 1)  # to account for the header
     """
 
 if __name__ == '__main__':
