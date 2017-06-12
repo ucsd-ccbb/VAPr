@@ -49,10 +49,11 @@ class Ingester:
                 full_path_single_file = os.path.join(os.path.abspath(folder), _file)
                 self.digest_single(full_path_single_file)
 
-    def digest_single(self, single, sample='infer', type='files'):
+    def digest_single(self, single, sample='infer', ingester_type='files', extra_data=None):
         """ Digests input data from input directory """
 
-        ingested = self.atomic_ingester(single, self.base_dir, self.out_dir, sample=sample, type=type)
+        ingested = self.atomic_ingester(single, self.base_dir, self.out_dir, sample=sample, ingester_type=ingester_type,
+                                        extra_data=extra_data)
         self.mapping_list.append(ingested.mapping)
         self.mapping_list = list({v['raw_vcf_file_full_path']: v for v in self.mapping_list}.values())
 
@@ -72,7 +73,8 @@ class Ingester:
                 else:
                     logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_files)), sample))
                     full_path_single_file = os.path.join(os.path.abspath(sample_dir), vcf_file[0])
-                    self.digest_single(full_path_single_file, sample=sample, type='files')
+                    self.digest_single(full_path_single_file, sample=sample, ingester_type='files',
+                                       extra_data=design_file_mapping[sample])
             else:
                 sample_dir = os.path.join(self.base_dir, sample)
                 sample_dir_preprocessed = os.path.join(self.base_dir, 'sample_' + sample)
@@ -86,21 +88,23 @@ class Ingester:
 
                 for vcf_file in vcf_files:
                     full_path_single_file = os.path.join(os.path.abspath(sample_dir), vcf_file)
-                    self.digest_single(full_path_single_file, sample=sample, type='dirs')
+                    self.digest_single(full_path_single_file, sample=sample, ingester_type='dirs',
+                                       extra_data=design_file_mapping[sample])
 
 
 class SingleInstance:
 
     """ Process data of single vcf file, populates dictionary """
 
-    def __init__(self, single_instance, input_dir, out_dir, sample='infer', type='files'):
+    def __init__(self, single_instance, input_dir, out_dir, sample='infer', ingester_type='files', extra_data=None):
 
         self.instance = single_instance
         self.out_dir = out_dir
         self.input_dir = input_dir
         self.reader = vcf.Reader(open(single_instance, 'r'))
         self.sample = sample
-        self.type = type
+        self.ingester_type = ingester_type
+        self.extra_data = extra_data
         self.mapping = {'raw_vcf_file_full_path': self.fill_input_vcf_path(),
                         'vcf_file_basename': self.fill_vcf_file_basename(),
                         'csv_file_basename': self.fill_csv_file_basename(),
@@ -109,7 +113,7 @@ class SingleInstance:
                         'csv_file_full_path': self.fill_csv_sample_dir(),
                         'vcf_sample_dir': self.fill_vcf_sample_dir()}
 
-        # self.create_path()
+        self.create_path()
         # self.move_file()
 
     def add_key(self, key, value):
@@ -123,7 +127,7 @@ class SingleInstance:
             return [self.sample]
 
     def sample_dir_name(self):
-        if self.type == 'dirs':
+        if self.ingester_type == 'dirs':
             return self.sample
         else:
             return ''
@@ -149,10 +153,6 @@ class SingleInstance:
             os.mkdir(self.mapping['csv_file_full_path'])
         except OSError:
             logging.info('Csv output dir %s for sample exists, moving files there' % self.mapping['csv_file_full_path'])
-        try:
-            os.mkdir(self.mapping['vcf_sample_dir'])
-        except OSError:
-            logging.info('Vcf input dir %s for sample exists, moving files there' % self.mapping['vcf_sample_dir'])
 
     def move_file(self):
         """ Moves files to newly created directory """
