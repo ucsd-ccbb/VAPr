@@ -29,6 +29,8 @@ class TestIngester(unittest.TestCase):
                         'vcf_file_basename': 'c1.vcf',
                         'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/'
                                                                           'des_file_dirs/X45'),
+                        'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005',
+                                       'Treatment': 'Li', 'Condition': 'BD_lithium_responder'},
                         'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_sample_dir/X45')}
 
         self.mini1 = {'sample_names': ['mini1.vcf'],
@@ -37,13 +39,14 @@ class TestIngester(unittest.TestCase):
                       'csv_file_basename': 'mini1_annotated',
                       'vcf_file_basename': 'mini1.vcf',
                       'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
+                      'extra_data': {'libType': 'aend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ006',
+                                     'Treatment': 'CTRL', 'Condition': 'BD_lithium_responder'},
                       'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/')}
 
     def test_input_design_file_dirs(self):
         organizer = Ingester(self.samples_input_dir, self.output_csv_path_dirs)
         design_df = pandas.read_csv(self.design_file_dirs)
         organizer.digest_design_file(design_df)
-        print(organizer.mapping_list[0], self.x_45_c1)
         self.assertEqual(len(organizer.mapping_list), self.mapping_list_len[0])
         self.assertEqual(organizer.mapping_list[0], self.x_45_c1)
         for _map in organizer.mapping_list:
@@ -53,11 +56,8 @@ class TestIngester(unittest.TestCase):
         organizer = Ingester(self.files_input_dir, self.output_csv_path_files)
         design_df = pandas.read_csv(self.design_file_files)
         organizer.digest_design_file(design_df)
+        print(organizer.mapping_list[0])
         self.assertEqual(len(organizer.mapping_list), self.mapping_list_len[1])
         self.assertEqual(organizer.mapping_list[0], self.mini1)
         for _map in organizer.mapping_list:
             self.assertTrue(os.path.isfile(_map['raw_vcf_file_full_path']))
-
-
-
-
