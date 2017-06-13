@@ -182,7 +182,7 @@ def parse_by_step(maps):
     csv_parsing = TxtParser(csv_file, samples=hgvs.samples, extra_data=extra_data)
 
     list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 2, sample)
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample)
 
     csv_variants = csv_parsing.open_and_parse_chunks(step, build_ver='hg19')
 
@@ -322,5 +322,4 @@ if __name__ == '__main__':
                                collection_name,
                                step))
 
-    # print(new_tuple_list[0])
     parse_by_step(new_tuple_list[0])
