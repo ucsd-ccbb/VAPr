@@ -1,71 +1,107 @@
+# standard libraries
+import unittest
+import os
+import logging
 
-if __name__ == '__main__':
+# project-specific libraries
+from VAPr.base import AnnotationProject
+from VAPr import definitions
+from VAPr.parsers import HgvsParser, TxtParser
+from VAPr.parsers import VariantParsing
+from VAPr.parsers import parse_by_step
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
-    mapping = [{'csv_file_basename': 'BC001.final_annotated',
-                'csv_file_full_path': '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_benchmark/sample_BC001',
-                'num_samples_in_csv': 1,
-                'raw_vcf_file_full_path': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_benchmark/sample_BC001/BC001.final.vcf',
-                'sample_names': ['BC001'],
-                'vcf_file_basename': 'BC001.final.vcf',
-                'vcf_sample_dir': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_benchmark/sample_BC001'}]
+__author__ = 'Mazzaferro'
 
-    def get_sample_csv_vcf_tuple(mapping):
-        """ Locate files associated with a specific sample """
 
-        list_tupls = []
-        db = 'VariantDBBenchmarkWES'
-        collection = 'collect'
-        for _map in mapping:
+class TestParallelAnnotationFunctions(unittest.TestCase):
 
-            matching_csv = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
-                            and i.endswith('txt')]
+    def setUp(self):
 
-            matching_vcf = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
-                            and i.endswith('vcf')]
+        self.base_dir = '/Volumes/Carlo_HD1/CCBB/VAPr_files/'
+        self.input_dir = os.path.join(self.base_dir, 'vcf_files/multi_sample')
+        self.design_file_dirs = os.path.join(self.base_dir, 'design_file_three_samples.csv')
+        self.out_path = os.path.join(self.base_dir, 'csv_multisample')
+        self.annovar = os.path.join(self.base_dir, '../annovar')
+        self.project_data = {'db_name': 'VariantDatabase',
+                             'project_name': 'collect'}
 
-            print(matching_vcf, matching_csv)
+        self.project = AnnotationProject(self.input_dir,
+                                         self.out_path,
+                                         self.annovar,
+                                         self.project_data,
+                                         design_file=self.design_file_dirs,
+                                         build_ver='hg19')
 
-            if len(matching_csv) > 1 or len(matching_vcf) > 1:
-                raise ValueError('Too many matching csvs')
-            elif len(matching_csv) == 0 or len(matching_vcf) == 0:
-                raise ValueError('Csv not found')
-            else:
-                csv_path = os.path.join(_map['csv_file_full_path'], matching_csv[0])
-                vcf_path = os.path.join(_map['csv_file_full_path'], matching_vcf[0])
-                list_tupls.append((_map['sample_names'],
-                                   vcf_path,
-                                   csv_path,
-                                   db,
-                                   collection))
+        self.annotator_wrapper = VariantParsing(self.input_dir,
+                                                self.out_path,
+                                                self.annovar,
+                                                self.project_data,
+                                                self.project.mapping,
+                                                design_file=self.design_file_dirs,
+                                                build_ver='hg19')
 
-        return list_tupls
+        self.x_7_raw_X = {'sample_names': ['X7'], 'num_samples_in_csv': 1,
+                           'raw_vcf_file_full_path': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_files/multi_sample/X7/'
+                                                     'X7.raw.X.vcf', 'csv_file_basename': 'X7.raw.X_annotated',
+                           'vcf_file_basename': 'X7.raw.X.vcf',
+                           'csv_file_full_path': '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/X7',
+                           'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005',
+                                          'Treatment': 'VPA', 'Condition': 'BD_lithium_responder'},
+                           'vcf_sample_dir': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_files/multi_sample/X7'}
 
-    list_tupls = get_sample_csv_vcf_tuple(mapping)
+        self.sample_csv_vcf_tuple = (['X7'],
+                                     '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/X7/X7.raw.X_annotated.hg19_multianno.vcf',
+                                     '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/X7/X7.raw.X_annotated.hg19_multianno.txt',
+                                     'VariantDatabase', 'collect',
+                                     {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005',
+                                      'Treatment': 'VPA', 'Condition': 'BD_lithium_responder'})
 
-    for tpl in list_tupls:
-        hgvs = HgvsParser(tpl[1])
-        csv_parsing = TxtParser(tpl[2], samples=hgvs.samples)
+        self.mapper_output = (['X7'],
+                              '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/X7/'
+                              'X7.raw.X_annotated.hg19_multianno.vcf',
+                              '/Volumes/Carlo_HD1/CCBB/VAPr_files/csv_multisample/X7/'
+                              'X7.raw.X_annotated.hg19_multianno.txt',
+                              {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005', 'Treatment': 'VPA',
+                              'Condition': 'BD_lithium_responder'},
+                              'VariantDatabase',
+                              'collect',
+                              0)
+
+    def test_ensure_good_input(self):
+        self.assertEqual(self.project.mapping[0], self.x_7_raw_X)
+
+    def test_get_sample_csv_vcf_tuple(self):
+        self.assertEqual(self.sample_csv_vcf_tuple, self.annotator_wrapper.get_sample_csv_vcf_tuple()[0])
+
+    def test_parallel_annotator_mapper(self):
+        hgvs = HgvsParser(self.sample_csv_vcf_tuple[1])
+        csv_parsing = TxtParser(self.sample_csv_vcf_tuple[2], samples=hgvs.samples,
+                                extra_data=self.sample_csv_vcf_tuple[5])
         num_lines = csv_parsing.num_lines
-        print(num_lines, 5000)
-        n_steps = int(num_lines / 5000) + 1
-        print(n_steps)
+        n_steps = int(num_lines / self.annotator_wrapper.chunksize) + 1
+        mapped = self.annotator_wrapper.parallel_annotator_mapper(self.sample_csv_vcf_tuple, n_steps,
+                                                                  extra_data=self.sample_csv_vcf_tuple[5])
+        for i, _m in enumerate(mapped):
+            self.assertEqual(self.mapper_output[0], _m[0])
+            self.assertEqual(self.mapper_output[1], _m[1])
+            self.assertEqual(self.mapper_output[2], _m[2])
+            self.assertEqual(self.mapper_output[3], _m[3])
+            self.assertEqual(self.mapper_output[4], _m[4])
+            self.assertEqual(self.mapper_output[5], _m[5])
+            self.assertEqual(i, _m[6])
 
-    _tuple = list_tupls[0]
-    new_tuple_list = []
-    for i in range(n_steps):
-        sample = _tuple[0]
-        vcf_file = _tuple[1]
-        csv_file = _tuple[2]
-        db_name = _tuple[3]
-        collection_name = _tuple[4]
-        step = i
-        new_tuple_list.append((sample,
-                               vcf_file,
-                               csv_file,
-                               db_name,
-                               collection_name,
-                               step))
+    def test_parse_by_step(self):
+        hgvs = HgvsParser(self.sample_csv_vcf_tuple[1])
+        csv_parsing = TxtParser(self.sample_csv_vcf_tuple[2], samples=hgvs.samples,
+                                extra_data=self.sample_csv_vcf_tuple[5])
+        num_lines = csv_parsing.num_lines
+        n_steps = int(num_lines / self.annotator_wrapper.chunksize) + 1
+        mapped = self.annotator_wrapper.parallel_annotator_mapper(self.sample_csv_vcf_tuple, n_steps,
+                                                                  extra_data=self.sample_csv_vcf_tuple[5])
 
-    # print(new_tuple_list[0])
-    parse_by_step(new_tuple_list[0])
+        for i in range(mapped[-1][-1]):
+            parse_by_step(mapped[i])
