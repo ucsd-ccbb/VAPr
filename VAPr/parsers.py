@@ -98,12 +98,11 @@ class VariantParsing:
         self.verbose = verbose
         list_tupls = self.get_sample_csv_vcf_tuple()
         for tpl in list_tupls:
-
             hgvs = HgvsParser(tpl[1])
             csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
             n_steps = int(num_lines/self.chunksize) + 1
-            map_job = self.parallel_annotator_mapper(tpl, n_steps)
+            map_job = self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5])
             pool = Pool(n_processes)
             for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
                 pass
@@ -111,7 +110,7 @@ class VariantParsing:
             logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
     @staticmethod
-    def parallel_annotator_mapper(_tuple, n_steps):
+    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None):
         """ Assign step number to each tuple to be consumed by parsing function """
         new_tuple_list = []
 
@@ -121,10 +120,12 @@ class VariantParsing:
             csv_file = _tuple[2]
             db_name = _tuple[3]
             collection_name = _tuple[4]
+            extra_data = extra_data
             step = i
             new_tuple_list.append((sample,
                                    vcf_file,
                                    csv_file,
+                                   extra_data,
                                    db_name,
                                    collection_name,
                                    step))
@@ -169,15 +170,16 @@ def parse_by_step(maps):
     sample = maps[0]
     vcf_file = maps[1]
     csv_file = maps[2]
-    db_name = maps[3]
-    collection_name = maps[4]
-    step = maps[5]
+    extra_data = maps[3]
+    db_name = maps[4]
+    collection_name = maps[5]
+    step = maps[6]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
     hgvs = HgvsParser(vcf_file)
-    csv_parsing = TxtParser(csv_file, samples=hgvs.samples)
+    csv_parsing = TxtParser(csv_file, samples=hgvs.samples, extra_data=extra_data)
 
     list_hgvs_ids = hgvs.get_variants_from_vcf(step)
     myvariants_variants = get_dict_myvariant(list_hgvs_ids, 2, sample)
@@ -210,7 +212,6 @@ def parallel_get_dict_mv(maps):
     db_name = maps[1]
     collection_name = maps[2]
     step = maps[3]
-
 
     print(vcf_path, db_name, collection_name, step)
 
