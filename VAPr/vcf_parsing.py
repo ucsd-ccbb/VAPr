@@ -53,6 +53,7 @@ def fill_genotype(info_value, genotype_info_to_fill):
     alleles = info_value.split('/')
     if len(alleles) != 2:
         GLOBAL_ERROR_COUNT += 1
+        return genotype_info_to_fill
     genotype_info_to_fill.genotype = info_value
     fill_genotype_class(alleles, genotype_info_to_fill)
     return genotype_info_to_fill
