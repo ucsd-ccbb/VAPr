@@ -117,7 +117,7 @@ class VCFGenotypeInfo:
         self.db_id = None
         self.genotype = None
         self._genotype_confidence = None
-        self._filter_passing_reads_count = 'NULL'
+        self._filter_passing_reads_count = None  # NULL
         self.raw_string = raw_string
         self.alleles = []  # 0 for ref, 1 for first alt, etc
         self.genotype_likelihoods = []
@@ -206,7 +206,7 @@ class GenotypeLikelihood:
     def allele2_number(self, value):
         int_value = validation.convert_to_nonneg_int(value, nullable=True)[0]
         self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
-        if self.allele1_number is not 'NULL':
+        if self.allele1_number is not None:
             self._validate_allele_relationship(self.allele1_number, int_value)
         self._allele2_number = int_value
 
