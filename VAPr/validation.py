@@ -25,10 +25,13 @@ def convert_to_nullable(input_val, cast_function):
     Raises:
         Error: whatever error is provided by cast_function if the cast fails.
     """
-    if input_val in ['.', None, '']:
-        result = 'NULL'
+    if input_val in ['.', None, '', 'NULL']:
+        return -9999
     else:
-        result = cast_function(input_val)
+        try:
+            result = cast_function(input_val)
+        except:
+            result = -9999
     return result
 
 
@@ -48,15 +51,29 @@ def convert_to_nonneg_int(input_val, nullable=False):
         ValueError: if the input cannot be successfully converted to a non-negative integer (or null, if nullable=True)
     """
     err_count = 0
+    if input_val == 'NULL':
+        err_count += 1
+        return -9999
+
     if nullable:
-        result = convert_to_nullable(input_val, float)
+        try:
+            result = convert_to_nullable(input_val, float)
+        except:
+            result = -9999
         if result == 'NULL':
-            return result
+            err_count += 1
+            return -9999, err_count
+
     else:
-        result = float(input_val)
+        try:
+            result = int(input_val)
+        except TypeError:
+            err_count += 1
+        except ValueError:
+            err_count += 1
 
     if not result.is_integer():
         err_count += 1
     if result < 0:
         err_count += 1
-    return int(result, err_count)
+    return result, err_count
