@@ -240,7 +240,6 @@ class AnnovarModels(object):
                 sample_specific_dict['filter_passing_reads_count'] = [float(genotype_to_fill.filter_passing_reads_count)]
             except ValueError:
                 read_depth_error += 1
-            # print('Read depth returned null value')
             try:
                 sample_specific_dict['genotype_likelihoods'] = [float(i.likelihood_neg_exponent) for i in
                                                                 genotype_to_fill.genotype_likelihoods]
