@@ -192,7 +192,11 @@ def parse_by_step(maps):
             merged_list.append(merge_dict_lists(myvariants_variants[i], dict_from_sample))
 
     logging.info('Parsing Buffer...')
-    collection.insert_many(merged_list, ordered=False)
+    try:
+        collection.insert_many(merged_list, ordered=False)
+    except Exception, error:
+        print(str(error))
+        logging.info('Empty list of documents trying to be parsed, skipping and continuing operation...')
 
 
 def merge_dict_lists(*dict_args):
