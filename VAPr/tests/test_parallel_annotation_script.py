@@ -71,6 +71,14 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
                               'collect',
                               0)
 
+        self.minimapper = (['RAND'],
+                           '/Users/carlomazzaferro/Desktop/sample_N15_vs_T15sample_mutect.13_annotated.hg19_multianno.vcf',
+                           '/Users/carlomazzaferro/Desktop/sample_N15_vs_T15sample_mutect.13_annotated.hg19_multianno.txt',
+                           'VariantDatabase',
+                           'collect',
+                           {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005', 'Treatment': 'VPA',
+                            'Condition': 'BD_lithium_responder'})
+
     def test_ensure_good_input(self):
         self.assertEqual(self.project.mapping[0], self.x_7_raw_X)
 
@@ -95,6 +103,8 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
             self.assertEqual(i, _m[6])
 
     def test_parse_by_step(self):
+        pass
+
         hgvs = HgvsParser(self.sample_csv_vcf_tuple[1])
         csv_parsing = TxtParser(self.sample_csv_vcf_tuple[2], samples=hgvs.samples,
                                 extra_data=self.sample_csv_vcf_tuple[5])
@@ -103,5 +113,17 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
         mapped = self.annotator_wrapper.parallel_annotator_mapper(self.sample_csv_vcf_tuple, n_steps,
                                                                   extra_data=self.sample_csv_vcf_tuple[5])
 
-        for i in range(mapped[-1][-1]):
+        for i in range(mapped[-1][10]):
+            parse_by_step(mapped[i])
+
+    def test_parse_by_step_2(self):
+        hgvs = HgvsParser(self.minimapper[1])
+        csv_parsing = TxtParser(self.minimapper[2], samples=hgvs.samples,
+                                extra_data=self.minimapper[5])
+        num_lines = csv_parsing.num_lines
+        n_steps = int(num_lines / self.annotator_wrapper.chunksize) + 1
+        mapped = self.annotator_wrapper.parallel_annotator_mapper(self.minimapper, n_steps,
+                                                                  extra_data=self.minimapper[5])
+
+        for i in range(mapped[-1][10]):
             parse_by_step(mapped[i])
