@@ -189,12 +189,12 @@ class Filters(object):
                                                     "$or": [
                                                             {"$and": [
                                                                 {"alleles": [0, 0]},
-                                                                {"sample_id": sample1}
+                                                                {"sample_id": sample2}
                                                             ]
                                                             },
                                                             {"$and": [
                                                                 {"alleles": [0, 0]},
-                                                                {"sample_id": sample2}
+                                                                {"sample_id": sample3}
                                                             ]
                                                             },
                                                         ]
@@ -207,19 +207,37 @@ class Filters(object):
                         [
                             {"hgvs_id": {"$in": filtered_hgvs}},
                             {"alleles": {"$ne": [0, 0]}},
-                            {"sample_id": sample3}
+                            {"sample_id": sample1}
                         ]
 
                 }
             )
         else:
-            filtered_hgvs = collection. collection.aggregate(
+            filtered_hgvs = collection.aggregate(
                 [
-                    {"$group":
-                        {"_id": "$hgvs_id",
-                         "samples": {"$addToSet": "$sample_id"}
-                         }
-                     },
+                    {"$group": {
+                        "_id": "$hgvs_id",
+                        "samples":
+                            {"$addToSet": {
+                                "$cond": [  # works with a if ... then ... else syntax
+
+                                    {  # if these are satisfied,
+                                        "$or": [
+                                            {"$eq": ["$sample_id", sample1]},
+                                            {"$eq": ["$sample_id", sample2]},
+                                            {"$eq": ["$sample_id", sample3]}
+                                        ]
+                                    },
+                                    # then add sample_id to the set of variants
+                                    "$sample_id",
+                                    # else, add zero
+                                    0
+                                ]
+
+                            }
+                            }
+                    }
+                    },
                     {"$redact": {
                         "$cond": {
                             "if": {
@@ -231,10 +249,10 @@ class Filters(object):
                             "then": "$$KEEP",
                             "else": "$$PRUNE"
                         }
-                    }}
+                    }
+                    }
                 ]
             )
-
             as_hgvs_list = [i['_id'] for i in filtered_hgvs]
             de_novo = collection.find({'hgvs_id': {'$in': as_hgvs_list}})
 
