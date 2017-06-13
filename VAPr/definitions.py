@@ -27,8 +27,8 @@ annovar_hosted = OrderedDict({'knownGene': True,
 
 dl_list_command = 'avdblist'
 manual_update = {'clinvar_20161128': [datetime.datetime(2016, 11, 28)],
-                      '1000g2015aug': [datetime.datetime(2016, 8, 30)],
-                      'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)] }
+                 '1000g2015aug': [datetime.datetime(2016, 8, 30)],
+                 'popfreq_all_20150413': [datetime.datetime(2015, 4, 13)]}
 
 hg_18_databases = OrderedDict({'knownGene': 'g',
                                     'tfbsConsSites': 'r',
