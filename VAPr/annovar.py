@@ -6,10 +6,7 @@ import csv
 import time
 import datetime
 import subprocess
-from collections import OrderedDict
 import logging
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 from VAPr import definitions
 
 logger = logging.getLogger()
@@ -71,24 +68,21 @@ class AnnovarWrapper:
             args = shlex.split(command)
             # Spawn subprocesses
             subprocess.Popen(args, stdout=subprocess.PIPE)
-            run_handler(os.path.join(self.annovar, 'humandb/'), cmds=list_commands, annovar_path=self.annovar)
+            # run_handler(os.path.join(self.annovar, 'humandb/'), cmds=list_commands, annovar_path=self.annovar)
 
         return 'Finished downloading databases to {}'.format(os.path.join(self.annovar, 'humandb/'))
 
     def run_annovar(self, batch_jobs=10, multisample=False):
         """ Spawning Annovar jobs in batches of five files at a time to prevent memory overflow """
 
-        chunks = int(len(self.mapping)/batch_jobs) + 1
-        n_job_splits = [(i*batch_jobs, (i+1)*batch_jobs) for i in range(chunks)]
+        handler = AnnovarJobHandler(batch_jobs, multisample, self.mapping)
         n_files_created = 0
+        for index, job in enumerate(handler.chunkenize):
+            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.mapping)/batch_jobs + 1))
+            n_files_created += len(job)
 
-        for index, job in enumerate(n_job_splits):
-            logging.info('Job %i/%i sent for processing' % (index + 1 , len(n_job_splits)))
-            n_files_created += len(self.mapping[job[0]:job[1]])
-
-            for index, _map in enumerate(self.mapping[job[0]:job[1]]):
+            for idx, _map in enumerate(job):
                 annotation_dir = _map['csv_file_full_path']
-
                 if os.path.isdir(annotation_dir):
                     logging.info('Directory already exists for %s. '
                                  'Writing output files there for file %s.' % (annotation_dir,
@@ -103,27 +97,29 @@ class AnnovarWrapper:
 
                 subprocess.Popen(args, stdout=subprocess.PIPE)
 
-            logging.info('Annovar jobs submitted for files %s' %
-                         ', '.join([i['raw_vcf_file_full_path'] for i in self.mapping]))
+            logging.info('Annovar jobs submitted for %i files: %s' % (len(job),
+                                                                      ', '.join([os.path.basename(
+                                                                          i['raw_vcf_file_full_path']) for i in
+                                                                                 job])))
 
-            listen(self.output_csv_path, batch_jobs, job[1])
+            listen(self.output_csv_path, len(job), n_files_created)
             logging.info('Finished running Annovar on this batch')
 
         logging.info('Finished running Annovar on all files')
 
-    def build_annovar_command_str(self, vcf, csv, multisample=False):
+    def build_annovar_command_str(self, _vcf, _csv, multisample=False):
         """ Concatenate command string arguments for Annovar jobs """
 
-        #TODO: check for newer version of databases
+        # TODO: check for newer version of databases
 
         dbs = ",".join(list(self.databases.keys()))
         dbs_args = ",".join(list(self.databases.values()))
 
         if '1000g2015aug' in dbs:
             dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
-        command = " ".join(['perl', os.path.join(self.annovar, 'table_annovar.pl'), vcf,
+        command = " ".join(['perl', os.path.join(self.annovar, 'table_annovar.pl'), _vcf,
                             os.path.join(self.annovar, 'humandb/'), '-buildver', self.buildver, '-out',
-                            csv, '-remove -protocol', dbs,  '-operation',
+                            _csv, '-remove -protocol', dbs,  '-operation',
                             dbs_args, '-nastring .', '-otherinfo -vcfinput'])
         if multisample:
             command += ' -format vcf4 -allsample -withfreq'
@@ -160,7 +156,6 @@ class AnnovarWrapper:
             reader = csv.reader(db_list, delimiter='\t')
             db_dict = {}
             for i in reader:
-
                 if i[0][-6:] != 'idx.gz':
                     db_dict[i[0][5:]] = [datetime.datetime(int(i[1][0:4]), int(i[1][4:6]), int(i[1][6:8])), i[2]]
 
@@ -197,7 +192,6 @@ def listen(out_path, batch_jobs, n_files):
                     txts.append(_file)
 
         time.sleep(5)
-
         new_files = []
         walker = os.walk(out_path)
         for folder, subfolders, files in walker:
@@ -212,41 +206,47 @@ def listen(out_path, batch_jobs, n_files):
             logging.info('File %i/%i: Annovar finished working on file : ' % (added, n_files) +
                          os.path.basename(newly_created[0]) +
                          '.\n A text file has been created in the %s directory\n' % out_path)
-
         if added == batch_jobs:
             break
         if len(txts) >= n_files:
             break
 
 
-class MyHandler(FileSystemEventHandler):
-    """
-    Overwrite the methods for creation of files as annovar runs. Once the .csv file is detected, exit process
-    and proceed to next file.
-    """
+class AnnovarJobHandler:
 
-    def __init__(self, observer, cmds=None, annovar_path='ANNOVAR_PATH'):
+    def __init__(self, batch_jobs, multisample, mapping):
 
-        self.observer = observer
-        self.annovar = annovar_path
-        self.cmds = cmds
+        self.mapping = mapping
+        self.multisample = multisample
+        self.batch_jobs = batch_jobs
+        if self.batch_jobs > len(self.mapping):
+            self.batch_jobs = len(self.mapping)/2
+        self.chunkenize = self.chunks()
 
-    def on_created(self, event):
+    def chunks(self):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(self.mapping), self.batch_jobs):
+            yield self.mapping[i:i + self.batch_jobs]
 
-        logging.info('Downloading: ' + event.src_path)
-
-        if self.cmds[-1][-2] in event.src_path:
-            self.observer.stop()
+    def _next(self):
+        return next(self.chunkenize)
 
 
-def run_handler(output_csv_path, cmds=None, annovar_path='ANNOVAR_PATH'):
-    observer = Observer()
-    event_handler = MyHandler(observer,
-                              cmds=cmds,
-                              annovar_path=annovar_path)
+if __name__ == '__main__':
 
-    observer.schedule(event_handler, output_csv_path, recursive=True)
-    observer.start()
-    observer.join()
+    def download_dbs(all_dbs=True, dbs=None):
+        """
+        Implementation of the wrapper around annotate_variation.pl with -downdb as optional arg
+        First, it cleans up the humandb/ directory to avoid conflicts, then gets newest versions of databases
+        by spawning the jobs using subprocesses
 
-    return None
+        """
+
+        if len(os.listdir(os.path.join(annovar, 'humandb/'))) > 0:
+            files = glob.glob(os.path.join(annovar, 'humandb/*'))
+            for f in files:
+                os.remove(f)
+
+        list_commands = self.build_db_dl_command_str(all_dbs, dbs)
+        for command in list_commands:
+            args = shlex.split(command)
