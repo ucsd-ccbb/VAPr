@@ -54,8 +54,10 @@ class Ingester:
 
         ingested = self.atomic_ingester(single, self.base_dir, self.out_dir, sample=sample, ingester_type=ingester_type,
                                         extra_data=extra_data)
-        ingested.mapping['extra_data'] = extra_data
+
         self.mapping_list.append(ingested.mapping)
+
+        # Eliminates possible duplicates
         self.mapping_list = list({v['raw_vcf_file_full_path']: v for v in self.mapping_list}.values())
 
     def digest_design_file(self, design_df):
@@ -64,11 +66,10 @@ class Ingester:
         vcf_files = []
         design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
         for sample in design_file_mapping.keys():
-            if sample.endswith('.vcf'):
+            if sample.endswith('.vcf'):   # Design file contains file names
+
                 sample_dir = self.base_dir
-                print(os.listdir(sample_dir))
                 vcf_file = [i for i in os.listdir(sample_dir) if i.startswith(sample)]
-                print(vcf_file)
                 if len(vcf_file) > 1:
                     raise NameError('More tha one file found with unique name in design file')
                 else:
@@ -76,14 +77,11 @@ class Ingester:
                     full_path_single_file = os.path.join(os.path.abspath(sample_dir), vcf_file[0])
                     self.digest_single(full_path_single_file, sample=sample, ingester_type='files',
                                        extra_data=design_file_mapping[sample])
-            else:
+
+            else:                         # Design file contains directory (sample) names
                 sample_dir = os.path.join(self.base_dir, sample)
-                sample_dir_preprocessed = os.path.join(self.base_dir, 'sample_' + sample)
                 if not os.path.exists(sample_dir) or os.listdir(sample_dir) == []:
-                    if not os.path.exists(sample_dir_preprocessed):
-                        raise NameError('Could not find directory named %s as provided in design file' % sample)
-                    else:
-                        sample_dir = sample_dir_preprocessed
+                    raise NameError('Could not find directory named %s as provided in design file' % sample)
 
                 vcf_files = [i for i in os.listdir(sample_dir) if i.endswith('.vcf')]
 
@@ -113,9 +111,14 @@ class SingleInstance:
                         'num_samples_in_csv': len(self.fill_sample_names()),
                         'csv_file_full_path': self.fill_csv_sample_dir(),
                         'vcf_sample_dir': self.fill_vcf_sample_dir()}
-
+        self.add_extra_data()
         self.create_path()
-        # self.move_file()
+
+    def add_extra_data(self):
+        if self.extra_data:
+            self.mapping['extra_data'] = self.extra_data
+        else:
+            self.mapping['extra_data'] = None
 
     def add_key(self, key, value):
         self.mapping[key] = value
