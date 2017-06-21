@@ -6,9 +6,14 @@ import sys
 from pymongo import MongoClient
 import VAPr.definitions as definitions
 from VAPr.models import TxtParser, HgvsParser
+from VAPr.writes import Writer
+from VAPr.queries import Filters
 import tqdm
 from multiprocessing import Pool
 import logging
+import subprocess
+import shlex
+import time
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -28,7 +33,8 @@ class VariantParsing:
                  project_data,
                  mapping,
                  design_file=None,
-                 build_ver=None):
+                 build_ver=None,
+                 mongod_cmd=None):
 
         """ Project data """
         self.input_dir = input_dir
@@ -46,6 +52,7 @@ class VariantParsing:
         # self.completed_jobs = dict.fromkeys(list(self.mapping.keys()), 0)
         self.verbose = 0
         self.n_vars = 0
+        self.mongod = mongod_cmd
 
     def get_sample_csv_vcf_tuple(self):
         """ Locate files associated with a specific sample """
@@ -97,22 +104,29 @@ class VariantParsing:
 
         self.verbose = verbose
         list_tupls = self.get_sample_csv_vcf_tuple()
+        map_job = []
         for tpl in list_tupls:
             hgvs = HgvsParser(tpl[1])
             csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
             n_steps = int(num_lines/self.chunksize) + 1
-            map_job = self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5])
-            pool = Pool(n_processes)
-            for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
-                pass
+            map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod))
 
-            logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
+        pool = Pool(n_processes)
+        for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
+            pass
+        pool.close()
+        pool.join()
+        # logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
     @staticmethod
-    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None):
+    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None, mongod_cmd=None):
         """ Assign step number to each tuple to be consumed by parsing function """
         new_tuple_list = []
+        if mongod_cmd:
+            mongod = mongod_cmd
+        else:
+            mongod = None
 
         for i in range(n_steps):
             sample = _tuple[0]
@@ -128,7 +142,8 @@ class VariantParsing:
                                    extra_data,
                                    db_name,
                                    collection_name,
-                                   step))
+                                   step,
+                                   mongod))
         return new_tuple_list
 
     def quick_annotate_and_save(self, n_processes=8):
@@ -163,6 +178,28 @@ class VariantParsing:
                                    step))
         return new_tuple_list
 
+    def generate_output_files_by_sample(self):
+
+        client = MongoClient()
+        db = getattr(client, self.project_data['db_name'])
+        collection = getattr(db, self.project_data['collection_name'])
+
+        # Get all distinct sample_ids
+        samples = collection.distinct('sample_id')
+
+        fwriter = Writer(self.project_data['db_name'], self.project_data['collection_name'])
+        filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
+
+        # Generate files for each sample
+        for sample in samples:
+            q = filt.variants_from_sample(sample)
+            list_docs = list(q)
+            out_path_by_sample = os.path.join(self.output_csv_path, 'csv_by_sample')
+            if not os.path.exists(out_path_by_sample):
+                os.makedirs(out_path_by_sample)
+            fname = os.path.join(out_path_by_sample, 'annotated_csv_' + sample + '_all_vars.csv')
+            fwriter.generate_annotated_csv(list_docs, fname)
+
 
 def parse_by_step(maps):
     """ The function that implements the parsing """
@@ -174,6 +211,7 @@ def parse_by_step(maps):
     db_name = maps[4]
     collection_name = maps[5]
     step = maps[6]
+    mongod_cmd = maps[7]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
@@ -190,12 +228,34 @@ def parse_by_step(maps):
         for dict_from_sample in csv_variants[i]:
             merged_list.append(merge_dict_lists(myvariants_variants[i], dict_from_sample))
 
+    return insert_handler(merged_list, collection, mongod_cmd)
+
+
+def insert_handler(merged_list, collection, mongod_cmd):
+
     logging.info('Parsing Buffer...')
-    try:
-        collection.insert_many(merged_list, ordered=False)
-    except Exception, error:
-        print(str(error))
+    if len(merged_list) == 0:
         logging.info('Empty list of documents trying to be parsed, skipping and continuing operation...')
+        return None
+    else:
+        try:
+            collection.insert_many(merged_list, ordered=False)
+        except Exception, error:
+            if "Connection refused" in str(error):
+                if mongod_cmd:
+                    logging.info('MongoDB Server seems to be off. Attempting restart...')
+                    print(mongod_cmd)
+                    args = shlex.split(mongod_cmd)
+                    subprocess.Popen(args, stdout=subprocess.PIPE)
+                else:
+                    logging.error('Error connecting to mongodb.' + str(error))
+                logging.info('Retrying to parse...')
+                time.sleep(4)
+                insert_handler(merged_list, collection, mongod_cmd)  # Recurse!
+            else:
+                logging.error('Unrecoverable error: ' + str(error))
+
+    return None
 
 
 def merge_dict_lists(*dict_args):
@@ -226,6 +286,8 @@ def parallel_get_dict_mv(maps):
 
     # logging.info('Parsing Buffer...')
     collection.insert_many(myvariants_variants, ordered=False)
+    client.close()
+    return None
 
 
 def get_dict_myvariant(variant_list, verbose, sample_id):
@@ -238,9 +300,14 @@ def get_dict_myvariant(variant_list, verbose, sample_id):
 
     mv = myvariant.MyVariantInfo()
     # This will retrieve a list of dictionaries
-    variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False)
-    variant_data = remove_id_key(variant_data, sample_id)
+    try:
+        variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False)
+    except Exception, error:
+        logging.info('Error: ' + str(error) + 'while fetching from MyVariant, retrying...')
+        time.sleep(5)
+        variant_data = get_dict_myvariant(variant_list, verbose, sample_id)
 
+    variant_data = remove_id_key(variant_data, sample_id)
     return variant_data
 
 
