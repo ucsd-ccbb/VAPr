@@ -6,7 +6,8 @@ import logging
 from VAPr.annovar import AnnovarWrapper
 from VAPr.parsers import VariantParsing
 from VAPr.ingester import Ingester
-from VAPr.file_writer import FileWriter
+from pymongo import MongoClient
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -30,7 +31,8 @@ class ProjectData(object):
                  project_data,
                  split_vcf=False,
                  design_file=None,
-                 build_ver=None):
+                 build_ver=None,
+                 mongod_cmd=None):
 
         self.input_dir = input_dir
         self.output_csv_path = output_dir
@@ -41,6 +43,7 @@ class ProjectData(object):
         self.times_called = 0
         self.mapping = self.get_mapping()
         self.split = split_vcf
+        self.mongod = mongod_cmd
 
     def get_mapping(self):
         """
@@ -54,7 +57,8 @@ class ProjectData(object):
                         'sample_names': samples in vcf file,
                         'num_samples_in_csv': number of samples,
                         'csv_file_full_path': output of sample file where csv files will be stored,
-                        'vcf_sample_dir': directory of sample where vcf file lives
+                        'vcf_sample_dir': directory of sample where vcf file lives,
+                        'extra_data': None or some dictionary of data contained in design file
                         }
 
         Each vcf file will be moved to a directory named after the samples it contains
@@ -113,7 +117,8 @@ class AnnotationProject(ProjectData):
                  annovar_path,
                  project_data,
                  design_file=None,
-                 build_ver=None):
+                 build_ver=None,
+                 mongod_cmd=None):
 
         """ Class that implements the API and the major annotation/saving methods  """
 
@@ -122,7 +127,8 @@ class AnnotationProject(ProjectData):
                                                 annovar_path,
                                                 project_data,
                                                 design_file=design_file,
-                                                build_ver=build_ver)
+                                                build_ver=build_ver,
+                                                mongod_cmd=mongod_cmd)
 
         self.annovar_wrapper = AnnovarWrapper(self.input_dir,
                                               self.output_csv_path,
@@ -138,9 +144,8 @@ class AnnotationProject(ProjectData):
                                                 self.project_data,
                                                 self.mapping,
                                                 design_file=self.design_file,
-                                                build_ver=self.buildver)
-
-        self.writer_wrapper = FileWriter(self.project_data)
+                                                build_ver=self.buildver,
+                                                mongod_cmd=self.mongod)
 
     def download_dbs(self, all_dbs=True, dbs=None):
         """ Wrapper around Annovar database downloading function """
@@ -162,22 +167,7 @@ class AnnotationProject(ProjectData):
         """ Wrapper around parallel annotation multiprocess runner using MyVariant solely """
         self.annotator_wrapper.quick_annotate_and_save(n_processes=n_processes)
 
-    def write_unfiltered_annotated_csv(self, filepath):
-        """ Wrapper around file writing class method. See file_writer module for more information """
-        return self.writer_wrapper.generate_unfiltered_annotated_csv(filepath)
+    def write_output_files_by_sample(self):
+        """ Wrapper around function that implemts the writing of csv files for each sample in collection """
+        self.annotator_wrapper.generate_output_files_by_sample()
 
-    def write_unfiltered_annotated_vcf(self, vcf_input_path, vcf_output_path, info_out=True):
-        """ Wrapper around file writing class method. See file_writer module for more information """
-        return self.writer_wrapper.generate_unfiltered_annotated_vcf(vcf_input_path, vcf_output_path, info_out=info_out)
-
-    def write_annotated_csv(self, list_dictionaries, filepath):
-        """ Wrapper around file writing class method. See file_writer module for more information """
-        return self.writer_wrapper.generate_annotated_csv(list_dictionaries, filepath)
-
-    def write_annotated_vcf(self, joint_list, vcf_input_path, vcf_output_path, info_out=True):
-        """ Wrapper around file writing class method. See file_writer module for more information """
-        return self.writer_wrapper.generate_annotated_vcf(joint_list, vcf_input_path, vcf_output_path, info_out=info_out)
-
-    def return_pandas_df(self):
-        """ Wrapper around file writing class method. See file_writer module for more information """
-        return self.writer_wrapper.generate_pandas_df()
