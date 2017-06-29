@@ -21,7 +21,7 @@ class TestQueries(unittest.TestCase):
         self.out_path = os.path.join(self.base_dir, 'csv_multisample')
         self.annovar = os.path.join(self.base_dir, '../annovar')
         self.project_data = {'db_name': 'VariantDatabase',
-                             'project_name': 'collect'}
+                             'collection_name': 'collect'}
 
         self.project = AnnotationProject(self.input_dir,
                                          self.out_path,
@@ -33,10 +33,16 @@ class TestQueries(unittest.TestCase):
                                                     '--storageEngine wiredTiger')
 
     def test_query_one(self):
-        filt = Filters(self.project_data['db_name'], self.project_data['project_name'])
+        self.project.parallel_annotation_and_saving(n_processes=6)
+        """
+
+        :return:
+
+        filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
         filtered = filt.rare_cancer_variant(samples=['RAND1', 'RAND'])
         self.assertEqual(len(filtered), 20)
         filtered = filt.rare_cancer_variant(samples=['RAND1'])
         self.assertEqual(len(filtered), 13)
         filtered = filt.rare_cancer_variant(samples=['RAND'])
         self.assertEqual(len(filtered), 7)
+        """

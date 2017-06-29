@@ -27,7 +27,7 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
         self.out_path = os.path.join(self.base_dir, 'csv_multisample')
         self.annovar = os.path.join(self.base_dir, '../annovar')
         self.project_data = {'db_name': 'VariantDatabase',
-                             'project_name': 'collect'}
+                             'collection_name': 'collect'}
 
         self.project = AnnotationProject(self.input_dir,
                                          self.out_path,

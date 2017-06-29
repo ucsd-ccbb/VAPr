@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     # Databse and Collection names (optional)
     proj_data = {'db_name': db_name,
-                 'project_name': collection_name}
+                 'collection_name': collection_name}
 
     Project = base.AnnotationProject(IN_PATH,
                                 OUT_PATH,

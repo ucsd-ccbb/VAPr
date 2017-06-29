@@ -30,7 +30,7 @@ class TestAnnovar(unittest.TestCase):
         self.output_csv_path_dirs = os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_dirs')
         self.annovar = os.path.join(self.base_dir, 'test_files/annovar_dir')
         self.project_data = {'db_name': 'VariantDatabase',
-                             'project_name': 'collect'}
+                             'collection_name': 'collect'}
         self.buildver = 'hg19'
         self.hg_18_databases = definitions.hg_18_databases
         self.hg_19_databases = definitions.hg_19_databases

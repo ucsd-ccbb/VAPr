@@ -46,7 +46,7 @@ class VariantParsing:
         self.mapping = mapping
         self.chunksize = definitions.chunk_size
         self.step = 0
-        self.collection = project_data['project_name']
+        self.collection = project_data['collection_name']
         self.db = project_data['db_name']
         self._last_round = False
         # self.completed_jobs = dict.fromkeys(list(self.mapping.keys()), 0)
