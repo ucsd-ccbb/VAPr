@@ -43,12 +43,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Parallel Annotation](#parallel)  
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)  
   3.4. [File Creation](#fwrite)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.1 [Required arguments](#required)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.2 [Node-specific arguments](#node_specific)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.3 [Edge-specific arguments](#edge_specific)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.4 [Interaction-specific arguments](#interaction_specific)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.5 [Configuration-specific arguments](#configuration_specific)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.6 [Miscellaneous arguments](#miscellaneous)   
+    &nbsp;&nbsp;&nbsp;&nbsp;3.4.1 [Available Writers](#required)   
+    &nbsp;&nbsp;&nbsp;&nbsp;3.4.2 [Extra](#node_specific)   
+
 
 [Table of contents](#toc)
 <a id='getting_started'></a>
@@ -427,8 +424,6 @@ my_writer.generate_annotated_csv(rare_cancer_variants, rare_cancer_variants_csv)
 ```
 
 
-
-
 ## Output Files
 
 ### Create unfiltered annotated vcf and csv files 
@@ -450,7 +445,6 @@ my_writer = create_output_files.FileWriter(db_name, collection_name)
 my_writer.generate_unfiltered_annotated_csv(out_unfiltered_csv_file)
 my_writer.generate_unfiltered_annotated_vcf(input_vcf_compressed, out_unfiltered_vcf_file)
 ```
-
 
 ### Create filtered annotated vcf and csv files
 
