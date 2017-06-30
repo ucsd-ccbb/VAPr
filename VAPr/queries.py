@@ -28,7 +28,7 @@ class Filters(object):
         filtered = collection.find({'sample_id': sample_name})
         return list(filtered)
 
-    def rare_cancer_variant(self, samples):
+    def rare_cancer_variants(self, samples=None):
         """ Function for retrieving rare cancer variants """
 
         client = MongoClient()
@@ -68,7 +68,7 @@ class Filters(object):
         print('Variants found that match rarity criteria: {}'.format(len(filtered)))
         return filtered
 
-    def rare_disease_variant(self, samples=None):
+    def rare_disease_variants(self, samples=None):
         """ Function for retrieving rare disease variants. Includes filter on Clinvar data  """
 
         client = MongoClient()
@@ -162,7 +162,7 @@ class Filters(object):
         print('Variants found that match rarity criteria: {}'.format(len(filtered)))
         return filtered
 
-    def deleterious_compound_heterozygote(self, samples=None):
+    def deleterious_compound_heterozygote_variants(self, samples=None):
         """ Function for retrieving deleterious compound heterozygote variants  """
 
         client = MongoClient()
@@ -187,7 +187,7 @@ class Filters(object):
         print('Variants found that match rarity criteria: {}'.format(len(filtered)))
         return filtered
 
-    def get_de_novo(self, sample1, sample2, sample3, multisample=True):
+    def de_novo_variants(self, sample1, sample2, sample3, multisample=True):
         """
         Function for de novo variant analysis. Can be performed on multisample files or or on data coming
         from a collection of files. In the former case, every sample contains the same variants, although they have

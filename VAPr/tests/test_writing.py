@@ -30,7 +30,7 @@ class TestWrites(unittest.TestCase):
     def test_query_and_write_rand1(self):
         fwriter = Writer(self.project_data['collection_name'], self.project_data['db_name'])
         filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
-        filtered = filt.rare_cancer_variants(samples=['RAND'])
+        filtered = filt.rare_cancer_variant(samples=['RAND'])
         self.assertEqual(len(filtered), 0)
 
         # Test a stub function that is more lenient
@@ -44,7 +44,7 @@ class TestWrites(unittest.TestCase):
     def test_and_query_rand(self):
         fwriter = Writer(self.project_data['db_name'], self.project_data['collection_name'])
         filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
-        filtered = filt.rare_cancer_variants(samples=['RAND'])
+        filtered = filt.rare_cancer_variant(samples=['RAND'])
         self.assertEqual(len(filtered), 0)
 
         # Test a stub function that is more lenient
