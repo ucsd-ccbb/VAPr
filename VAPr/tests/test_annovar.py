@@ -60,6 +60,11 @@ class TestAnnovar(unittest.TestCase):
 
     def annovar_runner_stub(self, batch_jobs,  multisample=False):
 
+        """ Use a stub because you don't really want to spawn an Annovar
+        process while testing. As long as the command that is generated is valid,
+        these tests should suffice.
+        """
+
         handler = AnnovarJobHandler(batch_jobs, multisample, self.project_2.mapping)
         n_files_created = 0
         for index, job in enumerate(handler.chunkenize):

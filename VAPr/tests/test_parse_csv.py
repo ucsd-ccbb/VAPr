@@ -7,7 +7,6 @@ import myvariant
 from VAPr import models as parser_models
 
 vcf_file = os.path.join(os.getcwd(), 'test_files/Normal_targeted_seq.vcf')
-
 txt_file = os.path.join(os.getcwd(), 'test_files/annotated.hg19_multianno.txt')
 
 

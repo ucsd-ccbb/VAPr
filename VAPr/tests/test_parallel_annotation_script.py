@@ -131,7 +131,7 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
         n_steps = int(num_lines / self.annotator_wrapper.chunksize) + 1
         mapped = self.annotator_wrapper.parallel_annotator_mapper(self.minimapper, n_steps,
                                                                   extra_data=self.minimapper[5],
-                                                                  mongod_cmd=self.mapper_output[7])
-
-        for i in range(mapped[-1][-2]):
+                                                                  mongod_cmd=self.mapper_output[7],
+                                                                  csv_only=True)
+        for i in range(mapped[-4][-3]):
             parse_by_step(mapped[i])
