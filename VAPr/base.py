@@ -159,9 +159,9 @@ class AnnotationProject(ProjectData):
         """ Wrapper around annotation runner. Deprecated in favour of parallel parsing """
         self.annotator_wrapper.annotate_and_saving(buffer_vars=buffer_vars, verbose=verbose)
 
-    def parallel_annotation_and_saving(self, n_processes=4, verbose=1):
+    def parallel_annotation_and_saving(self, n_processes=4, verbose=1, csv_only=False):
         """ Wrapper around parallel annotation multiprocess runner  """
-        self.annotator_wrapper.parallel_annotation(n_processes=n_processes, verbose=verbose)
+        self.annotator_wrapper.parallel_annotation(n_processes=n_processes, verbose=verbose, csv_only=csv_only)
 
     def quick_annotate_and_save(self, n_processes=8):
         """ Wrapper around parallel annotation multiprocess runner using MyVariant solely """
@@ -171,3 +171,5 @@ class AnnotationProject(ProjectData):
         """ Wrapper around function that implemts the writing of csv files for each sample in collection """
         self.annotator_wrapper.generate_output_files_by_sample()
 
+    #def annotate_further(self, list_of_vars):
+    #   self.annotator_wrapper.
