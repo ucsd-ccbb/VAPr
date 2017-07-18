@@ -83,7 +83,7 @@ class VariantParsing:
 
         return list_tupls
 
-    def parallel_annotation(self, n_processes, verbose=1):
+    def parallel_annotation(self, n_processes, verbose=1, csv_only=False):
 
         """
         Set up variant parsing scheme. Since a functional programming style is required for parallel
@@ -99,6 +99,7 @@ class VariantParsing:
 
         :param n_processes: number of cores to be used
         :param verbose: verbosity level [0,1,2,3]
+        :param csv_only: parse csv data only
         :return: None
         """
 
@@ -110,7 +111,8 @@ class VariantParsing:
             csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
             n_steps = int(num_lines/self.chunksize) + 1
-            map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod))
+            map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod,
+                                                          csv_only=csv_only))
 
         pool = Pool(n_processes)
         for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
@@ -120,7 +122,7 @@ class VariantParsing:
         # logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
     @staticmethod
-    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None, mongod_cmd=None):
+    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None, mongod_cmd=None, csv_only=False):
         """ Assign step number to each tuple to be consumed by parsing function """
         new_tuple_list = []
         if mongod_cmd:
@@ -143,7 +145,8 @@ class VariantParsing:
                                    db_name,
                                    collection_name,
                                    step,
-                                   mongod))
+                                   mongod,
+                                   csv_only))
         return new_tuple_list
 
     def quick_annotate_and_save(self, n_processes=8):
@@ -212,16 +215,22 @@ def parse_by_step(maps):
     collection_name = maps[5]
     step = maps[6]
     mongod_cmd = maps[7]
+    csv_only = maps[8]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-    hgvs = HgvsParser(vcf_file)
-    csv_parsing = TxtParser(csv_file, samples=sample, extra_data=extra_data)
-    list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample)
 
+    csv_parsing = TxtParser(csv_file, samples=sample, extra_data=extra_data)
     csv_variants = csv_parsing.open_and_parse_chunks(step, build_ver='hg19')
+
+    if csv_only:
+        myvariants_variants = [{}]*len(csv_variants)
+
+    else:
+        hgvs = HgvsParser(vcf_file)
+        list_hgvs_ids = hgvs.get_variants_from_vcf(step)
+        myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample)
 
     merged_list = []
     for i, _ in enumerate(myvariants_variants):
@@ -320,3 +329,6 @@ def remove_id_key(variant_data, sample_id):
         dic['sample_id'] = sample_id
 
     return variant_data
+
+def add_myvariant_info_data(list_of_dicts):
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples)
