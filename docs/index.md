@@ -130,7 +130,7 @@ See this [jupyter notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr%2
 
 <a id='workflow'></a>
 ### Workflow Overview
-![Workflow](https://github.com/ucsd-ccbb/VAPr/blob/master/pipeline.png)
+![Workflow](https://raw.githubusercontent.com/ucsd-ccbb/VAPr/master/pipeline.png)
 
 <a id='usage_tips'></a>
 ### Tips on Usage
@@ -250,6 +250,8 @@ _Optional_:
   As a rule of thumb, use at most `number of CPU cores - 1`, and for smaller vcf files (less than 50 thousand variants)
   4-5 cores at most. Default: 4.
   - `verbose`: An integer value from 0 to 3 that specifies the verbosity level. Default: 0.
+  - `csv_only`: Determines if only csv data from Annovar will be parsed to MongoDB. This will skip annotation with
+  MyVariant.info and will result in much faster annotation. It takes a Boolean True of False. Default: False
 
 
 #### `quick_annotate_and_save` (not recommended)

@@ -3,7 +3,7 @@
 
 This package is aimed at providing a way of retrieving variant information using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL database (MongoDB solely at the moment). 
 
-# Updates and Latest Improvements (v.2.0.5)
+## Updates and Latest Improvements (v.2.0.5)
 
 1. Optimizations
 
@@ -39,18 +39,8 @@ retrieved solely by MyVariant.info and rapidly parsed to the MongoDB instance.
 
 ANNOVAR, along with at least some of its data sets, should to be installed. We can not provide it with this package since
  downloading ANNOVAR requires the user to register on [their website](http://www.openbioinformatics.org/annovar/annovar_download_form.php).
- The data sets required to benefit from the full functionalities of the package are the following:
-
-- knownGene
-- tfbsConsSites
-- cytoBand
-- genomicSuperDups
-- esp6500siv2_all
-- 1000g2015aug_all
-- popfreq_all
-- clinvar_20140929
-- cosmic70
-- nci60
+ The data sets required to benefit from the full functionality of the package are the following: knownGene, tfbsConsSites,
+ cytoBand, genomicSuperDups, esp6500siv2_all, 1000g2015aug_all, popfreq_all, clinvar_20140929, cosmic70, nci60
 
 ### Available Methods
 The package offers two different ways to obtain variant data. One requires annovar, while the other is based solely on the

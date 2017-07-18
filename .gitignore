@@ -81,9 +81,9 @@ target/
 
 
 #ignore .csv and .tsv files
-*.csv
+# *.csv
 *.tsv
 
 #ignore all files in folder named results
 results/
-test_files/
+#test_files/
