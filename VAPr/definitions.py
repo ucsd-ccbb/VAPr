@@ -6,7 +6,7 @@ import datetime
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-chunk_size = 2000
+chunk_size = 50000
 
 
 # ------ #  ANNOVAR CONFIG # ------ #

@@ -5,6 +5,7 @@ import re
 import itertools
 import logging
 import sys
+from collections import OrderedDict
 import VAPr.vcf_parsing as vvp
 import VAPr.definitions as definitions
 logger = logging.getLogger()
@@ -144,7 +145,7 @@ class TxtParser(object):
             for i in itertools.islice(reader, (step*self.chunksize) + self.offset,
                                       ((step+1)*self.chunksize) + offset + self.offset):
 
-                sparse_dict = dict(zip(header[0:len(header)-1], i[0:len(header)-1]))
+                sparse_dict = OrderedDict(zip(header[0:len(header)-1], i[0:len(header)-1]))
                 sparse_dict['otherinfo'] = i[-1-len(self.samples)::]
 
                 if build_ver == 'hg19':
