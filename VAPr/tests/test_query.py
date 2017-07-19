@@ -1,5 +1,5 @@
 # project-specific libraries
-from VAPr.base import AnnotationProject
+from VAPr.annotation_project import AnnotationProject
 from VAPr.queries import Filters
 import logging
 import unittest

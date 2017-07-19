@@ -4,7 +4,7 @@ import os
 import logging
 
 # project-specific libraries
-from VAPr.base import AnnotationProject
+from VAPr.annotation_project import AnnotationProject
 from VAPr import definitions
 from VAPr.parsers import HgvsParser, TxtParser
 from VAPr.parsers import VariantParsing
@@ -42,7 +42,7 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
                                                 self.out_path,
                                                 self.annovar,
                                                 self.project_data,
-                                                self.project.mapping,
+                                                self.project.list_of_vcf_mapping_dicts,
                                                 design_file=self.design_file_dirs,
                                                 build_ver='hg19',
                                                 mongod_cmd='mongod --dbpath /Volumes/Carlo_HD1/data/db/ '
@@ -85,10 +85,10 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
                             'Condition': 'BD_lithium_responder'})
 
     def test_ensure_good_input(self):
-        self.assertEqual(self.project.mapping[0], self.x_7_raw_X)
+        self.assertEqual(self.project.list_of_vcf_mapping_dicts[0], self.x_7_raw_X)
 
     def test_get_sample_csv_vcf_tuple(self):
-        self.assertEqual(self.sample_csv_vcf_tuple, self.annotator_wrapper.get_sample_csv_vcf_tuple()[0])
+        self.assertEqual(self.sample_csv_vcf_tuple, self.annotator_wrapper._get_sample_csv_vcf_tuple()[0])
 
     def test_parallel_annotator_mapper(self):
         hgvs = HgvsParser(self.sample_csv_vcf_tuple[1])

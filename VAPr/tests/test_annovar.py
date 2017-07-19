@@ -6,17 +6,17 @@ import logging
 
 # project-specific libraries
 import subprocess
-from VAPr.base import AnnotationProject
+from VAPr.annotation_project import AnnotationProject
 from VAPr import definitions
 from VAPr.annovar import listen, AnnovarJobHandler
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-
 __author__ = 'Mazzaferro'
 
 
+# TODO: Figure out why this test case seems to basically reimplement AnnovarWrapper
 class TestAnnovar(unittest.TestCase):
 
     def setUp(self):
@@ -31,7 +31,7 @@ class TestAnnovar(unittest.TestCase):
         self.annovar = os.path.join(self.base_dir, 'test_files/annovar_dir')
         self.project_data = {'db_name': 'VariantDatabase',
                              'collection_name': 'collect'}
-        self.buildver = 'hg19'
+        self.genome_build_version = 'hg19'
         self.hg_18_databases = definitions.hg_18_databases
         self.hg_19_databases = definitions.hg_19_databases
         self.hg_38_databases = definitions.hg_38_databases
@@ -60,10 +60,10 @@ class TestAnnovar(unittest.TestCase):
 
     def annovar_runner_stub(self, batch_jobs,  multisample=False):
 
-        handler = AnnovarJobHandler(batch_jobs, multisample, self.project_2.mapping)
+        handler = AnnovarJobHandler(batch_jobs, multisample, self.project_2.list_of_vcf_mapping_dicts)
         n_files_created = 0
         for index, job in enumerate(handler.chunkenize):
-            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.project_2.mapping)/batch_jobs + 1))
+            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.project_2.list_of_vcf_mapping_dicts) / batch_jobs + 1))
             n_files_created += len(job)
 
             for idx, _map in enumerate(job):
@@ -94,10 +94,10 @@ class TestAnnovar(unittest.TestCase):
 
     def annovar_runner_stub_no_des_file(self, batch_jobs,  multisample=False):
 
-        handler = AnnovarJobHandler(batch_jobs, multisample, self.project_1.mapping)
+        handler = AnnovarJobHandler(batch_jobs, multisample, self.project_1.list_of_vcf_mapping_dicts)
         n_files_created = 0
         for index, job in enumerate(handler.chunkenize):
-            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.project_1.mapping)/batch_jobs + 1))
+            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.project_1.list_of_vcf_mapping_dicts) / batch_jobs + 1))
             n_files_created += len(job)
 
             for idx, _map in enumerate(job):
@@ -137,7 +137,7 @@ class TestAnnovar(unittest.TestCase):
         if '1000g2015aug' in dbs:
             dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
         command = " ".join(['perl', os.path.join(self.annovar, 'table_annovar.pl'), _vcf,
-                            os.path.join(self.annovar, 'humandb/'), '-buildver', self.buildver, '-out',
+                            os.path.join(self.annovar, 'humandb/'), '-genome_build_version', self.genome_build_version, '-out',
                             _csv, '-remove -protocol', dbs,  '-operation',
                             dbs_args, '-nastring .', '-otherinfo -vcfinput'])
         if multisample:
@@ -147,9 +147,9 @@ class TestAnnovar(unittest.TestCase):
 
     def get_databases(self):
 
-        if self.buildver == 'hg18':
+        if self.genome_build_version == 'hg18':
             databases = self.hg_18_databases
-        elif self.buildver == 'hg19':
+        elif self.genome_build_version == 'hg19':
             databases = self.hg_19_databases
         else:
             databases = self.hg_38_databases
@@ -157,20 +157,20 @@ class TestAnnovar(unittest.TestCase):
         return databases
 
     def test_ensure_input_validity(self):
-        self.assertEqual(self.project_1.mapping[0], self.mini1)
+        self.assertEqual(self.project_1.list_of_vcf_mapping_dicts[0], self.mini1)
 
     def test_run_annovar(self):
         self.annovar_runner_stub(5)
         self.annovar_runner_stub_no_des_file(5)
 
     def test_annovar_job_handler(self):
-        ann = AnnovarJobHandler(10, False, self.project_1.mapping)
+        ann = AnnovarJobHandler(10, False, self.project_1.list_of_vcf_mapping_dicts)
         self.assertEqual(ann._next()[0], self.mini1)
 
     def test_annovar_job_handler_dirs(self):
-        ann = AnnovarJobHandler(10, False, self.project_2.mapping)
+        ann = AnnovarJobHandler(10, False, self.project_2.list_of_vcf_mapping_dicts)
         print(len(ann._next()))
         print(len(ann._next()))
 
     def test_annovar_db_download(self):
-        pass  # fill
+        self.fail("Test not implemented")

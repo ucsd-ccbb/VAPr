@@ -16,13 +16,10 @@ except:
 
 
 class HgvsParser(object):
-
-    """ Class that process vcf files and extracts their hgvs ids"""
+    """ Process a vcf file and extract its hgvs ids"""
 
     def __init__(self, vcf_file):
-
         self.vcf = vcf_file
-        # self.num_lines = sum(1 for _ in open(self.vcf))
         self.chunksize = definitions.chunk_size
         self.samples = vcf.Reader(open(self.vcf, 'r')).samples
         self.num_samples = len(self.samples)
@@ -72,7 +69,6 @@ class HgvsParser(object):
 
 
 class TxtParser(object):
-
     """ Class that process an Annovar created csv file """
 
     def __init__(self, txt_file, samples=None, extra_data=None):
@@ -121,11 +117,10 @@ class TxtParser(object):
                               'otherinfo']
 
     def open_and_parse_chunks(self, step, build_ver=None, offset=0):
-
         """
         Parsing function that retrieves data from a specific location from a csv file.
         It will process every (significant) data field in an annovar-annotated csv and
-        conveniently return it into a dictionary
+        return it in a dictionary.
 
         :param step: tells the parallel processing where to start and end the hgvs id creation
         :param build_ver: genome build version
@@ -174,10 +169,9 @@ class TxtParser(object):
 
 
 class AnnovarModels(object):
-
     """
-    The actuall class that process a single annovar-annotated variant.
-    It performs specific and necessary manipulations to ensure that the data will be parsed appropriately
+    Class that process a single annovar-annotated variant.
+    It performs necessary manipulations to ensure that the data will be parsed appropriately
     and can be queried easily from MongoDB. Basically our ODM (Object Data Model) for the Annovar data.
     """
 
@@ -282,7 +276,6 @@ class AnnovarModels(object):
 
 
 class CytoBand(object):
-
     """ Gets its own class cause it is particularly pesky to parse"""
 
     def __init__(self, cyto_band_name):

@@ -24,12 +24,12 @@ class TestWrites(unittest.TestCase):
 
         self.base_dir = os.getcwd()
         self.fwriter_output_dir = os.path.join(self.base_dir, 'test_files/fwriter_output')
-        self.project_data = {'db_name': 'VariantDatabase',
+        self.mongo_db_and_collection_names_dict = {'db_name': 'VariantDatabase',
                              'collection_name': 'collect'}
 
     def test_query_and_write_rand1(self):
-        fwriter = Writer(self.project_data['collection_name'], self.project_data['db_name'])
-        filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
+        fwriter = Writer(self.mongo_db_and_collection_names_dict['collection_name'], self.mongo_db_and_collection_names_dict['db_name'])
+        filt = Filters(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
         filtered = filt.rare_cancer_variant(samples=['RAND'])
         self.assertEqual(len(filtered), 0)
 
@@ -42,8 +42,8 @@ class TestWrites(unittest.TestCase):
         self.assertEqual(row_count, len(filtered) + 1)  # to account for the header
 
     def test_and_query_rand(self):
-        fwriter = Writer(self.project_data['db_name'], self.project_data['collection_name'])
-        filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
+        fwriter = Writer(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
+        filt = Filters(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
         filtered = filt.rare_cancer_variant(samples=['RAND'])
         self.assertEqual(len(filtered), 0)
 
@@ -60,8 +60,8 @@ class TestWrites(unittest.TestCase):
         VAPr.parsers.generate_output_files_by_sample """
 
         samples = ['RAND', 'RAND1']
-        fwriter = Writer(self.project_data['db_name'], self.project_data['collection_name'])
-        filt = Filters(self.project_data['db_name'], self.project_data['collection_name'])
+        fwriter = Writer(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
+        filt = Filters(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
 
         for sample in samples:
             q = filt.variants_from_sample(sample)
@@ -79,8 +79,8 @@ class TestWrites(unittest.TestCase):
          by the test_parallel_annotation_test """
 
         client = MongoClient()
-        db = getattr(client, self.project_data['db_name'])
-        collection = getattr(db, self.project_data['collection_name'])
+        db = getattr(client, self.mongo_db_and_collection_names_dict['db_name'])
+        collection = getattr(db, self.mongo_db_and_collection_names_dict['collection_name'])
         if not samples:
             samples = collection.distinct('sample_id')
 

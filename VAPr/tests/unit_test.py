@@ -34,23 +34,22 @@ if __name__ == '__main__':
     fooRunner = unittest.TextTestRunner()
     fooResult = fooRunner.run(fooSuite)
 
-    print
-    print "---- START OF TEST RESULTS"
-    print fooResult
-    print
-    print "fooResult::errors"
-    print fooResult.errors
-    print
-    print "fooResult::failures"
-    print fooResult.failures
-    print
-    print "fooResult::skipped"
-    print fooResult.skipped
-    print
-    print "fooResult::successful"
-    print fooResult.wasSuccessful()
-    print
-    print "fooResult::test-run"
-    print fooResult.testsRun
-    print "---- END OF TEST RESULTS"
-    print
+    print("---- START OF TEST RESULTS")
+    print(fooResult)
+
+    print("fooResult::errors")
+    print(fooResult.errors)
+
+    print("fooResult::failures")
+    print(fooResult.failures)
+
+    print("fooResult::skipped")
+    print(fooResult.skipped)
+
+    print("fooResult::successful")
+    print(fooResult.wasSuccessful())
+
+    print("fooResult::test-run")
+    print(fooResult.testsRun)
+    print("---- END OF TEST RESULTS")
+
