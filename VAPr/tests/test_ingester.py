@@ -5,12 +5,13 @@ import pandas
 # from VAPr.in import ingester
 
 # project-specific libraries
-from VAPr.ingester import Ingester
+from VAPr.vcf_mappings_maker import VcfMappingsMaker
 
 __author__ = 'Mazzaferro'
 
 
 class TestIngester(unittest.TestCase):
+    # TODO: no tests for _store_mapping_for_single_vcf
 
     def setUp(self):
         self.base_dir = os.getcwd()
@@ -47,20 +48,20 @@ class TestIngester(unittest.TestCase):
     # the Ingester class
 
     def test_input_design_file_dirs(self):
-        organizer = Ingester(self.samples_input_dir, self.output_csv_path_dirs)
+        organizer = VcfMappingsMaker(self.samples_input_dir, self.output_csv_path_dirs)
         design_df = pandas.read_csv(self.design_file_dirs)
-        organizer.digest_design_file(design_df)
-        self.assertEqual(len(organizer.mapping_list), self.mapping_list_len[0])
-        self.assertEqual(organizer.mapping_list[0], self.x_45_c1)
-        for _map in organizer.mapping_list:
+        organizer.get_mappings_from_design_file(design_df)
+        self.assertEqual(len(organizer.list_of_vcf_mapping_dicts), self.mapping_list_len[0])
+        self.assertEqual(organizer.list_of_vcf_mapping_dicts[0], self.x_45_c1)
+        for _map in organizer.list_of_vcf_mapping_dicts:
             self.assertTrue(os.path.isfile(_map['raw_vcf_file_full_path']))
 
     def test_input_design_files(self):
-        organizer = Ingester(self.files_input_dir, self.output_csv_path_files)
+        organizer = VcfMappingsMaker(self.files_input_dir, self.output_csv_path_files)
         design_df = pandas.read_csv(self.design_file_files)
-        organizer.digest_design_file(design_df)
-        print(organizer.mapping_list[0])
-        self.assertEqual(len(organizer.mapping_list), self.mapping_list_len[1])
-        self.assertEqual(organizer.mapping_list[0], self.mini1)
-        for _map in organizer.mapping_list:
+        organizer.get_mappings_from_design_file(design_df)
+        print(organizer.list_of_vcf_mapping_dicts[0])
+        self.assertEqual(len(organizer.list_of_vcf_mapping_dicts), self.mapping_list_len[1])
+        self.assertEqual(organizer.list_of_vcf_mapping_dicts[0], self.mini1)
+        for _map in organizer.list_of_vcf_mapping_dicts:
             self.assertTrue(os.path.isfile(_map['raw_vcf_file_full_path']))

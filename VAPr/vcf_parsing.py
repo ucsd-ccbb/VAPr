@@ -14,7 +14,7 @@ GLOBAL_ERROR_COUNT = 0
 
 __author__ = 'Birmingham'
 
-# TODO: Forgive mal-formatted vcf files. Log the error but dont break the annotation.
+# TODO: Forgive mis-formatted vcf files. Log the error but don't break the annotation.
 
 
 # TODO: rewrite with lambdas or partials
@@ -223,8 +223,9 @@ class GenotypeLikelihood:
 
 # AD BQ DP FA GQ GT PL SS
 
+
 class VCFGenotypeStrings:
-    #TODO: Parser for Mutect files
+    # TODO: Parser for Mutect files
 
     _DELIMITER = ':'
     _PARSER_FUNCS = {'GT': fill_genotype,

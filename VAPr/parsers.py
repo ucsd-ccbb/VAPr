@@ -8,12 +8,16 @@ import VAPr.definitions as definitions
 from VAPr.models import TxtParser, HgvsParser
 from VAPr.writes import Writer
 from VAPr.queries import Filters
-import tqdm
 from multiprocessing import Pool
 import logging
 import subprocess
 import shlex
 import time
+import tqdm
+
+__author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
+
+# TODO: Is this really necessary?
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -21,46 +25,37 @@ try:
 except:
     pass
 
-__author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
-
 
 class VariantParsing:
+    def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
+                 list_of_vcf_mapping_dicts, design_file=None, build_ver=None, mongod_cmd=None):
 
-    def __init__(self,
-                 input_dir,
-                 output_csv_path,
-                 annovar_path,
-                 project_data,
-                 mapping,
-                 design_file=None,
-                 build_ver=None,
-                 mongod_cmd=None):
-
-        """ Project data """
+        # Project data
         self.input_dir = input_dir
         self.output_csv_path = output_csv_path
-        self.annovar = annovar_path
-        self.project_data = project_data
+        self.annovar_path = annovar_path
+        self.project_data = mongo_db_and_collection_names_dict
         self.design_file = design_file
-        self.buildver = build_ver
-        self.mapping = mapping
+        self.genome_build_version = build_ver
+        self.list_of_vcf_mapping_dicts = list_of_vcf_mapping_dicts
         self.chunksize = definitions.chunk_size
         self.step = 0
-        self.collection = project_data['collection_name']
-        self.db = project_data['db_name']
+
+        # TODO: refactor these string keys into symbolic constants
+        self.collection = mongo_db_and_collection_names_dict['collection_name']
+        self.db = mongo_db_and_collection_names_dict['db_name']
+
         self._last_round = False
-        # self.completed_jobs = dict.fromkeys(list(self.mapping.keys()), 0)
         self.verbose = 0
         self.n_vars = 0
         self.mongod = mongod_cmd
 
-    def get_sample_csv_vcf_tuple(self):
+    def _get_sample_csv_vcf_tuple(self):
         """ Locate files associated with a specific sample """
 
-        list_tupls = []
+        list_tuples = []
 
-        for _map in self.mapping:
-
+        for _map in self.list_of_vcf_mapping_dicts:
             matching_csv = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
                             and i.endswith('txt')]
 
@@ -74,17 +69,16 @@ class VariantParsing:
             else:
                 csv_path = os.path.join(_map['csv_file_full_path'], matching_csv[0])
                 vcf_path = os.path.join(_map['csv_file_full_path'], matching_vcf[0])
-                list_tupls.append((_map['sample_names'],
+                list_tuples.append((_map['sample_names'],
                                    vcf_path,
                                    csv_path,
                                    self.db,
                                    self.collection,
                                    _map['extra_data']))
 
-        return list_tupls
+        return list_tuples
 
-    def parallel_annotation(self, n_processes, verbose=1, csv_only=False):
-
+    def parallel_annotation(self, num_processes, verbose=1, csv_only=False):
         """
         Set up variant parsing scheme. Since a functional programming style is required for parallel
         processing, the input to the Pool.map function from the multiprocessing library must be
@@ -97,16 +91,16 @@ class VariantParsing:
         250 000 variants and a chunksize of 5 000 will yield 50 steps. Given 8 parallel procrsses, the annotation
         will happen over those 50 steps with 8 cores working cuncurrently until the 50 jobs are fully annotated.
 
-        :param n_processes: number of cores to be used
+        :param num_processes: number of cores to be used
         :param verbose: verbosity level [0,1,2,3]
         :param csv_only: parse csv data only
         :return: None
         """
 
         self.verbose = verbose
-        list_tupls = self.get_sample_csv_vcf_tuple()
+        list_tuples = self._get_sample_csv_vcf_tuple()
         map_job = []
-        for tpl in list_tupls:
+        for tpl in list_tuples:
             hgvs = HgvsParser(tpl[1])
             csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
@@ -114,7 +108,7 @@ class VariantParsing:
             map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod,
                                                           csv_only=csv_only))
 
-        pool = Pool(n_processes)
+        pool = Pool(num_processes)
         for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
             pass
         pool.close()
@@ -138,14 +132,7 @@ class VariantParsing:
             collection_name = _tuple[4]
             extra_data = extra_data
             step = i
-            new_tuple_list.append((sample,
-                                   vcf_file,
-                                   csv_file,
-                                   extra_data,
-                                   db_name,
-                                   collection_name,
-                                   step,
-                                   mongod,
+            new_tuple_list.append((sample, vcf_file, csv_file, extra_data, db_name, collection_name, step, mongod,
                                    csv_only))
         return new_tuple_list
 
@@ -153,12 +140,11 @@ class VariantParsing:
         """ Annotation that doesn't require annovar """
 
         list_tuples = []
-        for _map in self.mapping:
+        for _map in self.list_of_vcf_mapping_dicts:
             simple_map = {k: v for k, v in _map.items() if k not in ['csv_file_basename', 'sample_names']}
             list_tuples.append((simple_map['raw_vcf_file_full_path'], self.db, self.collection))
 
         for _tuple in list_tuples:
-
             hgvs = HgvsParser(_tuple[0])
             num_lines = hgvs.get_num_lines()
             n_steps = int(num_lines / self.chunksize) + 1
@@ -241,7 +227,6 @@ def parse_by_step(maps):
 
 
 def insert_handler(merged_list, collection, mongod_cmd):
-
     logging.info('Parsing Buffer...')
     if len(merged_list) == 0:
         logging.info('Empty list of documents trying to be parsed, skipping and continuing operation...')
@@ -249,7 +234,7 @@ def insert_handler(merged_list, collection, mongod_cmd):
     else:
         try:
             collection.insert_many(merged_list, ordered=False)
-        except Exception, error:
+        except Exception as error:
             if "Connection refused" in str(error):
                 if mongod_cmd:
                     logging.info('MongoDB Server seems to be off. Attempting restart...')
@@ -279,7 +264,6 @@ def merge_dict_lists(*dict_args):
 
 
 def parallel_get_dict_mv(maps):
-
     vcf_path = maps[0]
     db_name = maps[1]
     collection_name = maps[2]
@@ -311,7 +295,7 @@ def get_dict_myvariant(variant_list, verbose, sample_id):
     # This will retrieve a list of dictionaries
     try:
         variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False)
-    except Exception, error:
+    except Exception as error:
         logging.info('Error: ' + str(error) + 'while fetching from MyVariant, retrying...')
         time.sleep(5)
         variant_data = get_dict_myvariant(variant_list, verbose, sample_id)
