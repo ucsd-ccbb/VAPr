@@ -7,10 +7,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3c97aee6-3f5b-4468-a574-120a955935ac" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/VAPr.iml" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="" />
       <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="" />
     </list>
     <ignored path="VAPr.iws" />
@@ -56,12 +52,22 @@
     <favorites_list name="VAPr" />
   </component>
   <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="208">
-              <caret line="14" column="7" lean-forward="true" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
+            <state relative-caret-position="210">
+              <caret line="14" column="7" lean-forward="false" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="workspace.xml" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="300">
+              <caret line="20" column="30" lean-forward="false" selection-start-line="20" selection-start-column="30" selection-end-line="20" selection-end-column="30" />
               <folding />
             </state>
           </provider>
@@ -78,7 +84,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>lower</find>
       <find>vapr</find>
       <find>valida</find>
       <find>LIKH</find>
@@ -108,6 +113,7 @@
       <find>definiti</find>
       <find>project_name</find>
       <find>rand</find>
+      <find>.idea</find>
     </findStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/vapr</dir>
@@ -125,7 +131,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/base.py" />
         <option value="$PROJECT_DIR$/src/annovar.py" />
         <option value="$PROJECT_DIR$/scripts/run_annotations.py" />
         <option value="$PROJECT_DIR$/script.R" />
@@ -176,6 +181,7 @@
         <option value="$PROJECT_DIR$/VAPr/tests/test_ingester.py" />
         <option value="$PROJECT_DIR$/VAPr/tests/test_parse_csv.py" />
         <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/.idea/workspace.xml" />
       </list>
     </option>
   </component>
@@ -206,6 +212,7 @@
     </navigator>
     <panes>
       <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -217,7 +224,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -774,6 +780,14 @@
       <option name="presentableId" value="Default" />
       <updated>1484869734605</updated>
     </task>
+    <task id="LOCAL-00001" summary="Remove the .idea folder from git repo (without removing from local machine)">
+      <created>1502412156101</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1502412156101</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -878,7 +892,8 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <MESSAGE value="Merge branch 'code_review' of https://github.com/ucsd-ccbb/VAPr" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge branch 'code_review' of https://github.com/ucsd-ccbb/VAPr" />
+    <MESSAGE value="Remove the .idea folder from git repo (without removing from local machine)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove the .idea folder from git repo (without removing from local machine)" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -896,7 +911,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Test Results - Unittest_TestIngester_test_input_design_files.html" />
     <entry file="file://$PROJECT_DIR$/VAPr/tests/test_files/Normal_targeted_seq.vcf" />
     <entry file="file://$PROJECT_DIR$/VAPr/tests/test_files/annovar_dir/annotate_variation.pl">
       <provider selected="true" editor-type-id="text-editor">
@@ -1196,8 +1210,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="14" column="7" lean-forward="true" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
+        <state relative-caret-position="210">
+          <caret line="14" column="7" lean-forward="false" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="20" column="30" lean-forward="false" selection-start-line="20" selection-start-column="30" selection-end-line="20" selection-end-column="30" />
           <folding />
         </state>
       </provider>
