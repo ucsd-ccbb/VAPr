@@ -3,6 +3,8 @@
 
 This package is aimed at providing a way of retrieving variant information using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL database (MongoDB solely at the moment). 
 
+View the full documentation here: https://ucsd-ccbb.github.io/VAPr/
+
 ## Updates and Latest Improvements (v.2.0.5)
 
 1. Optimizations
