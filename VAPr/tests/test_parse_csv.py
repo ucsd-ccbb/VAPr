@@ -3,16 +3,18 @@ import sys
 import os
 import csv
 import myvariant
-#quick and dirty way of importing functions
+import zipfile
 from VAPr import models as parser_models
 
-vcf_file = os.path.join(os.getcwd(), 'test_files/Normal_targeted_seq.vcf')
-txt_file = os.path.join(os.getcwd(), 'test_files/annotated.hg19_multianno.txt')
+
+vcf_file = os.path.join(os.getcwd(), 'test_files/test_out_csv_path/real_files/X7/X7.raw.11_annotated.hg19_multianno.vcf')
+txt_file = os.path.join(os.getcwd(), 'test_files/test_out_csv_path/real_files/X7/X7.raw.11_annotated.hg19_multianno.txt')
 
 
 class OpenParseTest(unittest.TestCase):
 
     def setUp(self):
+        self.unzip_all()
         self.txt_file = txt_file
         self.vcf_file = vcf_file
         self.step = 0
@@ -20,6 +22,17 @@ class OpenParseTest(unittest.TestCase):
         self.chunksize = 10
         self.hgvs = parser_models.HgvsParser(self.vcf_file)
         self.csv_parsing = parser_models.TxtParser(self.txt_file, samples='SAMPLE')
+
+    def tearDown(self):
+        os.remove(txt_file)
+        os.remove(vcf_file)
+
+    @staticmethod
+    def unzip_all():
+        zip_vcf = zipfile.ZipFile(vcf_file + '.zip', 'r')
+        zip_vcf.extractall(os.path.join(os.getcwd(), 'test_files/test_out_csv_path/real_files/X7/'))
+        zip_csv = zipfile.ZipFile(txt_file + '.zip', 'r')
+        zip_csv.extractall(os.path.join(os.getcwd(), 'test_files/test_out_csv_path/real_files/X7/'))
 
     def test_csv_read_data_headers(self):
         dat = self.csv_parsing.open_and_parse_chunks(self.step, build_ver='hg19')
@@ -40,8 +53,11 @@ class OpenParseTest(unittest.TestCase):
              'cosmic70',
              'nci60',
              'otherinfo',
-             'genotype']
-        print(dat)
+             'alleles',
+             'genotype',
+             'genotype_likelihoods',
+             'sample_id']
+
         for dictionary in dat:
             for key in list(dictionary.keys()):
                 self.assertTrue(key in l)

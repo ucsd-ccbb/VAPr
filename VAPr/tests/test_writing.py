@@ -15,6 +15,8 @@ __author__ = 'Mazzaferro'
 
 class TestWrites(unittest.TestCase):
 
+    # TODO: test database needs to be rebuilt
+
     """ These tests work when the test_parallel_annotation script has been run twice, where the first
     run is done with the self.minimapper set to (['RAND'], ...) and the second with
     self.minimapper set to (['RAND1'], ...) . The sample names RAND and RAND1 are parsed to
@@ -30,7 +32,7 @@ class TestWrites(unittest.TestCase):
     def test_query_and_write_rand1(self):
         fwriter = Writer(self.mongo_db_and_collection_names_dict['collection_name'], self.mongo_db_and_collection_names_dict['db_name'])
         filt = Filters(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
-        filtered = filt.rare_cancer_variant(samples=['RAND'])
+        filtered = filt.rare_cancer_variants(samples=['RAND'])
         self.assertEqual(len(filtered), 0)
 
         # Test a stub function that is more lenient
@@ -44,7 +46,7 @@ class TestWrites(unittest.TestCase):
     def test_and_query_rand(self):
         fwriter = Writer(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
         filt = Filters(self.mongo_db_and_collection_names_dict['db_name'], self.mongo_db_and_collection_names_dict['collection_name'])
-        filtered = filt.rare_cancer_variant(samples=['RAND'])
+        filtered = filt.rare_cancer_variants(samples=['RAND'])
         self.assertEqual(len(filtered), 0)
 
         # Test a stub function that is more lenient

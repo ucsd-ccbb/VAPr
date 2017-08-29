@@ -13,6 +13,9 @@ __author__ = 'Mazzaferro'
 
 class TestQueries(unittest.TestCase):
 
+    # This effectively created a test database with the documents in mongo required by the other tests,
+    # not much else is needed to be tested here.
+
     def setUp(self):
 
         self.base_dir = '/Volumes/Carlo_HD1/CCBB/VAPr_files/'

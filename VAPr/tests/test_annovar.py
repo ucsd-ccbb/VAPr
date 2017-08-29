@@ -8,7 +8,7 @@ import logging
 import subprocess
 from VAPr.annotation_project import AnnotationProject
 from VAPr import definitions
-from VAPr.annovar import listen, AnnovarJobHandler
+from VAPr.annovar import listen, AnnovarJobHandler, AnnovarWrapper
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -32,9 +32,9 @@ class TestAnnovar(unittest.TestCase):
         self.project_data = {'db_name': 'VariantDatabase',
                              'collection_name': 'collect'}
         self.genome_build_version = 'hg19'
-        self.hg_18_databases = definitions.hg_18_databases
-        self.hg_19_databases = definitions.hg_19_databases
-        self.hg_38_databases = definitions.hg_38_databases
+        self.hg_18_databases = AnnovarWrapper.hg_18_databases
+        self.hg_19_databases = AnnovarWrapper.hg_19_databases
+        self.hg_38_databases = AnnovarWrapper.hg_38_databases
         self.databases = self.get_databases()
         self.project_1 = AnnotationProject(self.files_input_dir,
                                            self.output_csv_path_files,

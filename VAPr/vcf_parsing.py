@@ -156,7 +156,7 @@ class Allele:
             self.read_counts = read_counts
         else:
             self._read_counts = 'NULL'
-        self.errors = GLOBAL_ERROR_COUNT
+        self.errors = GLOBAL_ERROR_COUNT = 0
 
     @property
     def read_counts(self):
@@ -165,7 +165,7 @@ class Allele:
     @read_counts.setter
     def read_counts(self, value):
         self._read_counts = validation.convert_to_nonneg_int(value, nullable=True)[0]
-        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
+        # self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
 
 
 class GenotypeLikelihood:
@@ -194,7 +194,7 @@ class GenotypeLikelihood:
     @allele1_number.setter
     def allele1_number(self, value):
         int_value = validation.convert_to_nonneg_int(value, nullable=True)[0]
-        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
+        # self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
         if self.allele2_number is not None:
             self._validate_allele_relationship(int_value, self.allele2_number)
         self._allele1_number = int_value
@@ -206,7 +206,7 @@ class GenotypeLikelihood:
     @allele2_number.setter
     def allele2_number(self, value):
         int_value = validation.convert_to_nonneg_int(value, nullable=True)[0]
-        self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
+        # self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
         if self.allele1_number is not None:
             self._validate_allele_relationship(self.allele1_number, int_value)
         self._allele2_number = int_value

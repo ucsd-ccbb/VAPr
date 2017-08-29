@@ -72,7 +72,7 @@ def convert_to_nonneg_int(input_val, nullable=False):
         except ValueError:
             err_count += 1
 
-    if not result.is_integer():
+    if not isinstance(result, int):
         err_count += 1
     if result < 0:
         err_count += 1

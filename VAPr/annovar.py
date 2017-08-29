@@ -297,7 +297,7 @@ class AnnovarJobHandler:
         # TODO: This should probably be changed to integer division, as division to produce a float
         # causes linter to be concerned when value is used as step increment in for loop below
         if self.num_batch_jobs > len(self.list_of_vcf_mapping_dicts):
-            self.num_batch_jobs = len(self.list_of_vcf_mapping_dicts) / 2
+            self.num_batch_jobs = len(self.list_of_vcf_mapping_dicts) // 2   # Integer division implemented
 
         # TODO: Do we really need to assign _get_chunk_of_mappings_to_process to a new property?
         # After all, it is already a method.  Couldn't we use it directly in _next?

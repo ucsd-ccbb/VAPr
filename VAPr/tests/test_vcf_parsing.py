@@ -32,9 +32,9 @@ class TestFunctions(unittest.TestCase):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
         vcf_parsing.fill_unfiltered_reads_counts('0,64,12', genotype_to_fill)
         self.assertEqual(3, len(genotype_to_fill.alleles))
-        self.assertEqual('0', genotype_to_fill.alleles[0].read_counts)
-        self.assertEqual('64', genotype_to_fill.alleles[1].read_counts)
-        self.assertEqual('12', genotype_to_fill.alleles[2].read_counts)
+        self.assertEqual(0, genotype_to_fill.alleles[0].read_counts)
+        self.assertEqual(64, genotype_to_fill.alleles[1].read_counts)
+        self.assertEqual(12, genotype_to_fill.alleles[2].read_counts)
 
     def test_fill_unfiltered_reads_counts_error(self):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
@@ -46,14 +46,14 @@ class TestFunctions(unittest.TestCase):
     def test_fill_filtered_reads_count(self):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
         vcf_parsing.fill_filtered_reads_count('44', genotype_to_fill)
-        self.assertEqual('44', genotype_to_fill.filter_passing_reads_count)
+        self.assertEqual(44, genotype_to_fill.filter_passing_reads_count)
     # endregion
 
     # region fill_genotype_confidence tests
     def test_fill_genotype_confidence(self):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
         vcf_parsing.fill_genotype_confidence('44.1', genotype_to_fill)
-        self.assertEqual('44.1', genotype_to_fill.genotype_confidence)
+        self.assertEqual(44.1, genotype_to_fill.genotype_confidence)
     # endregion
 
     # region fill_genotype_likelihoods tests
@@ -78,7 +78,7 @@ class TestFunctions(unittest.TestCase):
             real_values = genotype_to_fill.genotype_likelihoods[index]
             self.assertEqual(curr_expected_values[0], real_values.allele1_number)
             self.assertEqual(curr_expected_values[1], real_values.allele2_number)
-            self.assertEqual(str(curr_expected_values[2]), real_values.likelihood_neg_exponent)
+            self.assertEqual(curr_expected_values[2], real_values.likelihood_neg_exponent)
 
     def test_fill_genotype_likelihoods_no_alleles(self):
         expected_values = [(0, 0, 495),
@@ -94,7 +94,7 @@ class TestFunctions(unittest.TestCase):
             real_values = genotype_to_fill.genotype_likelihoods[index]
             self.assertEqual(curr_expected_values[0], real_values.allele1_number)
             self.assertEqual(curr_expected_values[1], real_values.allele2_number)
-            self.assertEqual(str(curr_expected_values[2]), real_values.likelihood_neg_exponent)
+            self.assertEqual(curr_expected_values[2], real_values.likelihood_neg_exponent)
 
     def test_fill_genotype_likelihoods_error_too_few_alleles(self):
         genotype_to_fill = vcf_parsing.VCFGenotypeInfo('')
@@ -170,16 +170,16 @@ class TestVCFGenotypeInfo(unittest.TestCase):
     def test_genotype_confidence_setter(self):
         dummy_vcfgenotypeinfo = vcf_parsing.VCFGenotypeInfo('')
         dummy_vcfgenotypeinfo.genotype_confidence = "89"
-        self.assertEqual("89", dummy_vcfgenotypeinfo.genotype_confidence)
+        self.assertEqual(89.0, dummy_vcfgenotypeinfo.genotype_confidence)
         dummy_vcfgenotypeinfo.genotype_confidence = 89
         self.assertEqual(89, dummy_vcfgenotypeinfo.genotype_confidence)
         dummy_vcfgenotypeinfo.genotype_confidence = "-89.10"
-        self.assertEqual("-89.10", dummy_vcfgenotypeinfo.genotype_confidence)
+        self.assertEqual(-89.10, dummy_vcfgenotypeinfo.genotype_confidence)
 
     def test_genotype_confidence_setter_error(self):
         dummy_vcfgenotypeinfo = vcf_parsing.VCFGenotypeInfo('')
         dummy_vcfgenotypeinfo.genotype_confidence = "blue"
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 7)
 
 
     # endregion
@@ -188,18 +188,16 @@ class TestVCFGenotypeInfo(unittest.TestCase):
     def test_filter_passing_reads_count_setter(self):
         dummy_vcfgenotypeinfo = vcf_parsing.VCFGenotypeInfo('')
         dummy_vcfgenotypeinfo.filter_passing_reads_count = "42"
-        self.assertEqual("42", dummy_vcfgenotypeinfo.filter_passing_reads_count)
+        self.assertEqual(42.0, dummy_vcfgenotypeinfo.filter_passing_reads_count)
         dummy_vcfgenotypeinfo.filter_passing_reads_count = 0
         self.assertEqual(0, dummy_vcfgenotypeinfo.filter_passing_reads_count)
         dummy_vcfgenotypeinfo.filter_passing_reads_count = "."
-        self.assertEqual('.', dummy_vcfgenotypeinfo.filter_passing_reads_count)
+        self.assertEqual(-9999, dummy_vcfgenotypeinfo.filter_passing_reads_count)
 
     def test_filter_passing_reads_count_setter_error(self):
         dummy_vcfgenotypeinfo = vcf_parsing.VCFGenotypeInfo('')
         dummy_vcfgenotypeinfo.filter_passing_reads_count = -1
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
         dummy_vcfgenotypeinfo.filter_passing_reads_count = 48.5
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
 
     # endregion
 
@@ -231,7 +229,7 @@ class TestGenotypeLikelihood(unittest.TestCase):
 
     def test__validate_allele_relationship_fail(self):
         vcf_parsing.GenotypeLikelihood._validate_allele_relationship(2, 0)
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 1)
 
     # endregion
 
@@ -243,16 +241,16 @@ class TestGenotypeLikelihood(unittest.TestCase):
 
     def test_allele1_number_setter_error(self):
         vcf_parsing.GenotypeLikelihood(0, 0, 0).allele1_number = -1
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 1)
         vcf_parsing.GenotypeLikelihood(0, 5, 0).allele1_number = 4.5
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 1)
         vcf_parsing.GenotypeLikelihood(0, 0, 0).allele1_number = "blue"
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 1)
 
         temp_likelihood = vcf_parsing.GenotypeLikelihood(0, 0, 0)
         temp_likelihood.allele2_number = 1
         temp_likelihood.allele1_number = 4  # can't be greater than allele 2
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 2)
 
     # endregion
 
@@ -264,14 +262,14 @@ class TestGenotypeLikelihood(unittest.TestCase):
 
     def test_allele2_number_setter_error(self):
         vcf_parsing.GenotypeLikelihood(0, 0, 0).allele2_number = -1
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 3)
         vcf_parsing.GenotypeLikelihood(0, 0, 0).allele2_number = 4.5
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 3)
         vcf_parsing.GenotypeLikelihood(0, 0, 0).allele2_number = "blue"
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 4)
         temp_likelihood = vcf_parsing.GenotypeLikelihood(4, 4, 0)
         temp_likelihood.allele2_number = 2  # can't be smaller than allele 1
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 5)
 
     # endregion
 
@@ -279,16 +277,16 @@ class TestGenotypeLikelihood(unittest.TestCase):
     def test_likelihood_neg_exponent_setter(self):
         temp_likelihood = vcf_parsing.GenotypeLikelihood(0, 0, 0)
         temp_likelihood.likelihood_neg_exponent = "89"
-        self.assertEqual("89", temp_likelihood.likelihood_neg_exponent)
+        self.assertEqual(89, temp_likelihood.likelihood_neg_exponent)
         temp_likelihood.likelihood_neg_exponent = 89
         self.assertEqual(89, temp_likelihood.likelihood_neg_exponent)
         temp_likelihood.likelihood_neg_exponent = "-89.10"
-        self.assertEqual("-89.10", temp_likelihood.likelihood_neg_exponent)
+        self.assertEqual(-89.10, temp_likelihood.likelihood_neg_exponent)
 
     def test_genotype_confidence_setter_error(self):
         temp_likelihood = vcf_parsing.GenotypeLikelihood(0, 0, 0)
         temp_likelihood.likelihood_neg_exponent = "blue"
-        self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
+        # self.assertEqual(vcf_parsing.GLOBAL_ERROR_COUNT, 6)
     # endregion
 
 
@@ -299,13 +297,13 @@ class TestVCFGenotypeString(unittest.TestCase):
         parser = vcf_parsing.VCFGenotypeStrings()
         genotype_to_fill = parser.parse(format_string, info_string)
         self.assertEqual('1/1', genotype_to_fill.genotype)
-        self.assertEqual("NULL", genotype_to_fill.filter_passing_reads_count)
-        self.assertEqual('99', genotype_to_fill.genotype_confidence)
+        self.assertEqual(None, genotype_to_fill.filter_passing_reads_count)
+        self.assertEqual(99, genotype_to_fill.genotype_confidence)
         self.assertEqual(2, len(genotype_to_fill.alleles))
         self.assertEqual(3, len(genotype_to_fill.genotype_likelihoods))
-        self.assertEqual('1187.2', genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent)
-        self.assertEqual('101', genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent)
-        self.assertEqual('0', genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)
+        self.assertEqual(1187.2, genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent)
+        self.assertEqual(101, genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent)
+        self.assertEqual(0, genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)
 
     def test_parse_GT_AD_GQ_PL(self):
         pass
@@ -317,15 +315,15 @@ class TestVCFGenotypeString(unittest.TestCase):
         genotype_to_fill = parser.parse(format_string, info_string)
 
         self.assertEqual('1/1', genotype_to_fill.genotype)
-        self.assertEqual('34', genotype_to_fill.filter_passing_reads_count)
-        self.assertEqual('99', genotype_to_fill.genotype_confidence)
+        self.assertEqual(34, genotype_to_fill.filter_passing_reads_count)
+        self.assertEqual(99, genotype_to_fill.genotype_confidence)
         self.assertEqual(2, len(genotype_to_fill.alleles))
         self.assertEqual(3, len(genotype_to_fill.genotype_likelihoods))
-        self.assertEqual('0', genotype_to_fill.alleles[0].read_counts)
-        self.assertEqual('1187.2', genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent)
-        self.assertEqual('34', genotype_to_fill.alleles[1].read_counts)
-        self.assertEqual('101', genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent)
-        self.assertEqual('0', genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)
+        self.assertEqual(0, genotype_to_fill.alleles[0].read_counts)
+        self.assertEqual(1187.2, genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent)
+        self.assertEqual(34, genotype_to_fill.alleles[1].read_counts)
+        self.assertEqual(101, genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent)
+        self.assertEqual(0, genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)
 
     def test_parse_GT_AD_DP_GQ_PGT_PID_PL(self):
         pass

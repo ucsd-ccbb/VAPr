@@ -52,7 +52,8 @@ class TestIngester(unittest.TestCase):
         design_df = pandas.read_csv(self.design_file_dirs)
         organizer.get_mappings_from_design_file(design_df)
         self.assertEqual(len(organizer.list_of_vcf_mapping_dicts), self.mapping_list_len[0])
-        self.assertEqual(organizer.list_of_vcf_mapping_dicts[0], self.x_45_c1)
+        self.assertEqual(organizer.list_of_vcf_mapping_dicts[-3], self.x_45_c1)
+
         for _map in organizer.list_of_vcf_mapping_dicts:
             self.assertTrue(os.path.isfile(_map['raw_vcf_file_full_path']))
 

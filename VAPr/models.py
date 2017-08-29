@@ -151,7 +151,7 @@ class TxtParser(object):
                     dict_filled = {k: sparse_dict[k] for k in self.hg_38_columns if sparse_dict[k] != '.'}
 
                 modeled = AnnovarModels(dict_filled, self.samples, extra_data=self.extra_data)
-                listofdicts.append(modeled.final_list_dict)
+                listofdicts.extend(modeled.final_list_dict)
 
             self.offset += offset
 
@@ -211,7 +211,6 @@ class AnnovarModels(object):
                 self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
 
         final_annovar_list_of_dicts, self.errors = self.parse_genotype(self.dictionary)
-
         return final_annovar_list_of_dicts
 
     def parse_genotype(self, dictionary):
@@ -224,9 +223,8 @@ class AnnovarModels(object):
 
         for index, sample in enumerate(self.samples):
             sample_specific_dict = {k: v for k, v in dictionary.items()}  # make copy, propagate genotype info over alleles
-
-            genotype_to_fill = parser.parse(dictionary['otherinfo'][0],
-                                            dictionary['otherinfo'][index + 1])
+            genotype_to_fill = parser.parse(dictionary['otherinfo'][-1],
+                                            dictionary['otherinfo'][-2])
 
             sample_specific_dict['sample_id'] = sample
             sample_specific_dict['genotype'] = genotype_to_fill.genotype

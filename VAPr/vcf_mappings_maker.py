@@ -138,12 +138,12 @@ class SingleVcfFileMappingMaker:
         # Increases chance for bugs--if data changed in one place but not another, data in object will be inconsistent
         # and output will depend on whether data was accessed through property or dictionary.
         self.vcf_mapping_dict = {'raw_vcf_file_full_path': os.path.abspath(self.single_vcf_file_path),
-                        'vcf_file_basename': os.path.basename(self.single_vcf_file_path),
-                        'csv_file_basename': self._fill_csv_file_basename(),
-                        'sample_names': self._fill_sample_names(),
-                        'num_samples_in_csv': len(self._fill_sample_names()),
-                        'csv_file_full_path': os.path.join(self.out_dir, self._sample_dir_name()),
-                        'vcf_sample_dir': os.path.join(self.input_dir, self._sample_dir_name())}
+                                 'vcf_file_basename': os.path.basename(self.single_vcf_file_path),
+                                 'csv_file_basename': self._fill_csv_file_basename(),
+                                 'sample_names': self._fill_sample_names(),
+                                 'num_samples_in_csv': len(self._fill_sample_names()),
+                                 'csv_file_full_path': os.path.join(self.out_dir, self._sample_dir_name()),
+                                 'vcf_sample_dir': os.path.join(self.input_dir, self._sample_dir_name())}
 
         self._add_extra_data()
         self._create_csv_output_dir()
