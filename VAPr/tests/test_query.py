@@ -18,9 +18,9 @@ class TestQueries(unittest.TestCase):
 
     def setUp(self):
 
-        self.base_dir = '/Volumes/Carlo_HD1/CCBB/VAPr_files/'
-        self.input_dir = os.path.join(self.base_dir, 'vcf_files/multi_sample')
-        self.design_file_dirs = os.path.join(self.base_dir, 'design_file_three_samples.csv')
+        self.base_dir = os.getcwd()
+        self.input_dir = os.path.join(self.base_dir, 'test_files/test_out_csv_path/real_files')
+        self.design_file_dirs = os.path.join(self.base_dir, 'test_files/design_file_three_samples.csv')
         self.out_path = os.path.join(self.base_dir, 'csv_multisample')
         self.annovar = os.path.join(self.base_dir, '../annovar')
         self.project_data = {'db_name': 'VariantDatabase',
@@ -36,7 +36,8 @@ class TestQueries(unittest.TestCase):
                                                     '--storageEngine wiredTiger')
 
     def test_query_one(self):
-        self.project.parallel_annotation_and_saving(n_processes=6)
+        pass
+        # self.project.parallel_annotation_and_saving(n_processes=6)
         """
 
         :return:
