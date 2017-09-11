@@ -101,7 +101,7 @@ class AnnovarWrapper:
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
                  list_of_vcf_mapping_dicts, design_file=None, genome_build_version=None):
 
-        self.HUMANDB_FOLDER_NAME = "humandb/"
+        self.HUMANDB_FOLDER_NAME = "/humandb/"
 
         # TODO: Figure out what this string actually *is*
         self.DOWN_DD = '-webfrom annovar'
@@ -143,7 +143,7 @@ class AnnovarWrapper:
     # value in annovar_dbs_to_get will be ignored without comment or error.  It would be preferable to have only
     # annovar_dbs_to_get and to set it to None if you wanted to get all annovar dbs.  However, I have not made that
     # change yet in order to maintain the public interface.
-    def download_dbs(self, get_all_relevant_annovar_dbs=True, annovar_dbs_to_get=None):
+    def download_dbs(self, annovar_dbs_to_get=None):
         """
         Wrapper around annotate_variation.pl with -downdb as optional arg
         First, it cleans up the humandb/ directory to avoid conflicts, then gets newest versions of databases
@@ -157,8 +157,7 @@ class AnnovarWrapper:
             for f in files:
                 os.remove(f)
 
-        list_commands = self._build_annovar_database_download_command_str(get_all_relevant_annovar_dbs,
-                                                                          annovar_dbs_to_get)
+        list_commands = self._build_annovar_database_download_command_str(annovar_dbs_to_get)
         for command in list_commands:
             args = shlex.split(command)
             subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -176,6 +175,7 @@ class AnnovarWrapper:
                          (index + 1, len(self.list_of_vcf_mapping_dicts) / num_batch_jobs + 1))
             num_files_created += len(job)
 
+# break into separate function(s) and test for functionality
             for idx, _map in enumerate(job):
                 annotation_dir = _map['csv_file_full_path']
                 if os.path.isdir(annotation_dir):
@@ -212,10 +212,9 @@ class AnnovarWrapper:
         # TODO: Explain why this replacement is being done?
         if '1000g2015aug' in dbs:
             dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
-
         command = " ".join([
             'perl', os.path.join(self.annovar_path, 'table_annovar.pl'),
-            vcf_path, os.path.join(self.annovar_path, self.HUMANDB_FOLDER_NAME),
+            vcf_path, "".join([self.annovar_path, self.HUMANDB_FOLDER_NAME]),
             '-genome_build_version', self.genome_build_version,
             '-out', csv_path, '-remove -protocol', dbs,
             '-operation', dbs_args, '-nastring .', '-otherinfo -vcfinput'
@@ -226,28 +225,28 @@ class AnnovarWrapper:
 
         return command
 
-    def _build_annovar_database_download_command_str(self, get_all_relevant_annovar_dbs, annovar_dbs_to_get):
-        """ Concatenate command string arguments for Annovar download database jobs """
+    def _build_annovar_database_download_command_str(self, annovar_dbs_to_get):
+        """Concatenate command string arguments for Annovar download database jobs"""
 
-        if not get_all_relevant_annovar_dbs:
+        if annovar_dbs_to_get is not None:
             for annovar_db_name in annovar_dbs_to_get:
                 if annovar_db_name not in self.annovar_dbs_to_use:
                     raise ValueError('Database %s not supported for build version %s' % (annovar_db_name,
                                                                                          self.genome_build_version))
-            self.annovar_dbs_to_use = {db: self.annovar_dbs_to_use[db] for db in annovar_dbs_to_get}
+                self.annovar_dbs_to_use = {db: self.annovar_dbs_to_use[db] for db in annovar_dbs_to_get}
 
         command_list = []
         # TODO: refactor to remove duplicated command components :(
         for annovar_db_name in self.annovar_dbs_to_use:
             if self.ANNOVAR_DB_IS_HOSTED_BY_ANNOVAR[annovar_db_name]:
                 command_list.append(" ".join(
-                    ['perl', self.annovar_path + 'annotate_variation.pl',
+                    ['perl', self.annovar_path + '/annotate_variation.pl',
                      '-build', self.genome_build_version,
                      '-downdb', self.DOWN_DD, annovar_db_name,
                      self.annovar_path + self.HUMANDB_FOLDER_NAME]))
             else:
                 command_list.append(" ".join(
-                    ['perl', self.annovar_path + 'annotate_variation.pl',
+                    ['perl', self.annovar_path + '/annotate_variation.pl',
                      '-build', self.genome_build_version,
                      '-downdb', annovar_db_name,
                      self.annovar_path + self.HUMANDB_FOLDER_NAME]))
@@ -279,8 +278,10 @@ class AnnovarWrapper:
             databases = AnnovarWrapper.hg_18_databases
         elif self.genome_build_version == 'hg19':
             databases = AnnovarWrapper.hg_19_databases
-        else:
+        elif self.genome_build_version == 'hg38':
             databases = AnnovarWrapper.hg_38_databases
+        else:
+            raise NameError('Genome {0} not supported by VAPr, genome must be one of the following: hg18, hg19, or hg38'.format(self.genome_build_version))
 
         return databases
 
@@ -297,7 +298,7 @@ class AnnovarJobHandler:
         # TODO: This should probably be changed to integer division, as division to produce a float
         # causes linter to be concerned when value is used as step increment in for loop below
         if self.num_batch_jobs > len(self.list_of_vcf_mapping_dicts):
-            self.num_batch_jobs = len(self.list_of_vcf_mapping_dicts) / 2
+            self.num_batch_jobs = len(self.list_of_vcf_mapping_dicts) // 2
 
         # TODO: Do we really need to assign _get_chunk_of_mappings_to_process to a new property?
         # After all, it is already a method.  Couldn't we use it directly in _next?

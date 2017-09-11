@@ -48,7 +48,8 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
                                                 mongod_cmd='mongod --dbpath /Volumes/Carlo_HD1/data/db/ '
                                                            '--storageEngine wiredTiger')
 
-        self.x_7_raw_X = {'sample_names': ['X7'], 'num_samples_in_csv': 1,
+        self.x_7_raw_X = {'sample_names': ['X7'],
+                          'num_samples_in_csv': 1,
                           'raw_vcf_file_full_path': '/Volumes/Carlo_HD1/CCBB/VAPr_files/vcf_files/multi_sample/X7/'
                                                     'X7.raw.X.vcf', 'csv_file_basename': 'X7.raw.X_annotated',
                           'vcf_file_basename': 'X7.raw.X.vcf',
