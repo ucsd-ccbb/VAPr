@@ -56,9 +56,9 @@ class AnnotationProject:
                                                 build_ver=self.genome_build_version,
                                                 mongod_cmd=self.mongod)
 
-    def download_dbs(self, all_dbs=True, dbs=None):
+    def download_dbs(self, dbs=None):
         """ Wrapper around Annovar database downloading function """
-        self.annovar_wrapper.download_dbs(get_all_relevant_annovar_dbs=all_dbs, annovar_dbs_to_get=dbs)
+        self.annovar_wrapper.download_dbs(annovar_dbs_to_get=dbs)
 
     def run_annovar(self, batch_jobs=10, multisample=False):
         """ Wrapper around multiprocess Annovar annotation  """

@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/VAPr.iml" filepath="$PROJECT_DIR$/.idea/VAPr.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/VAPr_code_review.iml" filepath="$PROJECT_DIR$/.idea/VAPr_code_review.iml" />
     </modules>
   </component>
 </project>

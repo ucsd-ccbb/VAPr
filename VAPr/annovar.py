@@ -63,7 +63,7 @@ def listen(out_path, num_batch_jobs, num_files):
             break
 
 
-class AnnovarWrapper:
+class AnnovarWrapper(object):
     """ Wrapper around ANNOVAR download and annotation functions """
 
     # TODO: Pull out string keys into symbolic constants
@@ -99,7 +99,8 @@ class AnnovarWrapper:
                                    'nci60': 'f'})
 
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
-                 list_of_vcf_mapping_dicts, design_file=None, genome_build_version=None):
+                 list_of_vcf_mapping_dicts, design_file=None, genome_build_version=None,
+                 custom_annovar_dbs_to_use=None):
 
         self.HUMANDB_FOLDER_NAME = "/humandb/"
 
@@ -132,18 +133,33 @@ class AnnovarWrapper:
         self.annovar_path = annovar_path
         self.mongo_db_and_collection_names_dict = mongo_db_and_collection_names_dict
         self.design_file = design_file
-        self.genome_build_version = genome_build_version
         self.list_of_vcf_mapping_dicts = list_of_vcf_mapping_dicts
 
         # Databases data
-        self.annovar_dbs_to_use = self._get_annovar_dbs_to_use_for_build_version()
+        self._set_annovar_dbs_to_use(genome_build_version, custom_annovar_dbs_to_use)
+
+    @property
+    def genome_build_version(self):
+        return self._genome_build_version
+
+    @genome_build_version.setter
+    def genome_build_version(self, value):
+        raise NotImplementedError("genome_build_version setter not implemented")
+
+    @property
+    def annovar_dbs_to_use(self):
+        return self._annovar_dbs_to_use
+
+    @annovar_dbs_to_use.setter
+    def annovar_dbs_to_use(self, value):
+        raise NotImplementedError("annovar_dbs_to_use setter not implemented")
 
     # TODO: having both a "get_all_dbs" parameter and an "annovar_dbs_to_get" parameter introduces the potential for
     # unexpected behavior--if the user sets get_all_dbs to True (not understanding precisely what it implies) then any
     # value in annovar_dbs_to_get will be ignored without comment or error.  It would be preferable to have only
     # annovar_dbs_to_get and to set it to None if you wanted to get all annovar dbs.  However, I have not made that
     # change yet in order to maintain the public interface.
-    def download_dbs(self, annovar_dbs_to_get=None):
+    def download_dbs(self):
         """
         Wrapper around annotate_variation.pl with -downdb as optional arg
         First, it cleans up the humandb/ directory to avoid conflicts, then gets newest versions of databases
@@ -157,7 +173,7 @@ class AnnovarWrapper:
             for f in files:
                 os.remove(f)
 
-        list_commands = self._build_annovar_database_download_command_str(annovar_dbs_to_get)
+        list_commands = self._build_annovar_database_download_command_str()
         for command in list_commands:
             args = shlex.split(command)
             subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -175,23 +191,28 @@ class AnnovarWrapper:
                          (index + 1, len(self.list_of_vcf_mapping_dicts) / num_batch_jobs + 1))
             num_files_created += len(job)
 
-# break into separate function(s) and test for functionality
-            for idx, _map in enumerate(job):
-                annotation_dir = _map['csv_file_full_path']
-                if os.path.isdir(annotation_dir):
-                    logging.info('Directory already exists for %s. '
-                                 'Writing output files there for file %s.' % (annotation_dir,
-                                                                              _map['raw_vcf_file_full_path']))
-                else:
-                    os.makedirs(annotation_dir)
-
-                vcf_path = _map['raw_vcf_file_full_path']
-                csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
-                cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
-                                                                   vcf_is_multisample=vcf_is_multisample)
-                args = shlex.split(cmd_string)
-
-                subprocess.Popen(args, stdout=subprocess.PIPE)
+            # break into separate function(s) and test for functionality
+            self._submit_job(job, vcf_is_multisample=vcf_is_multisample)
+            # annotation_dir_list = []
+            # for idx, _map in enumerate(job):
+            #     annotation_dir = _map['csv_file_full_path']
+            #     if annotation_dir not in annotation_dir_list:
+            #         annotation_dir_list.append(annotation_dir)
+            #     for unique_annotation_dir in annotation_dir_list:
+            #         if os.path.isdir(unique_annotation_dir):
+            #             logging.info('Directory already exists for %s. '
+            #                          'Writing output files there for file %s.' % (unique_annotation_dir,
+            #                                                                       _map['raw_vcf_file_full_path']))
+            #         else:
+            #             os.makedirs(unique_annotation_dir)
+            #
+            #     vcf_path = _map['raw_vcf_file_full_path']
+            #     csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
+            #     cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
+            #                                                        vcf_is_multisample=vcf_is_multisample)
+            #     args = shlex.split(cmd_string)
+            #
+            #     subprocess.Popen(args, stdout=subprocess.PIPE)
 
             logging.info('Annovar jobs submitted for %i files: %s' % (len(job),
                                                                       ', '.join([os.path.basename(
@@ -201,6 +222,28 @@ class AnnovarWrapper:
             listen(self.output_csv_path, len(job), num_files_created)
             logging.info('Finished running Annovar on this batch')
         logging.info('Finished running Annovar on all files')
+
+    def _submit_job(self, job, vcf_is_multisample):
+        unique_annotation_dirs = set()
+        for idx, _map in enumerate(job):
+            annotation_dir = _map['csv_file_full_path']
+            #if annotation_dir not in annotation_dir_list:
+            unique_annotation_dirs.add(annotation_dir)
+            for unique_annotation_dir in unique_annotation_dirs:
+                if os.path.isdir(unique_annotation_dir):
+                    logging.info('Directory already exists for %s. '
+                                 'Writing output files there for file %s.' % (unique_annotation_dir,
+                                                                              _map['raw_vcf_file_full_path']))
+                else:
+                    os.makedirs(unique_annotation_dir)
+
+            vcf_path = _map['raw_vcf_file_full_path']
+            csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
+            cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
+                                                               vcf_is_multisample=vcf_is_multisample)
+            args = shlex.split(cmd_string)
+
+            subprocess.Popen(args, stdout=subprocess.PIPE)
 
     def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
         """Generate command string to run table_annovar.pl, which annotates a VCF file."""
@@ -225,15 +268,8 @@ class AnnovarWrapper:
 
         return command
 
-    def _build_annovar_database_download_command_str(self, annovar_dbs_to_get):
+    def _build_annovar_database_download_command_str(self):
         """Concatenate command string arguments for Annovar download database jobs"""
-
-        if annovar_dbs_to_get is not None:
-            for annovar_db_name in annovar_dbs_to_get:
-                if annovar_db_name not in self.annovar_dbs_to_use:
-                    raise ValueError('Database %s not supported for build version %s' % (annovar_db_name,
-                                                                                         self.genome_build_version))
-                self.annovar_dbs_to_use = {db: self.annovar_dbs_to_use[db] for db in annovar_dbs_to_get}
 
         command_list = []
         # TODO: refactor to remove duplicated command components :(
@@ -272,6 +308,20 @@ class AnnovarWrapper:
     #                 if db_dict[db_][0] > self.manual_update[db][0]:
     #                     logging.info('Database %s outdated, will download newer version' % db_)
     #                     self.download_dbs(all_dbs=False, dbs=[os.path.splitext(os.path.splitext(db_)[0])[0]])
+
+    def _set_annovar_dbs_to_use(self, genome_build_version, custom_annovar_dbs_to_use=None):
+        self._genome_build_version = genome_build_version
+        annovar_dbs_for_build_version_dict = self._get_annovar_dbs_to_use_for_build_version()
+
+        annovar_dbs_to_get_dict = annovar_dbs_for_build_version_dict # by default, assume we use all for build version
+        if custom_annovar_dbs_to_use is not None:
+            for annovar_db_name in custom_annovar_dbs_to_use:
+                if annovar_db_name not in annovar_dbs_for_build_version_dict:
+                    raise ValueError('Database %s not supported for build version %s' % (annovar_db_name,
+                                                                                         self.genome_build_version))
+                annovar_dbs_to_get_dict = {db: annovar_dbs_for_build_version_dict[db] for db in custom_annovar_dbs_to_use}
+
+        self._annovar_dbs_to_use = annovar_dbs_to_get_dict
 
     def _get_annovar_dbs_to_use_for_build_version(self):
         if self.genome_build_version == 'hg18':
