@@ -94,7 +94,6 @@ class VcfMappingsMaker:
     def _store_mapping_for_single_vcf(self, single_input_file_path, sample_id='infer', sample_id_type='files',
                                       extra_data=None):
         """ Digests input data from input directory """
-
         vcf_mapping_maker = self.single_vcf_mapping_maker(single_input_file_path, self.base_dir, self.out_dir,
                                                           sample_id=sample_id, sample_id_type=sample_id_type,
                                                           extra_data=extra_data)

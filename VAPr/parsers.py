@@ -41,6 +41,7 @@ class VariantParsing:
         self.chunksize = definitions.chunk_size
         self.step = 0
 
+
         # TODO: refactor these string keys into symbolic constants
         self.collection = mongo_db_and_collection_names_dict['collection_name']
         self.db = mongo_db_and_collection_names_dict['db_name']
@@ -276,6 +277,7 @@ def parallel_get_dict_mv(maps):
 
 def get_dict_myvariant(variant_list, verbose, sample_id):
     """ Retrieve variants from MyVariant.info"""
+    variant_fields = ['dbsnp.rsid', 'cadd.phred', 'cadd.1000g.af', 'cadd.esp.af', 'cosmic.cosmic_id']
 
     if verbose >= 2:
         verbose = True
@@ -285,7 +287,7 @@ def get_dict_myvariant(variant_list, verbose, sample_id):
     mv = myvariant.MyVariantInfo()
     # This will retrieve a list of dictionaries
     try:
-        variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False)
+        variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False, fields=variant_fields)
     except Exception as error:
         logging.info('Error: ' + str(error) + 'while fetching from MyVariant, retrying...')
         time.sleep(5)

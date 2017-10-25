@@ -2,6 +2,7 @@ from __future__ import division, print_function
 import sys
 import pandas
 import logging
+from VAPr.vcf_merge import MergeVcfs
 from VAPr.annovar import AnnovarWrapper
 from VAPr.parsers import VariantParsing
 from VAPr.vcf_mappings_maker import VcfMappingsMaker
@@ -28,12 +29,16 @@ class AnnotationProject:
     # TODO: Consider making this an enum?
     supported_build_vers = ['hg19', 'hg18', 'hg38']
 
-    def __init__(self, input_dir, output_dir, annovar_path, mongo_db_and_collection_names_dict,
+    def __init__(self, input_dir, output_dir, merged_vcf_name, annovar_path, mongo_db_and_collection_names_dict,
                  design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
-        """ Class that implements the API and the major annotation/saving methods  """
+        # type: (object, object, object, object, object, object, object, object, object) -> object
+        """ Class that implements the API and the major annotation/saving methods  
+        :rtype: object
+        """
 
         self.input_dir = input_dir
         self.output_csv_path = output_dir
+        self.merged_vcf_name = merged_vcf_name
         self.design_file = design_file
         self.annovar_path = annovar_path
         self.mongo_db_and_collection_names_dict = mongo_db_and_collection_names_dict
@@ -43,15 +48,18 @@ class AnnotationProject:
         self.split = split_vcf
         self.mongod = mongod_cmd
 
+        self.merged_vcf_mapping_dict = MergeVcfs(self.input_dir, self.output_csv_path, self.list_of_vcf_mapping_dicts, self.merged_vcf_name).merge_vcfs()
+        # return new vcf mapping dict
+
         # TODO: These two calls takes in exactly the same parameters; Consider storing them to an object and passing
         # object around?
         self.annovar_wrapper = AnnovarWrapper(self.input_dir, self.output_csv_path, self.annovar_path,
-                                              self.mongo_db_and_collection_names_dict, self.list_of_vcf_mapping_dicts,
+                                              self.mongo_db_and_collection_names_dict, merged_vcf_mapping_dict,
                                               design_file=self.design_file,
                                               genome_build_version=self.genome_build_version)
 
         self.annotator_wrapper = VariantParsing(self.input_dir, self.output_csv_path, self.annovar_path,
-                                                self.mongo_db_and_collection_names_dict, self.list_of_vcf_mapping_dicts,
+                                                self.mongo_db_and_collection_names_dict, merged_vcf_mapping_dict,
                                                 design_file=self.design_file,
                                                 build_ver=self.genome_build_version,
                                                 mongod_cmd=self.mongod)
