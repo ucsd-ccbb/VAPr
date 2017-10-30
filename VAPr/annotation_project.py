@@ -75,15 +75,6 @@ class AnnotationProject:
         """ Wrapper around multiprocess Annovar annotation  """
         self.annovar_wrapper.run_annovar(vcf_is_multisample=multisample)
 
-    # TODO: Apparent bug
-    # I cannot find any definition of a method called annotate_and_saving anywhere in the project, so
-    # I can't see how this method (the key method of the entire codebase as described in the documentation)
-    # could possibly run.  Perhaps the author's intention was that it would be superceded by a choice of either
-    # parallel_annotation_and_saving or quick_annotate_and_save?
-    def annotate_and_save(self, buffer_vars=False, verbose=2):
-        """ Wrapper around annotation runner. Deprecated in favour of parallel parsing """
-        self.annotator_wrapper.annotate_and_saving(buffer_vars=buffer_vars, verbose=verbose)
-
     def parallel_annotation_and_saving(self, n_processes=4, verbose=1):
         """ Wrapper around parallel annotation multiprocess runner  """
         self.annotator_wrapper.parallel_annotation(num_processes=n_processes, verbose=verbose)

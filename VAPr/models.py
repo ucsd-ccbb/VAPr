@@ -142,8 +142,6 @@ class TxtParser(object):
 
                 if build_ver == 'hg19':
                     dict_filled = {k: sparse_dict[k] for k in self.hg_19_columns if sparse_dict[k] != '.'}
-                elif build_ver == 'hg18':
-                    dict_filled = {k: sparse_dict[k] for k in self.hg_18_columns if sparse_dict[k] != '.'}
                 else:
                     dict_filled = {k: sparse_dict[k] for k in self.hg_38_columns if sparse_dict[k] != '.'}
 
@@ -204,8 +202,8 @@ class AnnovarModels(object):
             if key in ['genomicsuperdups', 'tfbsconssites']:
                 self.dictionary[key] = self.to_dict(key)
 
-            if key == 'otherinfo':
-                self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
+            # if key == 'otherinfo':
+            #     self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
 
         final_annovar_list_of_dicts, self.errors = self.parse_genotype(self.dictionary)
 
@@ -222,8 +220,11 @@ class AnnovarModels(object):
         for index, sample in enumerate(self.samples):
             sample_specific_dict = {k: v for k, v in dictionary.items()}  # make copy, propagate genotype info over alleles
 
-            genotype_to_fill = parser.parse(dictionary['otherinfo'][0],
-                                            dictionary['otherinfo'][index + 1])
+            var_info_string_for_curr_sample = dictionary['otherinfo'][index + 1]
+            if var_info_string_for_curr_sample == '.':
+                continue
+
+            genotype_to_fill = parser.parse(dictionary['otherinfo'][0], var_info_string_for_curr_sample)
 
             sample_specific_dict['sample_id'] = sample
             sample_specific_dict['genotype'] = genotype_to_fill.genotype

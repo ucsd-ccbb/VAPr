@@ -115,6 +115,7 @@ def fill_genotype_likelihoods(info_value, genotype_info_to_fill):
 class VCFGenotypeInfo:
 
     def __init__(self, raw_string):
+        self.errors = GLOBAL_ERROR_COUNT
         self.db_id = None
         self.genotype = None
         self._genotype_confidence = None
@@ -122,7 +123,6 @@ class VCFGenotypeInfo:
         self.raw_string = raw_string
         self.alleles = []  # 0 for ref, 1 for first alt, etc
         self.genotype_likelihoods = []
-        self.errors = GLOBAL_ERROR_COUNT
 
     @property
     def is_null_call(self):
@@ -150,13 +150,13 @@ class VCFGenotypeInfo:
 
 class Allele:
     def __init__(self, read_counts=None):
+        self.errors = GLOBAL_ERROR_COUNT
         self.db_id = None
         self._read_counts = None
         if read_counts is not None:
             self.read_counts = read_counts
         else:
             self._read_counts = 'NULL'
-        self.errors = GLOBAL_ERROR_COUNT
 
     @property
     def read_counts(self):
@@ -168,7 +168,7 @@ class Allele:
         self.errors += validation.convert_to_nonneg_int(value, nullable=True)[1]
 
 
-class GenotypeLikelihood:
+class GenotypeLikelihood(object):
     @staticmethod
     def _validate_allele_relationship(allele1_number, allele2_number):
         global GLOBAL_ERROR_COUNT
@@ -177,6 +177,7 @@ class GenotypeLikelihood:
 
     def __init__(self, allele1_number, allele2_number, likelihood_neg_exponent):
 
+        self.errors = GLOBAL_ERROR_COUNT
         self.db_id = None
         self._allele1_number = None
         self._allele2_number = None
@@ -185,7 +186,6 @@ class GenotypeLikelihood:
         self.allele2_number = allele2_number
         self.likelihood_neg_exponent = likelihood_neg_exponent
         self.genotype_subclass_by_class = None
-        self.errors = GLOBAL_ERROR_COUNT
 
     @property
     def allele1_number(self):

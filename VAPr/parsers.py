@@ -111,7 +111,7 @@ class VariantParsing:
             pass
         pool.close()
         pool.join()
-        # logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
+        logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
     # @staticmethod
     def parallel_annotator_mapper(self, _tuple, n_steps, extra_data=None, mongod_cmd=None):
@@ -148,9 +148,13 @@ class VariantParsing:
             num_lines = hgvs.get_num_lines()
             n_steps = int(num_lines / self.chunksize) + 1
             map_job = self.quick_annotate_mapper(_tuple, n_steps)
-            pool = Pool(n_processes)
-            for _ in tqdm.tqdm(pool.imap_unordered(parallel_get_dict_mv, map_job), total=len(map_job)):
-                pass
+            for map in map_job:
+                parallel_get_dict_mv(map)
+            # pool = Pool(n_processes)
+            # for _ in tqdm.tqdm(pool.imap_unordered(parallel_get_dict_mv, map_job), total=len(map_job)):
+            #     pass
+            # pool.close()
+            # pool.join()
 
 #    @staticmethod
     def quick_annotate_mapper(self, _tuple, n_steps):
@@ -219,7 +223,6 @@ def parse_by_step(maps):
     for i, _ in enumerate(myvariants_variants):
         for dict_from_sample in csv_variants[i]:
             merged_list.append(merge_dict_lists(myvariants_variants[i], dict_from_sample))
-
     return insert_handler(merged_list, collection, mongod_cmd)
 
 
@@ -235,7 +238,6 @@ def insert_handler(merged_list, collection, mongod_cmd):
             if "Connection refused" in str(error):
                 if mongod_cmd:
                     logging.info('MongoDB Server seems to be off. Attempting restart...')
-                    print(mongod_cmd)
                     args = shlex.split(mongod_cmd)
                     subprocess.Popen(args, stdout=subprocess.PIPE)
                 else:
@@ -282,7 +284,6 @@ def parallel_get_dict_mv(maps):
 
 def get_dict_myvariant(variant_list, verbose, sample_id, fields, genome_build_version):
     """ Retrieve variants from MyVariant.info"""
-
     if verbose >= 2:
         verbose = True
     else:
