@@ -32,6 +32,7 @@ class AnnotationProject:
     def __init__(self, input_dir, output_dir, analysis_name, annovar_path, mongo_db_and_collection_names_dict,
                  design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
         # type: (object, object, object, object, object, object, object, object, object) -> object
+        # TODO: Why is the above here?
         """ Class that implements the API and the major annotation/saving methods  
         :rtype: object
         """

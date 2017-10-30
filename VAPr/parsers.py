@@ -41,7 +41,6 @@ class VariantParsing:
         self.chunksize = definitions.chunk_size
         self.step = 0
 
-
         # TODO: refactor these string keys into symbolic constants
         self.collection = mongo_db_and_collection_names_dict['collection_name']
         self.db = mongo_db_and_collection_names_dict['db_name']
