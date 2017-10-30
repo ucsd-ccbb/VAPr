@@ -29,7 +29,7 @@ class AnnotationProject:
     # TODO: Consider making this an enum?
     supported_build_vers = ['hg19', 'hg18', 'hg38']
 
-    def __init__(self, input_dir, output_dir, merged_vcf_name, annovar_path, mongo_db_and_collection_names_dict,
+    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, mongo_db_and_collection_names_dict,
                  design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
         # type: (object, object, object, object, object, object, object, object, object) -> object
         """ Class that implements the API and the major annotation/saving methods  
@@ -38,7 +38,7 @@ class AnnotationProject:
 
         self.input_dir = input_dir
         self.output_csv_path = output_dir
-        self.merged_vcf_name = merged_vcf_name
+        self.analysis_name = analysis_name
         self.design_file = design_file
         self.annovar_path = annovar_path
         self.mongo_db_and_collection_names_dict = mongo_db_and_collection_names_dict
@@ -48,29 +48,32 @@ class AnnotationProject:
         self.split = split_vcf
         self.mongod = mongod_cmd
 
-        self.merged_vcf_mapping_dict = MergeVcfs(self.input_dir, self.output_csv_path, self.list_of_vcf_mapping_dicts, self.merged_vcf_name).merge_vcfs()
         # return new vcf mapping dict
+        self.vcf_mapping_dict = MergeVcfs(self.input_dir,
+                                          self.output_csv_path,
+                                          self.list_of_vcf_mapping_dicts,
+                                          self.analysis_name).merge_vcfs()
 
         # TODO: These two calls takes in exactly the same parameters; Consider storing them to an object and passing
         # object around?
         self.annovar_wrapper = AnnovarWrapper(self.input_dir, self.output_csv_path, self.annovar_path,
-                                              self.mongo_db_and_collection_names_dict, merged_vcf_mapping_dict,
+                                              self.mongo_db_and_collection_names_dict, self.vcf_mapping_dict,
                                               design_file=self.design_file,
                                               genome_build_version=self.genome_build_version)
 
         self.annotator_wrapper = VariantParsing(self.input_dir, self.output_csv_path, self.annovar_path,
-                                                self.mongo_db_and_collection_names_dict, merged_vcf_mapping_dict,
+                                                self.mongo_db_and_collection_names_dict, self.vcf_mapping_dict,
                                                 design_file=self.design_file,
                                                 build_ver=self.genome_build_version,
                                                 mongod_cmd=self.mongod)
 
-    def download_dbs(self, dbs=None):
+    def download_dbs(self):
         """ Wrapper around Annovar database downloading function """
-        self.annovar_wrapper.download_dbs(annovar_dbs_to_get=dbs)
+        self.annovar_wrapper.download_dbs()
 
-    def run_annovar(self, batch_jobs=10, multisample=False):
+    def run_annovar(self, multisample=False):
         """ Wrapper around multiprocess Annovar annotation  """
-        self.annovar_wrapper.run_annovar(num_batch_jobs=batch_jobs, vcf_is_multisample=multisample)
+        self.annovar_wrapper.run_annovar(vcf_is_multisample=multisample)
 
     # TODO: Apparent bug
     # I cannot find any definition of a method called annotate_and_saving anywhere in the project, so

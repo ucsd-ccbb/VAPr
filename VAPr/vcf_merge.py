@@ -3,8 +3,7 @@ import os
 import shlex
 import subprocess
 import logging
-import threading
-from vcf_mappings_maker import SingleVcfFileMappingMaker, VcfMappingsMaker
+from VAPr.vcf_mappings_maker import VcfMappingsMaker, SingleVcfFileMappingMaker
 
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
 
@@ -17,29 +16,36 @@ except:
 
 
 class MergeVcfs:
-    def __init__(self, input_dir, output_dir, list_of_vcf_mapping_dicts, merged_vcf_name):
+    def __init__(self, input_dir, output_dir, list_of_vcf_mapping_dicts, analysis_name):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.merged_vcf_name = merged_vcf_name
-        self.output_merged_vcf_path = os.path.join(self.output_dir, self.merged_vcf_name)
+        self.vcf_name = analysis_name
+        # User must provide analysis_name without .vcf extension: if one single vcf file
+        # If multiple vcf files, analysis name will be name of merged vcf file
+        self.output_vcf_path = os.path.join(self.output_dir, self.vcf_name + '.vcf')
+        self.list_of_vcf_mapping_dicts = list_of_vcf_mapping_dicts
         self.raw_vcf_path_list =  [vcf['raw_vcf_file_full_path'] for vcf in list_of_vcf_mapping_dicts]
 
     def merge_vcfs(self):
         """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
 
-        if not os.path.isdir(self.output_dir):
-            os.makedirs(self.output_dir)
+        try:
+            os.mkdir(self.output_dir)
+        except OSError:
+            logging.info('Output directory %s for analysis already exists; using existing directory' %
+                         self.output_dir)
 
-        bgzipped_vcf_path_list = [self.bgzip_index_vcf(vcf) for vcf in self.raw_vcf_path_list]
-        self.execute_merge(bgzipped_vcf_path_list, self.output_merged_vcf_path)
-
-
-        return SingleVcfFileMappingMaker(single_input_file_path=self.output_merged_vcf_path,
+        if len(self.raw_vcf_path_list) > 1:
+            bgzipped_vcf_path_list = [self.bgzip_index_vcf(vcf) for vcf in self.raw_vcf_path_list]
+            self.execute_merge(bgzipped_vcf_path_list, self.output_vcf_path)
+            return [SingleVcfFileMappingMaker(single_input_file_path=self.output_vcf_path,
                                          input_dir=self.input_dir,
                                          out_dir=self.output_dir,
                                          sample_id='infer',
                                          sample_id_type='files',
-                                         extra_data=None).vcf_mapping_dict
+                                         extra_data=None).vcf_mapping_dict]
+        else:
+            return self.list_of_vcf_mapping_dicts
 
 
     def execute_merge(self, vcf_list, out_vcf):

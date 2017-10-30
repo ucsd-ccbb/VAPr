@@ -88,16 +88,14 @@ class TxtParser(object):
                               'gene_knowngene',
                               'genedetail_knowngene',
                               'exonicfunc_knowngene',
-                              'tfbsconssites',
-                              'cytoband',
-                              'genomicsuperdups',
-                              '1000g2015aug_all',
-                              'esp6500siv2_all',
-                              'cosmic70',
-                              'nci60',
+                              #'tfbsconssites',
+                              #'cytoband',
+                              #'genomicsuperdups',
+                              #'1000g2015aug_all',
+                              #'esp6500siv2_all',
+                              #'cosmic70',
+                              #'nci60',
                               'otherinfo']
-
-        self.hg_18_columns = self.hg_19_columns
 
         self.hg_38_columns = ['chr',
                               'start',
@@ -108,12 +106,12 @@ class TxtParser(object):
                               'gene_knowngene',
                               'genedetail_knowngene',
                               'exonicfunc_knowngene',
-                              'cytoband',
-                              'genomicsuperdups',
-                              '1000g2015aug_all',
-                              'esp6500siv2_all',
-                              'cosmic70',
-                              'nci60',
+                              #'cytoband',
+                              #'genomicsuperdups',
+                              #'1000g2015aug_all',
+                              #'esp6500siv2_all',
+                              #'cosmic70',
+                              #'nci60',
                               'otherinfo']
 
     def open_and_parse_chunks(self, step, build_ver=None, offset=0):

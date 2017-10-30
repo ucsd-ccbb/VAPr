@@ -45,7 +45,6 @@ class VariantParsing:
         # TODO: refactor these string keys into symbolic constants
         self.collection = mongo_db_and_collection_names_dict['collection_name']
         self.db = mongo_db_and_collection_names_dict['db_name']
-
         self._last_round = False
         self.verbose = 0
         self.n_vars = 0
@@ -114,8 +113,8 @@ class VariantParsing:
         pool.join()
         # logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
-    @staticmethod
-    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None, mongod_cmd=None):
+    # @staticmethod
+    def parallel_annotator_mapper(self, _tuple, n_steps, extra_data=None, mongod_cmd=None):
         """ Assign step number to each tuple to be consumed by parsing function """
         new_tuple_list = []
         if mongod_cmd:
@@ -131,7 +130,9 @@ class VariantParsing:
             collection_name = _tuple[4]
             extra_data = extra_data
             step = i
-            new_tuple_list.append((sample, vcf_file, csv_file, extra_data, db_name, collection_name, step, mongod))
+            new_tuple_list.append((sample, vcf_file, csv_file, extra_data, db_name, collection_name, step, mongod,
+                                   definitions.myvariant_fields,
+                                   self.genome_build_version))
         return new_tuple_list
 
     def quick_annotate_and_save(self, n_processes=8):
@@ -151,8 +152,8 @@ class VariantParsing:
             for _ in tqdm.tqdm(pool.imap_unordered(parallel_get_dict_mv, map_job), total=len(map_job)):
                 pass
 
-    @staticmethod
-    def quick_annotate_mapper(_tuple, n_steps):
+#    @staticmethod
+    def quick_annotate_mapper(self, _tuple, n_steps):
         new_tuple_list = []
         for i in range(n_steps):
             step = i
@@ -162,7 +163,9 @@ class VariantParsing:
             new_tuple_list.append((vcf_path,
                                    db_name,
                                    collec_name,
-                                   step))
+                                   step,
+                                   definitions.myvariant_fields,
+                                   self.genome_build_version))
         return new_tuple_list
 
     def generate_output_files_by_sample(self):
@@ -199,6 +202,8 @@ def parse_by_step(maps):
     collection_name = maps[5]
     step = maps[6]
     mongod_cmd = maps[7]
+    fields = maps[8]
+    genome_build_version = maps[9]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
@@ -206,7 +211,7 @@ def parse_by_step(maps):
     hgvs = HgvsParser(vcf_file)
     csv_parsing = TxtParser(csv_file, samples=sample, extra_data=extra_data)
     list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample)
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample, fields, genome_build_version)
 
     csv_variants = csv_parsing.open_and_parse_chunks(step, build_ver='hg19')
 
@@ -260,24 +265,23 @@ def parallel_get_dict_mv(maps):
     db_name = maps[1]
     collection_name = maps[2]
     step = maps[3]
+    fields = maps[4]
+    genome_build_version = maps[5]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
     hgvs = HgvsParser(vcf_path)
-
     list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples)
-
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples, fields, genome_build_version)
     # logging.info('Parsing Buffer...')
     collection.insert_many(myvariants_variants, ordered=False)
     client.close()
     return None
 
 
-def get_dict_myvariant(variant_list, verbose, sample_id):
+def get_dict_myvariant(variant_list, verbose, sample_id, fields, genome_build_version):
     """ Retrieve variants from MyVariant.info"""
-    variant_fields = ['dbsnp.rsid', 'cadd.phred', 'cadd.1000g.af', 'cadd.esp.af', 'cosmic.cosmic_id']
 
     if verbose >= 2:
         verbose = True
@@ -287,11 +291,13 @@ def get_dict_myvariant(variant_list, verbose, sample_id):
     mv = myvariant.MyVariantInfo()
     # This will retrieve a list of dictionaries
     try:
-        variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False, fields=variant_fields)
+        getvariants = mv.getvariants(variant_list, verbose=1, as_dataframe=False, fields=fields,
+                                     assembly=genome_build_version)
+        variant_data = getvariants
     except Exception as error:
         logging.info('Error: ' + str(error) + 'while fetching from MyVariant, retrying...')
         time.sleep(5)
-        variant_data = get_dict_myvariant(variant_list, verbose, sample_id)
+        variant_data = get_dict_myvariant(variant_list, verbose, sample_id, fields, genome_build_version)
 
     variant_data = remove_id_key(variant_data, sample_id)
     return variant_data

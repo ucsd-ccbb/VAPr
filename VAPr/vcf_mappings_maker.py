@@ -145,7 +145,7 @@ class SingleVcfFileMappingMaker:
                         'vcf_sample_dir': os.path.join(self.input_dir, self._sample_dir_name())}
 
         self._add_extra_data()
-        self._create_csv_output_dir()
+        #self._create_csv_output_dir()
 
     def _add_extra_data(self):
         if self.extra_data:
