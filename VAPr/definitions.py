@@ -18,6 +18,5 @@ myvariant_fields = [
     'civic.evidence_items',
     'cgi',
     'gwassnps',
-    'gwassnps'
     'wellderly.alleles.freq'
 ]

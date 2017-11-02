@@ -54,6 +54,7 @@ class HgvsParser(object):
 
         return self.complete_chromosome(list_ids)
 
+
     @staticmethod
     def complete_chromosome(expanded_list):
         """ Ensuring syntax consistency """
@@ -68,8 +69,12 @@ class HgvsParser(object):
         return expanded_list
 
 
-class TxtParser(object):
+class AnnovarTxtParser(object):
     """ Class that process an Annovar created csv file """
+    ANNOVAR_CHR_HEADER ='chr'
+    ANNOVAR_START_HEADER = 'start'
+    ANNOVAR_REF_HEADER = 'ref'
+    ANNOVAR_ALT_HEADER = 'alt'
 
     def __init__(self, txt_file, samples=None, extra_data=None):
 
@@ -79,40 +84,23 @@ class TxtParser(object):
         self.chunksize = definitions.chunk_size
         self.offset = 0
         self.extra_data = extra_data
-        self.hg_19_columns = ['chr',
-                              'start',
-                              'end',
-                              'ref',
-                              'alt',
-                              'func_knowngene',
-                              'gene_knowngene',
-                              'genedetail_knowngene',
-                              'exonicfunc_knowngene',
-                              #'tfbsconssites',
-                              #'cytoband',
-                              #'genomicsuperdups',
-                              #'1000g2015aug_all',
-                              #'esp6500siv2_all',
-                              #'cosmic70',
-                              #'nci60',
-                              'otherinfo']
+        self.annovar_columns = [self.ANNOVAR_CHR_HEADER,
+                                self.ANNOVAR_START_HEADER,
+                                'end',
+                                self.ANNOVAR_REF_HEADER,
+                                self.ANNOVAR_ALT_HEADER,
+                                'func_knowngene',
+                                'gene_knowngene',
+                                'genedetail_knowngene',
+                                'exonicfunc_knowngene',
+                                #'cytoband',
+                                #'genomicsuperdups',
+                                '1000g2015aug_all',
+                                #'esp6500siv2_all',
+                                #'cosmic70',
+                                #'nci60',
+                                'otherinfo']
 
-        self.hg_38_columns = ['chr',
-                              'start',
-                              'end',
-                              'ref',
-                              'alt',
-                              'func_knowngene',
-                              'gene_knowngene',
-                              'genedetail_knowngene',
-                              'exonicfunc_knowngene',
-                              #'cytoband',
-                              #'genomicsuperdups',
-                              #'1000g2015aug_all',
-                              #'esp6500siv2_all',
-                              #'cosmic70',
-                              #'nci60',
-                              'otherinfo']
 
     def open_and_parse_chunks(self, step, build_ver=None, offset=0):
         """
@@ -128,7 +116,7 @@ class TxtParser(object):
         """
 
         listofdicts = []
-
+        hgvsid_list = []
         with open(self.txt_file, 'r') as txt:
 
             reader = csv.reader(txt, delimiter='\t')
@@ -140,17 +128,20 @@ class TxtParser(object):
                 sparse_dict = dict(zip(header[0:len(header)-1], i[0:len(header)-1]))
                 sparse_dict['otherinfo'] = i[-1-len(self.samples)::]
 
-                if build_ver == 'hg19':
-                    dict_filled = {k: sparse_dict[k] for k in self.hg_19_columns if sparse_dict[k] != '.'}
-                else:
-                    dict_filled = {k: sparse_dict[k] for k in self.hg_38_columns if sparse_dict[k] != '.'}
+                dict_filled = {k: sparse_dict[k] for k in self.annovar_columns if sparse_dict[k] != '.'}
 
+                hgvs_id = myvariant.format_hgvs(dict_filled[self.ANNOVAR_CHR_HEADER],
+                                      dict_filled[self.ANNOVAR_START_HEADER],
+                                      dict_filled[self.ANNOVAR_REF_HEADER],
+                                      dict_filled[self.ANNOVAR_ALT_HEADER])
+                hgvsid_list.append(hgvs_id)
+                dict_filled['hgvs_id'] = hgvs_id
                 modeled = AnnovarModels(dict_filled, self.samples, extra_data=self.extra_data)
-                listofdicts.append(modeled.final_list_dict)
+                listofdicts.append(modeled.annovar_dict)
 
             self.offset += offset
 
-        return listofdicts
+        return listofdicts, hgvsid_list
 
     @staticmethod
     def _normalize_header(header):
@@ -181,7 +172,7 @@ class AnnovarModels(object):
         self.existing_keys = self.dictionary.keys()
         self.errors = None
         self.extra_data = extra_data
-        self.final_list_dict = self.process()
+        self.annovar_dict = self.process()
 
     def process(self):
         for key in self.dictionary.keys():
@@ -205,9 +196,9 @@ class AnnovarModels(object):
             # if key == 'otherinfo':
             #     self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
 
-        final_annovar_list_of_dicts, self.errors = self.parse_genotype(self.dictionary)
+        annovar_dict, self.errors = self.parse_genotype(self.dictionary)
 
-        return final_annovar_list_of_dicts
+        return annovar_dict
 
     def parse_genotype(self, dictionary):
         """ Implements the genotype parsing scheme. Many thanks to Amanda Birmingham """
@@ -215,10 +206,10 @@ class AnnovarModels(object):
         read_depth_error = genotype_lik_error = allele_error = 0
         parser = vvp.VCFGenotypeStrings()
 
-        list_dictionaries = []
+        samples_by_id = []
 
         for index, sample in enumerate(self.samples):
-            sample_specific_dict = {k: v for k, v in dictionary.items()}  # make copy, propagate genotype info over alleles
+            sample_specific_dict = {}
 
             var_info_string_for_curr_sample = dictionary['otherinfo'][index + 1]
             if var_info_string_for_curr_sample == '.':
@@ -226,7 +217,6 @@ class AnnovarModels(object):
 
             genotype_to_fill = parser.parse(dictionary['otherinfo'][0], var_info_string_for_curr_sample)
 
-            sample_specific_dict['sample_id'] = sample
             sample_specific_dict['genotype'] = genotype_to_fill.genotype
 
             try:
@@ -242,7 +232,7 @@ class AnnovarModels(object):
                 genotype_lik_error += 1
 
             try:
-                sample_specific_dict['alleles'] = [float(i.read_counts) for i in genotype_to_fill.alleles]
+                sample_specific_dict['AD'] = [float(i.read_counts) for i in genotype_to_fill.alleles]
             except IndexError:
                 allele_error += 1
             except ValueError:
@@ -253,11 +243,15 @@ class AnnovarModels(object):
                 vvp.fill_genotype_class(sample_specific_dict['genotype'], genotype_class_to_fill)
                 sample_specific_dict['genotype_subclass_by_class'] = genotype_class_to_fill.genotype_subclass_by_class
 
-            list_dictionaries.append(sample_specific_dict)
+            sample_specific_dict['sample_id'] = sample
+            samples_by_id.append(sample_specific_dict)
 
         errors = (read_depth_error, genotype_lik_error, allele_error)
+        dictionary['samples'] = samples_by_id
+        #dictionary['sample_id'] = list(dictionary['samples_by_id'].keys())
+        dictionary.pop('otherinfo', None)
 
-        return list_dictionaries, errors
+        return dictionary, errors
 
     @staticmethod
     def _to_int(val):

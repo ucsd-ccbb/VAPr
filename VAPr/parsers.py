@@ -5,7 +5,7 @@ import os
 import sys
 from pymongo import MongoClient
 import VAPr.definitions as definitions
-from VAPr.models import TxtParser, HgvsParser
+from VAPr.models import AnnovarTxtParser, HgvsParser
 from VAPr.writes import Writer
 from VAPr.queries import Filters
 from multiprocessing import Pool
@@ -100,11 +100,12 @@ class VariantParsing:
         map_job = []
         for tpl in list_tuples:
             hgvs = HgvsParser(tpl[1])
-            csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
+            csv_parsing = AnnovarTxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
             n_steps = int(num_lines/self.chunksize) + 1
             map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod))
-
+        # for job in map_job:
+        #     parse_by_step(job)
         pool = Pool(num_processes)
         for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
             pass
@@ -147,13 +148,13 @@ class VariantParsing:
             num_lines = hgvs.get_num_lines()
             n_steps = int(num_lines / self.chunksize) + 1
             map_job = self.quick_annotate_mapper(_tuple, n_steps)
-            for map in map_job:
-                parallel_get_dict_mv(map)
-            # pool = Pool(n_processes)
-            # for _ in tqdm.tqdm(pool.imap_unordered(parallel_get_dict_mv, map_job), total=len(map_job)):
-            #     pass
-            # pool.close()
-            # pool.join()
+            # for map in map_job:
+            #     parallel_get_dict_mv(map)
+            pool = Pool(n_processes)
+            for _ in tqdm.tqdm(pool.imap_unordered(parallel_get_dict_mv, map_job), total=len(map_job)):
+                pass
+            pool.close()
+            pool.join()
 
 #    @staticmethod
     def quick_annotate_mapper(self, _tuple, n_steps):
@@ -211,17 +212,14 @@ def parse_by_step(maps):
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-    hgvs = HgvsParser(vcf_file)
-    csv_parsing = TxtParser(csv_file, samples=sample, extra_data=extra_data)
-    list_hgvs_ids = hgvs.get_variants_from_vcf(step)
+    annovar_txt_parser = AnnovarTxtParser(csv_file, samples=sample, extra_data=extra_data)
+    annovar_variants, list_hgvs_ids = annovar_txt_parser.open_and_parse_chunks(step, build_ver=genome_build_version)
     myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample, fields, genome_build_version)
 
-    csv_variants = csv_parsing.open_and_parse_chunks(step, build_ver='hg19')
-
     merged_list = []
-    for i, _ in enumerate(myvariants_variants):
-        for dict_from_sample in csv_variants[i]:
-            merged_list.append(merge_dict_lists(myvariants_variants[i], dict_from_sample))
+
+    for i in range(0, len(list_hgvs_ids)):
+        merged_list.append(merge_annovar_and_myvariant_dicts(myvariants_variants[i], annovar_variants[i]))
     return insert_handler(merged_list, collection, mongod_cmd)
 
 
@@ -250,15 +248,15 @@ def insert_handler(merged_list, collection, mongod_cmd):
     return None
 
 
-def merge_dict_lists(*dict_args):
+def merge_annovar_and_myvariant_dicts(myvariant_dict, annovar_dict):
     """
-    Given any number of dicts, shallow copy and merge into a new dict,
-    precedence goes to key value pairs in latter dicts.
+    Merge myvariant_dict with annovar_dict
     """
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+    if myvariant_dict['hgvs_id'] != annovar_dict['hgvs_id']:
+        raise ValueError("myvariant hgvs_id {0} not equal to annovar hgvs_id {1}".format(myvariant_dict['hgvs_id'],
+                                                                                  annovar_dict['hgvs_id']))
+    annovar_dict.update(myvariant_dict)
+    return annovar_dict
 
 
 def parallel_get_dict_mv(maps):
@@ -309,6 +307,6 @@ def remove_id_key(variant_data, sample_id):
     for dic in variant_data:
         dic['hgvs_id'] = dic.pop("_id", None)
         dic['hgvs_id'] = dic.pop("query", None)
-        dic['sample_id'] = sample_id
+        #dic['sample_id'] = sample_id
 
     return variant_data

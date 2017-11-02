@@ -17,18 +17,37 @@ __author__ = 'Birmingham'
 # TODO: Forgive mis-formatted vcf files. Log the error but don't break the annotation.
 
 
-# TODO: rewrite with lambdas or partials
-def ignore_pid(info_value, genotype_info_to_fill):
-    return ignore_field(info_value, genotype_info_to_fill, 'PID')
+def capture_unprocessed_field(field, anno, genotype_info_to_fill):
+    try:
+        genotype_info_to_fill.unprocessed_info[field] = float(anno)
+    except:
+        try:
+            split_list = anno.split(",")
+            cast_split_list = []
+            for value in split_list:
+                try:
+                    cast_split_list.append(float(value))
+                except:
+                    cast_split_list.append(value)
+            genotype_info_to_fill.unprocessed_info[field] = cast_split_list
 
-
-# TODO: rewrite with lambdas or partials
-def ignore_pgt(info_value, genotype_info_to_fill):
-    return ignore_field(info_value, genotype_info_to_fill, 'PGT')
-
-
-def ignore_field(info_value, genotype_info_to_fill, subkey):
+        except:
+            genotype_info_to_fill.unprocessed_info[field] = anno
     return genotype_info_to_fill
+
+
+# # TODO: rewrite with lambdas or partials
+# def ignore_pid(info_value, genotype_info_to_fill):
+#     return ignore_field(info_value, genotype_info_to_fill, 'PID')
+#
+#
+# # TODO: rewrite with lambdas or partials
+# def ignore_pgt(info_value, genotype_info_to_fill):
+#     return ignore_field(info_value, genotype_info_to_fill, 'PGT')
+#
+#
+# def ignore_field(info_value, genotype_info_to_fill, subkey):
+#     return genotype_info_to_fill
 
 
 def fill_genotype_class(alleles, genotype_info_to_fill):
@@ -123,6 +142,7 @@ class VCFGenotypeInfo:
         self.raw_string = raw_string
         self.alleles = []  # 0 for ref, 1 for first alt, etc
         self.genotype_likelihoods = []
+        self.unprocessed_info ={}
 
     @property
     def is_null_call(self):
@@ -234,31 +254,26 @@ class VCFGenotypeStrings:
                      'DP': fill_filtered_reads_count,
                      # 'FA': fill_allele_fraction,
                      'GQ': fill_genotype_confidence,
-                     'PL': fill_genotype_likelihoods,
+                     'PL': fill_genotype_likelihoods}
                      # 'SS': fill_variant_status,
-                     'PID': ignore_pid,
-                     'PGT': ignore_pgt}
+                     #'PID': ignore_pid,
+                     #'PGT': ignore_pgt}
 
     @classmethod
-    def parse(cls, format_string, info_string):
-
-        mutect_formats = ['BQ', 'FA', 'SS']
-        possible_string_formats = ['GT:GQ:PL', 'GT:AD:GQ:PL', 'GT:AD:DP:GQ:PL', 'GT:AD:DP:GQ:PGT:PID:PL']
-        result = VCFGenotypeInfo(info_string)
+    def parse(cls, format_key_string, format_value_string):
+        result = VCFGenotypeInfo(format_value_string)
 
         if not result.is_null_call:
-            info_subkeys = format_string.split(cls._DELIMITER)
-            info_values = info_string.split(cls._DELIMITER)
+            format_subkeys = format_key_string.split(cls._DELIMITER)
+            format_values = format_value_string.split(cls._DELIMITER)
 
-            for index, value in enumerate(info_subkeys):
-                if value in mutect_formats:
-                    continue
-                if value not in possible_string_formats[-1]:
-                    continue
-                curr_key = info_subkeys[index]
-                curr_value = info_values[index]
-                parse_func = cls._PARSER_FUNCS[curr_key]
-                result = parse_func(curr_value, result)
+            for index, curr_key in enumerate(format_subkeys):
+                curr_value = format_values[index]
+                if curr_key in cls._PARSER_FUNCS:
+                    parse_func = cls._PARSER_FUNCS[curr_key]
+                    result = parse_func(curr_value, result)
+                else:
+                    result = capture_unprocessed_field(curr_key, curr_value, result)
 
         return result
 

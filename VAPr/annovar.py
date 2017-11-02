@@ -66,23 +66,23 @@ def listen(out_path, num_batch_jobs, num_files):
 class AnnovarWrapper(object):
     """ Wrapper around ANNOVAR download and annotation functions """
 
-    hg_19_databases = OrderedDict({'knownGene': 'g'})
+    hg_19_databases = OrderedDict({'knownGene': 'g',
                                    # 'tfbsConsSites': 'r',
                                    # 'cytoBand': 'r',
                                    # 'targetScanS': 'r',
                                    # 'genomicSuperDups': 'r',
                                    # 'esp6500siv2_all': 'f',
-                                   # '1000g2015aug': 'f'
+                                    '1000g2015aug': 'f'})
                                    # 'popfreq_all_20150413': 'f',
                                    # 'clinvar_20161128': 'f',
                                    # 'cosmic70': 'f',
                                    # 'nci60': 'f'
 
-    hg_38_databases = OrderedDict({'knownGene': 'g'})
+    hg_38_databases = OrderedDict({'knownGene': 'g',
                                    # 'cytoBand': 'r',
                                    # 'genomicSuperDups': 'r',
                                    # 'esp6500siv2_all': 'f',
-                                   # '1000g2015aug': 'f'
+                                    '1000g2015aug': 'f'})
                                    # 'clinvar_20161128': 'f',
                                    # 'cosmic70': 'f',
                                    # 'nci60': 'f'})
@@ -98,13 +98,13 @@ class AnnovarWrapper(object):
         self.DOWN_DD = '-webfrom annovar'
 
         # TODO: Pull out string keys into symbolic constants
-        self.ANNOVAR_DB_IS_HOSTED_BY_ANNOVAR = OrderedDict({'knownGene': True
+        self.ANNOVAR_DB_IS_HOSTED_BY_ANNOVAR = OrderedDict({'knownGene': True,
                                                             #'tfbsConsSites': False,
                                                             #'cytoBand': False,
                                                             #'targetScanS': False,
                                                             #'genomicSuperDups': False,
                                                             #'esp6500siv2_all': True,
-                                                            #'1000g2015aug': True
+                                                            '1000g2015aug': True
                                                             #'popfreq_all_20150413': True,
                                                             #'clinvar_20161128': True,
                                                             #'cosmic70': True,
@@ -149,7 +149,7 @@ class AnnovarWrapper(object):
         for command in list_commands:
             print(command)
             args = shlex.split(command)
-            subprocess.Popen(args, stdout=subprocess.PIPE)
+            subprocess.call(args)
 
             logging.info('Finished downloading databases to {}'.format(
                 os.path.join(self.annovar_path, self.HUMANDB_FOLDER_NAME)))
@@ -243,6 +243,8 @@ class AnnovarWrapper(object):
         """Generate command string to run table_annovar.pl, which annotates a VCF file."""
         dbs = ",".join(list(self.annovar_dbs_to_use.keys()))
         dbs_args = ",".join(list(self.annovar_dbs_to_use.values()))
+        if '1000g2015aug' in dbs:
+            dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
         command = " ".join([
             'perl', os.path.join(self.annovar_path, 'table_annovar.pl'),
             vcf_path, "".join([self.annovar_path, self.HUMANDB_FOLDER_NAME]),

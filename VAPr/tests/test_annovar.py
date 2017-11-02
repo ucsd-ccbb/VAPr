@@ -70,7 +70,7 @@ class TestAnnovar(unittest.TestCase):
                                          'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X45')},
                                         {'sample_names': ['X7'], 'num_samples_in_csv': 1,
                                          'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X7/X7.raw.22.vcf'),
-                                         'csv_file_basename': 'X7.raw.Y_annotated', 'vcf_file_basename': 'X7.raw.Y.vcf',
+                                         'csv_file_basename': 'X7.raw.Y_annotated', 'vcf_file_basename': 'X7.raw.22.vcf',
                                          'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
                                          'extra_data': None,
                                          'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X7')}
@@ -84,8 +84,8 @@ class TestAnnovar(unittest.TestCase):
                                         'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005', 'Treatment': 'Li', 'Condition': 'BD_lithium_responder'},
                                         'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X45')},
                                         {'sample_names': ['X7'], 'num_samples_in_csv': 1,
-                                        'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X7/X7.raw.Y.vcf'),
-                                        'csv_file_basename': 'X7.raw.Y_annotated', 'vcf_file_basename': 'X7.raw.Y.vcf',
+                                        'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X7/X7.raw.X.vcf'),
+                                        'csv_file_basename': 'X7.raw.Y_annotated', 'vcf_file_basename': 'X7.raw.X.vcf',
                                         'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_dirs/X7'),
                                         'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005', 'Treatment': 'VPA', 'Condition': 'BD_lithium_responder'},
                                         'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X7')}

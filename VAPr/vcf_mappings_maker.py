@@ -22,36 +22,15 @@ class VcfMappingsMaker:
         self.list_of_vcf_mapping_dicts = []
         self.single_vcf_mapping_maker = SingleVcfFileMappingMaker
 
-    # TODO: It appears this method is only ever used by check_contents, which is itself never used
-    # @staticmethod
-    # def listdir_fullpath(d):
-    #     return [os.path.join(d, f) for f in os.listdir(d)]
-
-    # TODO: It does not appear this code is ever used!
-    # def check_contents(self):
-    #     """ Basic checker for input files """
-    #     types = {'files': [], 'dirs': [], 'other': 0}
-    #     contents = self.listdir_fullpath(self.base_dir)
-    #
-    #     # TODO: Given that contents are going into labeled lists, why do they need to be a label+path tuple?
-    #     for path in contents:
-    #         if os.path.isfile(path):
-    #             types['files'].append(('file', path))
-    #         elif os.path.isdir(path):
-    #             types['dirs'].append(('dir', path))
-    #         else:
-    #             types['other'] += 1
-    #
-    #     if len(set(types)) > 1:
-    #         raise IOError("Detected both files and directories at path '{0}'".format(self.base_dir))
-
     def get_mappings_from_directory(self):
         """ Creates list of mapping dicts for VCF files found by walking the files in the base directory"""
+        VCF_EXTENSION = ".vcf"
         walker = os.walk(self.base_dir)
         for folder, _, files in walker:
             for curr_file in files:
-                full_path_single_file = os.path.join(os.path.abspath(folder), curr_file)
-                self._store_mapping_for_single_vcf(full_path_single_file)
+                if curr_file.endswith(VCF_EXTENSION):
+                    full_path_single_file = os.path.join(os.path.abspath(folder), curr_file)
+                    self._store_mapping_for_single_vcf(full_path_single_file)
 
     def get_mappings_from_design_file(self, design_df):
         """ Creates list of mapping dicts for VCF files referenced in dataframe containing contents of design file """
