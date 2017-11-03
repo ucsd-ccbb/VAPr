@@ -1,19 +1,30 @@
 # standard libraries
 import unittest
 import os
-import shlex
 import logging
+import random
+from collections import OrderedDict
+
+# standard libraries
 
 # project-specific libraries
-import subprocess
 from VAPr.annotation_project import AnnotationProject
-from VAPr import definitions
-from VAPr.annovar import listen, AnnovarJobHandler, AnnovarWrapper
+from VAPr.annovar import AnnovarWrapper, AnnovarJobHandler
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 __author__ = 'Mazzaferro'
+
+class TestableAnnovarWrapper(AnnovarWrapper):
+    _test_file_num = 0
+
+    def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
+        self._test_file_num += 1
+        temp_filename = "testable_annovar_wrapper_file_{0}.txt".format(self._test_file_num)
+        temp_filepath = os.path.join(csv_path, temp_filename)
+        cmd_string = "echo hello > {0}".format(temp_filepath)
+        return cmd_string
 
 
 # TODO: Figure out why this test case seems to basically reimplement AnnovarWrapper
@@ -23,159 +34,135 @@ class TestAnnovar(unittest.TestCase):
 
         self.base_dir = os.getcwd()
         self.files_input_dir = os.path.join(self.base_dir, 'test_files/test_input_dir')
-        self.samples_input_dir = os.path.join(self.base_dir, 'test_files/test_input_sample_dir')
+        self.samples_input_dir = os.path.join(self.base_dir, 'test_files/test_input_dir')
+        self.single_input_dir = os.path.join(self.base_dir, 'test_files/test_input_dir/C90')
         self.design_file_files = os.path.join(self.base_dir, 'test_files/design_file_by_file_name.csv')
         self.design_file_dirs = os.path.join(self.base_dir, 'test_files/design_file_by_dir_name.csv')
         self.output_csv_path_files = os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files')
         self.output_csv_path_dirs = os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_dirs')
+        self.analysis_name = "annovar_test"
         self.annovar = os.path.join(self.base_dir, 'test_files/annovar_dir')
         self.project_data = {'db_name': 'VariantDatabase',
                              'collection_name': 'collect'}
         self.genome_build_version = 'hg19'
-        self.hg_18_databases = AnnovarWrapper.hg_18_databases
-        self.hg_19_databases = AnnovarWrapper.hg_19_databases
-        self.hg_38_databases = AnnovarWrapper.hg_38_databases
-        self.databases = self.get_databases()
-        self.project_1 = AnnotationProject(self.files_input_dir,
-                                           self.output_csv_path_files,
-                                           self.annovar,
-                                           self.project_data,
-                                           build_ver='hg19')
+        self.relevant_dbs = ['knownGene']
+        self.database_download_command_list = [#'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb genomicSuperDups /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb cytoBand /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb tfbsConsSites /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar knownGene /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/'
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar popfreq_all_20150413 /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar cosmic70 /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb targetScanS /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar clinvar_20161128 /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar 1000g2015aug /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/',
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar esp6500siv2_all /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/'
+                                               #'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/annotate_variation.pl -build hg19 -downdb -webfrom annovar nci60 /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/'
+                                                ]
 
-        self.project_2 = AnnotationProject(self.samples_input_dir,
-                                           self.output_csv_path_dirs,
-                                           self.annovar,
-                                           self.project_data,
-                                           design_file=self.design_file_dirs,
-                                           build_ver='hg19')
+        self.expected_table_cmd_str = 'perl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/table_annovar.pl /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/test_input_dir/X45/X45.raw.22.vcf /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/annovar_dir/humandb/ -genome_build_version hg19 -out /Users/adammark/software/VAPr_code_review/VAPr/tests/test_files/test_out_csv_path/des_file_files -remove -protocol knownGene -operation g -nastring . -otherinfo -vcfinput'
 
-        self.mini1 = {'sample_names': [],
-                      'num_samples_in_csv': 0,
-                      'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/mini1.vcf'),
-                      'csv_file_basename': 'mini1_annotated',
-                      'vcf_file_basename': 'mini1.vcf',
+
+        self.vcf_mapping_dicts_files = [{'sample_names': ['X45'], 'num_samples_in_csv': 1,
+                                         'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X45/X45.raw.22.vcf'),
+                                         'csv_file_basename': 'X45.raw.22_annotated', 'vcf_file_basename': 'X45.raw.22.vcf',
+                                         'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
+                                         'extra_data': None,
+                                         'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X45')},
+                                        {'sample_names': ['X7'], 'num_samples_in_csv': 1,
+                                         'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X7/X7.raw.22.vcf'),
+                                         'csv_file_basename': 'X7.raw.Y_annotated', 'vcf_file_basename': 'X7.raw.22.vcf',
+                                         'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
+                                         'extra_data': None,
+                                         'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X7')}
+
+                                        ]
+
+        self.vcf_mapping_dicts_dirs = [{'sample_names': ['X45'], 'num_samples_in_csv': 1,
+                                        'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X45/X45.raw.22.vcf'),
+                                        'csv_file_basename': 'X45.raw.22_annotated', 'vcf_file_basename': 'X45.raw.22.vcf',
+                                        'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_dirs/X45'),
+                                        'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005', 'Treatment': 'Li', 'Condition': 'BD_lithium_responder'},
+                                        'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X45')},
+                                        {'sample_names': ['X7'], 'num_samples_in_csv': 1,
+                                        'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X7/X7.raw.X.vcf'),
+                                        'csv_file_basename': 'X7.raw.Y_annotated', 'vcf_file_basename': 'X7.raw.X.vcf',
+                                        'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_dirs/X7'),
+                                        'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005', 'Treatment': 'VPA', 'Condition': 'BD_lithium_responder'},
+                                        'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X7')}
+
+                                       ]
+
+        self.X45_22 = {'sample_names': ['X45'],
+                      'num_samples_in_csv': 1,
+                      'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/X45/X45.raw.22.vcf'),
+                      'csv_file_basename': 'X45.raw.22_annotated',
+                      'vcf_file_basename': 'X45.raw.22.vcf',
                       'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
                       'extra_data': None,
-                      'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/')}
+                      'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/X45')}
 
-    def annovar_runner_stub(self, batch_jobs,  multisample=False):
+        self.C90_22 = {'sample_names': ['C90'],
+                      'num_samples_in_csv': 1,
+                      'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/C90/C90.raw.22.vcf'),
+                      'csv_file_basename': 'C90.raw.22_annotated',
+                      'vcf_file_basename': 'C90.raw.22.vcf',
+                      'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
+                      'extra_data': None,
+                      'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/C90')}
 
-        """ Use a stub because you don't really want to spawn an Annovar
-        process while testing. As long as the command that is generated is valid,
-        these tests should suffice.
-        """
+    def test__get_annovar_dbs_to_use_for_build_version(self):
+        # use known-good genome version in init
+        test_wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.vcf_mapping_dicts_files, None, 'hg19')
+        self.assertDictEqual(AnnovarWrapper.hg_19_databases, test_wrapper.annovar_dbs_to_use)
 
-        handler = AnnovarJobHandler(batch_jobs, multisample, self.project_2.list_of_vcf_mapping_dicts)
-        n_files_created = 0
-        for index, job in enumerate(handler.chunkenize):
-            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.project_2.list_of_vcf_mapping_dicts) / batch_jobs + 1))
-            n_files_created += len(job)
+    def test__get_annovar_dbs_to_use_for_build_version_error(self):
+        test_wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None,
+                                      self.vcf_mapping_dicts_files, None, 'hg19')
+        with self.assertRaises(NameError):
+            # Note: would never access _genome_build_version directly from outside like this except for testing:
+            # is wrapped in a property specifically to PREVENT this kind of corruption :)
+            test_wrapper._genome_build_version = "Fakevalue"
+            test_wrapper._get_annovar_dbs_to_use_for_build_version()
 
-            for idx, _map in enumerate(job):
-                annotation_dir = _map['csv_file_full_path']
-                if os.path.isdir(annotation_dir):
-                    logging.info('Directory already exists for %s. '
-                                 'Writing output files there for file %s.' % (annotation_dir,
-                                                                              _map['raw_vcf_file_full_path']))
-                else:
-                    os.makedirs(annotation_dir)
-
-                vcf_path = _map['raw_vcf_file_full_path']
-                csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
-                cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
-                args = shlex.split(cmd_string)
-
-                my_cmd = ['echo'] + ['test file for sample %s, job # %i' % (_map['sample_names'][0], idx)]
-                with open(csv_path + '.txt', "w") as outfile:
-                    subprocess.call(my_cmd, stdout=outfile)
-
-            logging.info('Annovar jobs submitted for %i files: %s' % (len(job),
-                         ', '.join([os.path.basename(i['raw_vcf_file_full_path']) for i in job])))
-
-            listen(self.output_csv_path_dirs, len(job), n_files_created)
-            logging.info('Finished running Annovar on this batch')
-
-        logging.info('Finished running Annovar on all files')
-
-    def annovar_runner_stub_no_des_file(self, batch_jobs,  multisample=False):
-
-        handler = AnnovarJobHandler(batch_jobs, multisample, self.project_1.list_of_vcf_mapping_dicts)
-        n_files_created = 0
-        for index, job in enumerate(handler.chunkenize):
-            logging.info('Job %i/%i sent for processing' % (index + 1, len(self.project_1.list_of_vcf_mapping_dicts) / batch_jobs + 1))
-            n_files_created += len(job)
-
-            for idx, _map in enumerate(job):
-                annotation_dir = _map['csv_file_full_path']
-                if os.path.isdir(annotation_dir):
-                    logging.info('Directory already exists for %s. '
-                                 'Writing output files there for file %s.' % (annotation_dir,
-                                                                              _map['raw_vcf_file_full_path']))
-                else:
-                    os.makedirs(annotation_dir)
-
-                vcf_path = _map['raw_vcf_file_full_path']
-                csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
-                cmd_string = self.build_annovar_command_str(vcf_path, csv_path, multisample=multisample)
-                args = shlex.split(cmd_string)
-
-                my_cmd = ['echo'] + ['test file for sample %s, job # %i' % (_map['sample_names'], idx)]
-                with open(csv_path + '.txt', "w") as outfile:
-                    subprocess.call(my_cmd, stdout=outfile)
-
-            logging.info('Annovar jobs submitted for %i files: %s' % (len(job),
-                         ', '.join([os.path.basename(i['raw_vcf_file_full_path']) for i in job])))
-
-            listen(self.output_csv_path_files, len(job), n_files_created)
-            logging.info('Finished running Annovar on this batch')
-
-        logging.info('Finished running Annovar on all files')
-
-    def build_annovar_command_str(self, _vcf, _csv, multisample=False):
-        """ Concatenate command string arguments for Annovar jobs """
-
-        # TODO: check for newer version of databases
-
-        dbs = ",".join(list(self.databases.keys()))
-        dbs_args = ",".join(list(self.databases.values()))
-
-        if '1000g2015aug' in dbs:
-            dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
-        command = " ".join(['perl', os.path.join(self.annovar, 'table_annovar.pl'), _vcf,
-                            os.path.join(self.annovar, 'humandb/'), '-genome_build_version', self.genome_build_version, '-out',
-                            _csv, '-remove -protocol', dbs,  '-operation',
-                            dbs_args, '-nastring .', '-otherinfo -vcfinput'])
-        if multisample:
-            command += ' -format vcf4 -allsample -withfreq'
-
-        return command
-
-    def get_databases(self):
-
-        if self.genome_build_version == 'hg18':
-            databases = self.hg_18_databases
-        elif self.genome_build_version == 'hg19':
-            databases = self.hg_19_databases
-        else:
-            databases = self.hg_38_databases
-
-        return databases
 
     def test_ensure_input_validity(self):
-        self.assertEqual(self.project_1.list_of_vcf_mapping_dicts[0], self.mini1)
+        self.assertEqual(AnnotationProject(self.files_input_dir, self.output_csv_path_files, self.analysis_name, self.annovar, self.project_data, build_ver='hg19').list_of_vcf_mapping_dicts[0]['sample_names'][0], self.vcf_mapping_dicts_files[1]['sample_names'][0])
+
+    def test_ensure_input_validity(self):
+        self.assertEqual(AnnotationProject(self.single_input_dir, self.output_csv_path_files, self.analysis_name, self.annovar, self.project_data, build_ver='hg19').list_of_vcf_mapping_dicts[0]['sample_names'][0], self.C90_22['sample_names'][0])
 
     def test_run_annovar(self):
-        self.annovar_runner_stub(5)
-        self.annovar_runner_stub_no_des_file(5)
+    #     try:
+    #         wrapper = TestableAnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.vcf_mapping_dicts_files, None, self.genome_build_version)
+    #         self.assertEqual(self.expected_table_cmd_str, wrapper.run_annovar(2))
+    #     finally:
+    #         # clean up test files here
+        Project = AnnotationProject(self.files_input_dir, self.output_csv_path_dirs, self.analysis_name, self.annovar,
+                                    self.project_data, build_ver="hg19")
+        Project.run_annovar(multisample=True)
 
-    def test_annovar_job_handler(self):
-        ann = AnnovarJobHandler(10, False, self.project_1.list_of_vcf_mapping_dicts)
-        self.assertEqual(ann._next()[0], self.mini1)
+    def test__build_table_annovar_command_str(self):
+        wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.vcf_mapping_dicts_files, None, self.genome_build_version)
+        output_cmd_str = wrapper._build_table_annovar_command_str(self.X45_22['raw_vcf_file_full_path'], self.output_csv_path_files)
+        self.assertEqual(self.expected_table_cmd_str, output_cmd_str)
 
-    def test_annovar_job_handler_dirs(self):
-        ann = AnnovarJobHandler(10, False, self.project_2.list_of_vcf_mapping_dicts)
-        print(len(ann._next()))
-        print(len(ann._next()))
+    def test__build_table_annovar_command_str_multisample(self):
+        wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.X45_22, None, self.genome_build_version)
+        expected_cmd_str = self.expected_table_cmd_str + ' -format vcf4 -allsample -withfreq'
+        output_cmd_str = wrapper._build_table_annovar_command_str(self.X45_22['raw_vcf_file_full_path'], self.output_csv_path_files, vcf_is_multisample=True)
+        self.assertEqual(expected_cmd_str, output_cmd_str)
 
-    def test_annovar_db_download(self):
-        self.fail("Test not implemented")
+    def test__build_annovar_database_download_command_str(self):
+        wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.vcf_mapping_dicts_files,
+                                 None, self.genome_build_version, self.relevant_dbs)
+        output_cmd_str = wrapper._build_annovar_database_download_command_str()
+        self.assertEqual([self.database_download_command_list[0]], output_cmd_str)
+
+    def test__build_annovar_database_download_command_str_none(self):
+        wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.vcf_mapping_dicts_files,
+                                 None, self.genome_build_version)
+        output_cmd_str = wrapper._build_annovar_database_download_command_str()
+        self.assertListEqual(self.database_download_command_list, output_cmd_str)
+
+    # def test_annovar_db_download(self):
+    #     self.fail("Test not implemented")

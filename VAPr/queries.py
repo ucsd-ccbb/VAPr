@@ -34,8 +34,8 @@ class Filters(object):
         client = MongoClient()
         db = getattr(client, self.db_name)
         collection = getattr(db, self.collection_name)
-        if not samples:
-            samples = collection.distinct('sample_id')
+        # if not samples:
+        #     samples = collection.distinct('samples_by_id')
 
         filtered = collection.find(
             {
@@ -44,8 +44,8 @@ class Filters(object):
                         {
                             "$or":
                                 [
-                                    {"esp6500siv2_all": {"$lt": 0.05}},
-                                    {"esp6500siv2_all": {"$exists": False}}
+                                    {"cadd.esp.af": {"$lt": 0.05}},
+                                    {"cadd.esp.af": {"$exists": False}}
                                 ]
                         },
                         {
@@ -56,10 +56,10 @@ class Filters(object):
                                 ]
                         },
                         {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                        {"filter_passing_reads_count": {"$gte": 10}},
-                        {"cosmic70": {"$exists": True}},
-                        {"1000g2015aug_all": {"$lt": 100}},
-                        {"sample_id": {"$in": samples}}
+                        #{"filter_passing_reads_count": {"$gte": 10}},
+                        {"cosmic.cosmic_id": {"$exists": True}},
+                        {"1000g2015aug_all": {"$lt": 0.1}}
+                        #{"sample_id": {"$in": samples}}
                     ]
             }
         )
@@ -84,8 +84,8 @@ class Filters(object):
                         {
                             "$or":
                                 [
-                                   {"esp6500siv2_all": {"$lt": 0.05}},
-                                   {"esp6500siv2_all": {"$exists": False}}
+                                   {"cadd.esp.af": {"$lt": 0.05}},
+                                   {"cadd.esp.af": {"$exists": False}}
                                 ]
                         },
                         {
@@ -96,16 +96,16 @@ class Filters(object):
                                 ]
                         },
                         {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                        {"filter_passing_reads_count": {"$gte": 10}},
+                        #{"filter_passing_reads_count": {"$gte": 10}},
                         {
-                            "$or":
+                            "$and":
                                 [
-                                    {"cosmic70": {"$exists": True}},
-                                    {"clinvar": {"$exists": True}}
+                                    {"clinvar.rcv.accession": {"$exists": True}},
+                                    {"clinvar.rcv.accession": {"$ne": "Benign"}}
                                 ]
                         },
-                        {"1000g2015aug_all": {"$lt": 0.1}},
-                        {"sample_id": {"$in": samples}},
+                        {"1000g2015aug_all": {"$lt": 0.1}}
+                        #{"sample_id": {"$in": samples}}
                     ]
             }
         )
@@ -131,8 +131,8 @@ class Filters(object):
                         {
                             "$or":
                                 [
-                                    {"esp6500siv2_all": {"$lt": 0.05}},
-                                    {"esp6500siv2_all": {"$exists": False}}
+                                    {"cadd.esp.af": {"$lt": 0.05}},
+                                    {"cadd.esp.af": {"$exists": False}}
                                 ]
                         },
                         {
@@ -143,17 +143,18 @@ class Filters(object):
                                 ]
                         },
                         {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                        {"filter_passing_reads_count": {"$gte": 10}},
+                        #{"filter_passing_reads_count": {"$gte": 10}},
                         {
                             "$or":
                                 [
-                                    {"cosmic70": {"$exists": True}},
-                                    {"clinvar": {"$exists": True}}
+                                    {"cosmic.cosmic_id": {"$exists": True}},
+                                    {"clinvar.rcv.accession": {"$exists": True}},
+                                    {"clinvar.rcv.accession": {"$ne": "benign"}}
                                 ]
                         },
                         {"1000g2015aug_all": {"$lt": 0.1}},
-                        {"cadd.phred": {"$gte": 15}},
-                        {"sample_id": {"$in": samples}},
+                        {"cadd.phred": {"$gte": 15}}
+                        #{"sample_id": {"$in": samples}},
                     ]
             }
         )
@@ -177,8 +178,8 @@ class Filters(object):
                 "$and":
                     [
                         {"genotype_subclass_by_class.heterozygous": "compound"},
-                        {"cadd.phred": {"$gte": 10}},
-                        {"sample_id": {"$in": samples}},
+                        {"cadd.phred": {"$gte": 10}}
+                        #{"sample_id": {"$in": samples}},
                     ]
             }
         )

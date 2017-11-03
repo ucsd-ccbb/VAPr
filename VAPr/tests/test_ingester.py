@@ -15,31 +15,31 @@ class TestIngester(unittest.TestCase):
 
     def setUp(self):
         self.base_dir = os.getcwd()
-        self.files_input_dir = os.path.join(self.base_dir, 'test_files/test_input_dir')
-        self.samples_input_dir = os.path.join(self.base_dir, 'test_files/test_input_sample_dir')
-        self.design_file_files = os.path.join(self.base_dir, 'test_files/design_file_by_file_name.csv')
-        self.design_file_dirs = os.path.join(self.base_dir, 'test_files/design_file_by_dir_name.csv')
-        self.output_csv_path_files = os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files')
-        self.output_csv_path_dirs = os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_dirs')
+        self.files_input_dir = os.path.join(self.base_dir, 'VAPr/tests/test_files/test_input_dir')
+        self.samples_input_dir = os.path.join(self.base_dir, 'VAPr/tests/test_files/test_input_dir')
+        self.design_file_files = os.path.join(self.base_dir, 'VAPr/tests/test_files/design_file_by_file_name.csv')
+        self.design_file_dirs = os.path.join(self.base_dir, 'VAPr/tests/test_files/design_file_by_dir_name.csv')
+        self.output_csv_path_files = os.path.join(self.base_dir, 'VAPr/tests/test_files/test_out_csv_path/des_file_files')
+        self.output_csv_path_dirs = os.path.join(self.base_dir, 'VAPr/tests/test_files/test_out_csv_path/des_file_dirs')
         self.mapping_list_len = (12, 2)
         self.x_45_c1 = {'sample_names': ['X45'],
                         'num_samples_in_csv': 1,
-                        'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_sample_dir/'
-                                                                              'X45/c1.vcf'),
+                        'raw_vcf_file_full_path': os.path.join(self.base_dir, 'VAPr/tests/test_files/test_input_dir/'
+                                                                              'X45/X45.raw.22.vcf'),
                         'csv_file_basename': 'c1_annotated',
                         'vcf_file_basename': 'c1.vcf',
-                        'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/'
+                        'csv_file_full_path': os.path.join(self.base_dir, 'VAPr/tests/test_files/test_out_csv_path/'
                                                                           'des_file_dirs/X45'),
                         'extra_data': {'libType': 'singleend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ005',
                                        'Treatment': 'Li', 'Condition': 'BD_lithium_responder'},
-                        'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_sample_dir/X45')}
+                        'vcf_sample_dir': os.path.join(self.base_dir, 'VAPr/tests/test_files/test_input_dir/X45')}
 
         self.mini1 = {'sample_names': ['mini1.vcf'],
                       'num_samples_in_csv': 1,
-                      'raw_vcf_file_full_path': os.path.join(self.base_dir, 'test_files/test_input_dir/mini1.vcf'),
+                      'raw_vcf_file_full_path': os.path.join(self.base_dir, 'VAPr/tests/test_files/test_input_dir/mini1.vcf'),
                       'csv_file_basename': 'mini1_annotated',
                       'vcf_file_basename': 'mini1.vcf',
-                      'csv_file_full_path': os.path.join(self.base_dir, 'test_files/test_out_csv_path/des_file_files/'),
+                      'csv_file_full_path': os.path.join(self.base_dir, 'VAPr/tests/test_files/test_out_csv_path/des_file_files/'),
                       'extra_data': {'libType': 'aend', 'Tissue': 'lymphoblast', 'Patient': 'JNJ006',
                                      'Treatment': 'CTRL', 'Condition': 'BD_lithium_responder'},
                       'vcf_sample_dir': os.path.join(self.base_dir, 'test_files/test_input_dir/')}

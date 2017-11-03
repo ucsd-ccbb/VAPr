@@ -21,7 +21,7 @@ class OpenParseTest(unittest.TestCase):
         self.txt_len = sum(1 for _ in open(self.txt_file))
         self.chunksize = 10
         self.hgvs = parser_models.HgvsParser(self.vcf_file)
-        self.csv_parsing = parser_models.TxtParser(self.txt_file, samples='SAMPLE')
+        self.csv_parsing = parser_models.AnnovarTxtParser(self.txt_file, samples='SAMPLE')
 
     def tearDown(self):
         os.remove(txt_file)

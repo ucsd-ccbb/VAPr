@@ -5,7 +5,7 @@ import os
 import sys
 from pymongo import MongoClient
 import VAPr.definitions as definitions
-from VAPr.models import TxtParser, HgvsParser
+from VAPr.models import AnnovarTxtParser, HgvsParser
 from VAPr.writes import Writer
 from VAPr.queries import Filters
 from multiprocessing import Pool
@@ -44,7 +44,6 @@ class VariantParsing:
         # TODO: refactor these string keys into symbolic constants
         self.collection = mongo_db_and_collection_names_dict['collection_name']
         self.db = mongo_db_and_collection_names_dict['db_name']
-
         self._last_round = False
         self.verbose = 0
         self.n_vars = 0
@@ -78,7 +77,7 @@ class VariantParsing:
 
         return list_tuples
 
-    def parallel_annotation(self, num_processes, verbose=1, csv_only=False):
+    def parallel_annotation(self, num_processes, verbose=1):
         """
         Set up variant parsing scheme. Since a functional programming style is required for parallel
         processing, the input to the Pool.map function from the multiprocessing library must be
@@ -93,7 +92,6 @@ class VariantParsing:
 
         :param num_processes: number of cores to be used
         :param verbose: verbosity level [0,1,2,3]
-        :param csv_only: parse csv data only
         :return: None
         """
 
@@ -102,21 +100,19 @@ class VariantParsing:
         map_job = []
         for tpl in list_tuples:
             hgvs = HgvsParser(tpl[1])
-            csv_parsing = TxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
+            csv_parsing = AnnovarTxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
             num_lines = csv_parsing.num_lines
             n_steps = int(num_lines/self.chunksize) + 1
-            map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod,
-                                                          csv_only=csv_only))
-
+            map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod))
         pool = Pool(num_processes)
         for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
             pass
         pool.close()
         pool.join()
-        # logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
+        logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
-    @staticmethod
-    def parallel_annotator_mapper(_tuple, n_steps, extra_data=None, mongod_cmd=None, csv_only=False):
+
+    def parallel_annotator_mapper(self, _tuple, n_steps, extra_data=None, mongod_cmd=None):
         """ Assign step number to each tuple to be consumed by parsing function """
         new_tuple_list = []
         if mongod_cmd:
@@ -133,7 +129,8 @@ class VariantParsing:
             extra_data = extra_data
             step = i
             new_tuple_list.append((sample, vcf_file, csv_file, extra_data, db_name, collection_name, step, mongod,
-                                   csv_only))
+                                   definitions.myvariant_fields,
+                                   self.genome_build_version))
         return new_tuple_list
 
     def quick_annotate_and_save(self, n_processes=8):
@@ -152,9 +149,11 @@ class VariantParsing:
             pool = Pool(n_processes)
             for _ in tqdm.tqdm(pool.imap_unordered(parallel_get_dict_mv, map_job), total=len(map_job)):
                 pass
+            pool.close()
+            pool.join()
 
-    @staticmethod
-    def quick_annotate_mapper(_tuple, n_steps):
+
+    def quick_annotate_mapper(self, _tuple, n_steps):
         new_tuple_list = []
         for i in range(n_steps):
             step = i
@@ -164,7 +163,9 @@ class VariantParsing:
             new_tuple_list.append((vcf_path,
                                    db_name,
                                    collec_name,
-                                   step))
+                                   step,
+                                   definitions.myvariant_fields,
+                                   self.genome_build_version))
         return new_tuple_list
 
     def generate_output_files_by_sample(self):
@@ -201,28 +202,20 @@ def parse_by_step(maps):
     collection_name = maps[5]
     step = maps[6]
     mongod_cmd = maps[7]
-    csv_only = maps[8]
+    fields = maps[8]
+    genome_build_version = maps[9]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-
-    csv_parsing = TxtParser(csv_file, samples=sample, extra_data=extra_data)
-    csv_variants = csv_parsing.open_and_parse_chunks(step, build_ver='hg19')
-
-    if csv_only:
-        myvariants_variants = [{}]*len(csv_variants)
-
-    else:
-        hgvs = HgvsParser(vcf_file)
-        list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-        myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample)
+    annovar_txt_parser = AnnovarTxtParser(csv_file, samples=sample, extra_data=extra_data)
+    annovar_variants, list_hgvs_ids = annovar_txt_parser.open_and_parse_chunks(step, build_ver=genome_build_version)
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample, fields, genome_build_version)
 
     merged_list = []
-    for i, _ in enumerate(myvariants_variants):
-        for dict_from_sample in csv_variants[i]:
-            merged_list.append(merge_dict_lists(myvariants_variants[i], dict_from_sample))
 
+    for i in range(0, len(list_hgvs_ids)):
+        merged_list.append(merge_annovar_and_myvariant_dicts(myvariants_variants[i], annovar_variants[i]))
     return insert_handler(merged_list, collection, mongod_cmd)
 
 
@@ -238,7 +231,6 @@ def insert_handler(merged_list, collection, mongod_cmd):
             if "Connection refused" in str(error):
                 if mongod_cmd:
                     logging.info('MongoDB Server seems to be off. Attempting restart...')
-                    print(mongod_cmd)
                     args = shlex.split(mongod_cmd)
                     subprocess.Popen(args, stdout=subprocess.PIPE)
                 else:
@@ -252,15 +244,15 @@ def insert_handler(merged_list, collection, mongod_cmd):
     return None
 
 
-def merge_dict_lists(*dict_args):
+def merge_annovar_and_myvariant_dicts(myvariant_dict, annovar_dict):
     """
-    Given any number of dicts, shallow copy and merge into a new dict,
-    precedence goes to key value pairs in latter dicts.
+    Merge myvariant_dict with annovar_dict
     """
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+    if myvariant_dict['hgvs_id'] != annovar_dict['hgvs_id']:
+        raise ValueError("myvariant hgvs_id {0} not equal to annovar hgvs_id {1}".format(myvariant_dict['hgvs_id'],
+                                                                                  annovar_dict['hgvs_id']))
+    annovar_dict.update(myvariant_dict)
+    return annovar_dict
 
 
 def parallel_get_dict_mv(maps):
@@ -268,24 +260,23 @@ def parallel_get_dict_mv(maps):
     db_name = maps[1]
     collection_name = maps[2]
     step = maps[3]
+    fields = maps[4]
+    genome_build_version = maps[5]
 
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
     hgvs = HgvsParser(vcf_path)
-
     list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples)
-
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples, fields, genome_build_version)
     # logging.info('Parsing Buffer...')
     collection.insert_many(myvariants_variants, ordered=False)
     client.close()
     return None
 
 
-def get_dict_myvariant(variant_list, verbose, sample_id):
+def get_dict_myvariant(variant_list, verbose, sample_id, fields, genome_build_version):
     """ Retrieve variants from MyVariant.info"""
-
     if verbose >= 2:
         verbose = True
     else:
@@ -294,11 +285,13 @@ def get_dict_myvariant(variant_list, verbose, sample_id):
     mv = myvariant.MyVariantInfo()
     # This will retrieve a list of dictionaries
     try:
-        variant_data = mv.getvariants(variant_list, verbose=1, as_dataframe=False)
+        getvariants = mv.getvariants(variant_list, verbose=1, as_dataframe=False, fields=fields,
+                                     assembly=genome_build_version)
+        variant_data = getvariants
     except Exception as error:
         logging.info('Error: ' + str(error) + 'while fetching from MyVariant, retrying...')
         time.sleep(5)
-        variant_data = get_dict_myvariant(variant_list, verbose, sample_id)
+        variant_data = get_dict_myvariant(variant_list, verbose, sample_id, fields, genome_build_version)
 
     variant_data = remove_id_key(variant_data, sample_id)
     return variant_data
@@ -310,9 +303,4 @@ def remove_id_key(variant_data, sample_id):
     for dic in variant_data:
         dic['hgvs_id'] = dic.pop("_id", None)
         dic['hgvs_id'] = dic.pop("query", None)
-        dic['sample_id'] = sample_id
-
     return variant_data
-
-def add_myvariant_info_data(list_of_dicts):
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples)
