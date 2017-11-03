@@ -1,4 +1,4 @@
-chunk_size = 50000
+chunk_size = 2000
 
 myvariant_fields = [
     'cadd.1000g',
