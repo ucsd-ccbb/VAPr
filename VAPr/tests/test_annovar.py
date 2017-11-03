@@ -141,14 +141,6 @@ class TestAnnovar(unittest.TestCase):
                                     self.project_data, build_ver="hg19")
         Project.run_annovar(multisample=True)
 
-    # def test_annovar_job_handler_init(self):
-    #     ann = AnnovarJobHandler(10, False, self.vcf_mapping_dicts_files)
-    #     self.assertEqual(ann._next()[0]['raw_vcf_file_full_path'], self.X45_22['raw_vcf_file_full_path'])
-    #
-    # def test_annovar_job_handler_init_dirs(self):
-    #     ann = AnnovarJobHandler(10, False, self.vcf_mapping_dicts_dirs)
-    #     self.assertEqual(ann._next()[0]['raw_vcf_file_full_path'], self.X45_22['raw_vcf_file_full_path'])
-
     def test__build_table_annovar_command_str(self):
         wrapper = AnnovarWrapper(self.files_input_dir, self.output_csv_path_files, self.annovar, None, self.vcf_mapping_dicts_files, None, self.genome_build_version)
         output_cmd_str = wrapper._build_table_annovar_command_str(self.X45_22['raw_vcf_file_full_path'], self.output_csv_path_files)

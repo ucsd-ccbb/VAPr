@@ -104,8 +104,6 @@ class VariantParsing:
             num_lines = csv_parsing.num_lines
             n_steps = int(num_lines/self.chunksize) + 1
             map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod))
-        # for job in map_job:
-        #     parse_by_step(job)
         pool = Pool(num_processes)
         for _ in tqdm.tqdm(pool.imap_unordered(parse_by_step, map_job), total=len(map_job)):
             pass
@@ -113,7 +111,7 @@ class VariantParsing:
         pool.join()
         logger.info('Completed annotation and parsing for variants in sample %s' % tpl[0])
 
-    # @staticmethod
+
     def parallel_annotator_mapper(self, _tuple, n_steps, extra_data=None, mongod_cmd=None):
         """ Assign step number to each tuple to be consumed by parsing function """
         new_tuple_list = []
@@ -156,7 +154,7 @@ class VariantParsing:
             pool.close()
             pool.join()
 
-#    @staticmethod
+
     def quick_annotate_mapper(self, _tuple, n_steps):
         new_tuple_list = []
         for i in range(n_steps):
@@ -307,6 +305,4 @@ def remove_id_key(variant_data, sample_id):
     for dic in variant_data:
         dic['hgvs_id'] = dic.pop("_id", None)
         dic['hgvs_id'] = dic.pop("query", None)
-        #dic['sample_id'] = sample_id
-
     return variant_data

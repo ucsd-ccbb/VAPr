@@ -115,11 +115,6 @@ class AnnotationProject:
 
         return list_of_vcf_mapping_dicts
 
-    # TODO: It appears this method is never used
-    # @staticmethod
-    # def listdir_fullpath(d):
-    #     """ Helper function to list full path of files in directory """
-    #     return [os.path.join(d, f) for f in os.listdir(d)]
 
     def _get_vcf_mappings_from_directory(self):
         """ Ingest all files in specified directory and return mapping """

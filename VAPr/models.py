@@ -193,9 +193,6 @@ class AnnovarModels(object):
             if key in ['genomicsuperdups', 'tfbsconssites']:
                 self.dictionary[key] = self.to_dict(key)
 
-            # if key == 'otherinfo':
-            #     self.dictionary[key] = [i for i in self.dictionary[key] if i != '.']
-
         annovar_dict, self.errors = self.parse_genotype(self.dictionary)
 
         return annovar_dict
@@ -248,14 +245,12 @@ class AnnovarModels(object):
 
         errors = (read_depth_error, genotype_lik_error, allele_error)
         dictionary['samples'] = samples_by_id
-        #dictionary['sample_id'] = list(dictionary['samples_by_id'].keys())
         dictionary.pop('otherinfo', None)
 
         return dictionary, errors
 
     @staticmethod
     def _to_int(val):
-        """ This is.... Bad """
         try:
             val = int(val)
         except:
