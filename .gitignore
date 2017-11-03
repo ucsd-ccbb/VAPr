@@ -64,25 +64,25 @@ docs/_build/
 # PyBuilder
 target/
 
-#Ipython Notebook
+# Ipython Notebook
 .ipynb_checkpoints
 .ipynb_checkpoints/
-#test files
+
+# files in folder named results
+results/
+
+# test files
 *.fastq
 *.bam
 *.bam.gz
 *.fastq.gz
 *.vcf.gz
 
-#.json docs
+# .json docs
 *.json
 
-
-
-#ignore .csv and .tsv files
-# *.csv
+# .tsv files
 *.tsv
 
-#ignore all files in folder named results
-results/
-#test_files/
+# perl files
+tests/test_files/annovar_dir/
