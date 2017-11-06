@@ -73,6 +73,7 @@ target/
 *.bam.gz
 *.fastq.gz
 *.vcf.gz
+*.vcf
 
 #.json docs
 *.json

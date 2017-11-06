@@ -2,7 +2,6 @@ chunk_size = 2000
 
 myvariant_fields = [
     'cadd.1000g',
-    'cadd.consequence',
     'cadd.esp',
     'cadd.phred',
     'cadd.gerp',
