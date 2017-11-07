@@ -57,7 +57,7 @@ class MergeVcfs:
 
     def bgzip_index_vcf(self, vcf_path):
         """bgzip and index each vcf so it can be verged with bcftools."""
-        if vcf_path.endswith(".gz"):
+        if os.path.isfile(vcf_path + ".gz"):
             return vcf_path
         else:
             bgzip_cmd_string = self._build_bgzip_vcf_command_str(vcf_path)
