@@ -47,7 +47,7 @@ class VcfMappingsMaker:
         for sample_identifier in design_file_mapping.keys():
             if sample_identifier.endswith(VCF_EXTENSION):  # Design file contains file names
                 sample_dir = self.base_dir
-                vcf_file = [i for i in os.listdir(sample_dir) if i.startswith(sample_identifier)]
+                vcf_file = [i for i in os.listdir(sample_dir) if i.startswith(sample_identifier) and i.endswith(VCF_EXTENSION)]
                 if len(vcf_file) > 1:
                     raise NameError("More than one vcf file found that starts with sample identifier '{0}' from the "
                                     "design file".format(sample_identifier))
@@ -164,17 +164,3 @@ class SingleVcfFileMappingMaker:
             # catch error, don't propagate
             logging.info('Csv output directory %s for sample already exists; using existing directory' %
                          self.vcf_mapping_dict['csv_file_full_path'])
-
-    # TODO: It appears this method is never used
-    # def move_file(self):
-    #     """ Moves files to newly created directory """
-    #     try:
-    #         os.rename(self.mapping['raw_vcf_file_full_path'], os.path.join(self.mapping['vcf_sample_dir'],
-    #                                                                        self.mapping['vcf_file_basename']))
-    #
-    #         self.mapping['raw_vcf_file_full_path'] = os.path.join(self.mapping['vcf_sample_dir'],
-    #                                                               self.mapping['vcf_file_basename'])
-    #     except OSError:
-    #         logging.info('Files are organized already')
-    #
-    #     print(os.path.isfile(self.mapping['raw_vcf_file_full_path']), self.mapping['raw_vcf_file_full_path'])

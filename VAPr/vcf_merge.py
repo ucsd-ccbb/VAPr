@@ -58,11 +58,11 @@ class MergeVcfs:
     def bgzip_index_vcf(self, vcf_path):
         """bgzip and index each vcf so it can be verged with bcftools."""
         if os.path.isfile(vcf_path + ".gz"):
-            return vcf_path
+            return vcf_path + ".gz"
         else:
             bgzip_cmd_string = self._build_bgzip_vcf_command_str(vcf_path)
             bgzip_args = shlex.split(bgzip_cmd_string)
-            with open(vcf_path + '.gz', 'w') as outfile:
+            with open(vcf_path + ".gz", "w") as outfile:
                 p=subprocess.Popen(bgzip_args, stdout=outfile, stderr=subprocess.PIPE)
                 p.communicate()
 
@@ -70,7 +70,7 @@ class MergeVcfs:
             index_args = shlex.split(index_cmd_string)
             subprocess.call(index_args)
 
-            return vcf_path + '.gz'
+            return vcf_path + ".gz"
 
     def _build_merge_vcf_command_str(self, raw_vcf_path_list):
         """Generate command string to merge vcf files into single multisample vcf."""
