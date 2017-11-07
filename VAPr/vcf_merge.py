@@ -76,7 +76,7 @@ class MergeVcfs:
         """Generate command string to merge vcf files into single multisample vcf."""
 
         command = " ".join([
-            'vcf-merge', " ".join(raw_vcf_path_list)
+            'bcftools merge', " ".join(raw_vcf_path_list)
             ])
         return command
 
