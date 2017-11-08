@@ -38,7 +38,7 @@ class MergeVcfs:
         if len(self.raw_vcf_path_list) > 1:
             bgzipped_vcf_path_list = set([self.bgzip_index_vcf(vcf) for vcf in self.raw_vcf_path_list])
             self.execute_merge(bgzipped_vcf_path_list, self.output_vcf_path)
-            return [SingleVcfFileMappingMaker(single_input_file_path=self.output_vcf_path,
+            return [SingleVcfFileMappingMaker(single_input_file_path=self.output_vcf_path + ".gz",
                                          input_dir=self.input_dir,
                                          out_dir=self.output_dir,
                                          sample_id='infer',
