@@ -37,15 +37,18 @@ class MergeVcfs:
 
         if len(self.raw_vcf_path_list) > 1:
             bgzipped_vcf_path_list = set([self.bgzip_index_vcf(vcf) for vcf in self.raw_vcf_path_list])
-            vcf = self.execute_merge(bgzipped_vcf_path_list, self.output_vcf_path)
-            return [SingleVcfFileMappingMaker(single_input_file_path=vcf,
+            merged_vcf = self.execute_merge(bgzipped_vcf_path_list, self.output_vcf_path)
+            return [SingleVcfFileMappingMaker(single_input_file_path=merged_vcf,
                                          input_dir=self.input_dir,
                                          out_dir=self.output_dir,
                                          sample_id='infer',
                                          sample_id_type='files',
                                          extra_data=None).vcf_mapping_dict]
         else:
-            return self.list_of_vcf_mapping_dicts
+            list_of_vcf_mapping_dicts = self.list_of_vcf_mapping_dicts
+            bgzipped_vcf_path = self.execute_merge(self.raw_vcf_path_list[0], self.output_vcf_path)
+            list_of_vcf_mapping_dicts[0]['raw_vcf_file_full_path'] = bgzipped_vcf_path
+            return list_of_vcf_mapping_dicts
 
     def execute_merge(self, vcf_list, out_vcf):
         merge_cmd_string = self._build_merge_vcf_command_str(vcf_list)
