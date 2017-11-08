@@ -54,6 +54,7 @@ class MergeVcfs:
         with open(out_vcf, 'w') as outfile:
             p=subprocess.Popen(merge_args, stdout=outfile, stderr=subprocess.PIPE)
             p.communicate()
+        bgzip_index_vcf(out_vcf)
 
     def bgzip_index_vcf(self, vcf_path):
         """bgzip and index each vcf so it can be verged with bcftools."""
