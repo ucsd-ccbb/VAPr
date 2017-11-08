@@ -7,6 +7,8 @@ import logging
 import sys
 import VAPr.vcf_parsing as vvp
 import VAPr.definitions as definitions
+
+# TODO: Understand, vet this logging set-up
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -16,7 +18,7 @@ except:
 
 
 class HgvsParser(object):
-    """ Process a vcf file and extract its hgvs ids"""
+    """ Process a vcf file and extract its hgvs ids."""
 
     def __init__(self, vcf_file):
         self.vcf = vcf_file
@@ -40,8 +42,8 @@ class HgvsParser(object):
         return self.complete_chromosome(list_ids)
 
     def get_variants_from_vcf(self, step):
-        """
-        Retrieves variant names from a LARGE vcf file.
+        """ Retrieve variant names from a LARGE vcf file.
+
         :param step: tells the parallel processing where to start and end the hgvs id creation
         :return: a list of variants formatted according to HGVS standards
         """
@@ -53,7 +55,6 @@ class HgvsParser(object):
                                                   record.REF, str(record.ALT[0])))
 
         return self.complete_chromosome(list_ids)
-
 
     @staticmethod
     def complete_chromosome(expanded_list):
@@ -193,7 +194,7 @@ class AnnovarModels(object):
             if key in ['genomicsuperdups', 'tfbsconssites']:
                 self.dictionary[key] = self.to_dict(key)
 
-        annovar_dict, self.errors = self.parse_genotype(self.dictionary)
+        annovar_dict = self.parse_genotype(self.dictionary)
 
         return annovar_dict
 
@@ -201,7 +202,7 @@ class AnnovarModels(object):
         """ Implements the genotype parsing scheme. Many thanks to Amanda Birmingham """
 
         read_depth_error = genotype_lik_error = allele_error = 0
-        parser = vvp.VCFGenotypeStrings()
+        parser = vvp.VCFGenotypeParser()
 
         samples_by_id = []
 
@@ -237,7 +238,7 @@ class AnnovarModels(object):
 
             if sample_specific_dict['genotype'] is not None:
                 genotype_class_to_fill = vvp.VCFGenotypeInfo('')
-                vvp.fill_genotype_class(sample_specific_dict['genotype'], genotype_class_to_fill)
+                vvp._fill_genotype_class(sample_specific_dict['genotype'], genotype_class_to_fill)
                 sample_specific_dict['genotype_subclass_by_class'] = genotype_class_to_fill.genotype_subclass_by_class
 
             sample_specific_dict['sample_id'] = sample
