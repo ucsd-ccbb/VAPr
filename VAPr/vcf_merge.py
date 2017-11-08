@@ -46,7 +46,7 @@ class MergeVcfs:
                                          extra_data=None).vcf_mapping_dict]
         else:
             list_of_vcf_mapping_dicts = self.list_of_vcf_mapping_dicts
-            bgzipped_vcf_path = self.execute_merge(self.raw_vcf_path_list[0], self.output_vcf_path)
+            bgzipped_vcf_path = self.bgzip_index_vcf(self.raw_vcf_path_list[0])
             list_of_vcf_mapping_dicts[0]['raw_vcf_file_full_path'] = bgzipped_vcf_path
             return list_of_vcf_mapping_dicts
 
