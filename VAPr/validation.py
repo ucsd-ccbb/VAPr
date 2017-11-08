@@ -4,76 +4,58 @@ By convention, validation functions in this module raise an appropriate Error if
 successful, they return either nothing or the appropriately converted input value.
 """
 
-# personal libraries
 
 __author__ = 'Birmingham'
 
 
 def convert_to_nullable(input_val, cast_function):
-    """For non-null input_val, apply cast_function and return result if successful; otherwise, return database null.
+    """For non-null input_val, apply cast_function and return result if successful; for null input_val, return None.
 
     Args:
-        input_val (Any): The value to attempt to convert to either a null or the type specified by cast_function.
-            The recognized null value is '.'
+        input_val (Any): The value to attempt to convert to either a None or the type specified by cast_function.
+            The recognized null values are '.', None, '', and 'NULL'
         cast_function (Callable[[Any], Any]): A function to cast the input_val to some specified type; should raise an
             error if this cast fails.
 
     Returns:
-        utilities.database.NULL value if input is the null value.
+        None if input is the null value.
         An appropriately cast value if input is not null and the cast is successful.
 
     Raises:
         Error: whatever error is provided by cast_function if the cast fails.
     """
     if input_val in ['.', None, '', 'NULL']:
-        return -9999
+        result = None
     else:
-        try:
-            result = cast_function(input_val)
-        except:
-            result = -9999
+        result = cast_function(input_val)
     return result
 
 
 def convert_to_nonneg_int(input_val, nullable=False):
-    """Cast the input to a non-negative integer, if possible, or (optionally) a database null if matches null value.
+    """For non-null input_val, cast to a non-negative integer and return result; for null input_val, return None.
 
     Args:
-        input_val (Any): The value to attempt to convert to a non-negative integer (or a null, if nullable=True).
-            The recognized null value is '.'
+        input_val (Any): The value to attempt to convert to either a non-negative integer or a None (if nullable).
+            The recognized null values are '.', None, '', and 'NULL'
         nullable (Optional[bool]): True if the input value may be null, false otherwise.  Defaults to False.
 
     Returns:
-        utilities.database.NULL value if nullable=True and the input is the null value.
+        None if nullable=True and the input is a null value.
         The appropriately cast non-negative integer if input is not null and the cast is successful.
 
     Raises:
-        ValueError: if the input cannot be successfully converted to a non-negative integer (or null, if nullable=True)
+        ValueError: if the input cannot be successfully converted to a non-negative integer or, if allowed, None
     """
-    err_count = 0
-    if input_val == 'NULL':
-        err_count += 1
-        return -9999
-
-    if nullable:
-        try:
+    try:
+        if nullable:
             result = convert_to_nullable(input_val, float)
-        except:
-            result = -9999
-        if result == 'NULL':
-            err_count += 1
-            return -9999, err_count
+            if result is None:
+                return result
+        else:
+            result = float(input_val)
 
-    else:
-        try:
-            result = int(input_val)
-        except TypeError:
-            err_count += 1
-        except ValueError:
-            err_count += 1
-
-    if not isinstance(result, int):
-        err_count += 1
-    if result < 0:
-        err_count += 1
-    return result, err_count
+        if not result.is_integer(): raise ValueError()
+        if result < 0: raise ValueError()
+        return int(result)
+    except ValueError:
+        raise ValueError("Input ({0}) must be a non-negative integer".format(input_val))
