@@ -16,15 +16,14 @@ except:
 
 
 class MergeVcfs:
-    def __init__(self, input_dir, output_dir, list_of_vcf_mapping_dicts, analysis_name):
+    def __init__(self, input_dir, output_dir, vcf_file_path_list, analysis_name):
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.vcf_name = analysis_name
         # User must provide analysis_name without .vcf extension: if one single vcf file
         # If multiple vcf files, analysis name will be name of merged vcf file
-        self.output_vcf_path = os.path.join(self.output_dir, self.vcf_name + '.vcf')
-        self.list_of_vcf_mapping_dicts = list_of_vcf_mapping_dicts
-        self.raw_vcf_path_list =  [vcf['raw_vcf_file_full_path'] for vcf in list_of_vcf_mapping_dicts]
+        self.output_vcf_path = os.path.join(self.output_dir, self.vcf_name + ".vcf")
+        self.raw_vcf_path_list =  vcf_file_path_list
 
     def merge_vcfs(self):
         """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
@@ -37,18 +36,16 @@ class MergeVcfs:
 
         if len(self.raw_vcf_path_list) > 1:
             bgzipped_vcf_path_list = set([self.bgzip_index_vcf(vcf) for vcf in self.raw_vcf_path_list])
-            merged_vcf = self.execute_merge(bgzipped_vcf_path_list, self.output_vcf_path)
-            return [SingleVcfFileMappingMaker(single_input_file_path=merged_vcf,
-                                         input_dir=self.input_dir,
-                                         out_dir=self.output_dir,
-                                         sample_id='infer',
-                                         sample_id_type='files',
-                                         extra_data=None).vcf_mapping_dict]
+            single_vcf_path = self.execute_merge(bgzipped_vcf_path_list, self.output_vcf_path)
         else:
-            list_of_vcf_mapping_dicts = self.list_of_vcf_mapping_dicts
-            bgzipped_vcf_path = self.bgzip_index_vcf(self.raw_vcf_path_list[0])
-            list_of_vcf_mapping_dicts[0]['raw_vcf_file_full_path'] = bgzipped_vcf_path
-            return list_of_vcf_mapping_dicts
+            single_vcf_path = self.raw_vcf_path_list[0]
+
+        return SingleVcfFileMappingMaker(single_input_file_path=single_vcf_path,
+                                          input_dir=self.input_dir,
+                                          out_dir=self.output_dir,
+                                          sample_id='infer',
+                                          sample_id_type='files',
+                                          extra_data=None).vcf_mapping_dict
 
     def execute_merge(self, vcf_list, out_vcf):
         merge_cmd_string = self._build_merge_vcf_command_str(vcf_list)
@@ -56,24 +53,24 @@ class MergeVcfs:
         with open(out_vcf, 'w') as outfile:
             p=subprocess.Popen(merge_args, stdout=outfile, stderr=subprocess.PIPE)
             p.communicate()
-        return self.bgzip_index_vcf(out_vcf)
+        return out_vcf
 
     def bgzip_index_vcf(self, vcf_path):
         """bgzip and index each vcf so it can be verged with bcftools."""
-        if os.path.isfile(vcf_path + ".gz"):
-            return vcf_path + ".gz"
+        vcf_gz = vcf_path + ".gz"
+        if os.path.isfile(vcf_gz):
+            return vcf_gz
         else:
             bgzip_cmd_string = self._build_bgzip_vcf_command_str(vcf_path)
             bgzip_args = shlex.split(bgzip_cmd_string)
-            with open(vcf_path + ".gz", "w") as outfile:
+            with open(vcf_gz, "w") as outfile:
                 p=subprocess.Popen(bgzip_args, stdout=outfile, stderr=subprocess.PIPE)
                 p.communicate()
 
-            index_cmd_string = self._build_index_vcf_command_str(vcf_path + '.gz')
+            index_cmd_string = self._build_index_vcf_command_str(vcf_gz)
             index_args = shlex.split(index_cmd_string)
             subprocess.call(index_args)
-
-        return vcf_path + ".gz"
+        return vcf_gz
 
     def _build_merge_vcf_command_str(self, raw_vcf_path_list):
         """Generate command string to merge vcf files into single multisample vcf."""

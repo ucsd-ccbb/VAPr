@@ -62,7 +62,7 @@ def listen(out_path, num_batch_jobs, num_files):
 
 
 class AnnovarWrapper(object):
-    """Wrapper around ANNOVAR download and annotation functions """
+    """ Wrapper around ANNOVAR download and annotation functions """
 
     hg_19_databases = OrderedDict({'knownGene': 'g',
                                    # 'tfbsConsSites': 'r',
@@ -86,7 +86,7 @@ class AnnovarWrapper(object):
                                    # 'nci60': 'f'})
 
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
-                 list_of_vcf_mapping_dicts, design_file=None, genome_build_version=None,
+                 vcf_mapping_dict, design_file=None, genome_build_version=None,
                  custom_annovar_dbs_to_use=None):
 
         self.HUMANDB_FOLDER_NAME = "/humandb/"
@@ -115,7 +115,7 @@ class AnnovarWrapper(object):
         self.annovar_path = annovar_path
         self.mongo_db_and_collection_names_dict = mongo_db_and_collection_names_dict
         self.design_file = design_file
-        self.list_of_vcf_mapping_dicts = list_of_vcf_mapping_dicts
+        self.vcf_mapping_dict = vcf_mapping_dict
 
         # Databases data
         self._set_annovar_dbs_to_use(genome_build_version, custom_annovar_dbs_to_use)
@@ -152,24 +152,23 @@ class AnnovarWrapper(object):
 
     def run_annovar(self, vcf_is_multisample=False):
         """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
-        for idx, _map in enumerate(self.list_of_vcf_mapping_dicts):
-            annotation_dir = _map['csv_file_full_path']
-            if os.path.isdir(annotation_dir):
-                logging.info('Directory already exists for %s. '
-                             'Writing output files there for file %s.' % (annotation_dir,
-                                                                          _map['raw_vcf_file_full_path']))
-            else:
-                os.makedirs(annotation_dir)
+        annotation_dir = self.vcf_mapping_dict['csv_file_full_path']
+        if os.path.isdir(annotation_dir):
+            logging.info('Directory already exists for %s. '
+                         'Writing output files there for file %s.' % (annotation_dir,
+                                                                      self.vcf_mapping_dict['raw_vcf_file_full_path']))
+        else:
+            os.makedirs(annotation_dir)
 
-            vcf_path = _map['raw_vcf_file_full_path']
-            csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
-            cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
-                                                               vcf_is_multisample=vcf_is_multisample)
-            args = shlex.split(cmd_string)
-            logging.info('Running Annovar')
-            subprocess.call(args)#, stdout=subprocess.PIPE)
-            #listen(vcf_path, len(self.list_of_vcf_mapping_dicts), num_files=1)
-            logging.info('Finished running Annovar')
+        vcf_path = self.vcf_mapping_dict['raw_vcf_file_full_path']
+        csv_path = os.path.join(self.vcf_mapping_dict['csv_file_full_path'], self.vcf_mapping_dict['csv_file_basename'])
+        cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
+                                                           vcf_is_multisample=vcf_is_multisample)
+        args = shlex.split(cmd_string)
+        logging.info('Running Annovar')
+        subprocess.call(args)#, stdout=subprocess.PIPE)
+        #listen(vcf_path, len(self.vcf_mapping_dict), num_files=1)
+        logging.info('Finished running Annovar')
 
     def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
         """Generate command string to run table_annovar.pl, which annotates a VCF file."""
