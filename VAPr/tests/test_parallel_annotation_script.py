@@ -93,7 +93,7 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
 
     def test_parallel_annotator_mapper(self):
         hgvs = HgvsParser(self.sample_csv_vcf_tuple[1])
-        csv_parsing = AnnovarTxtParser(self.sample_csv_vcf_tuple[2], samples=hgvs.samples,
+        csv_parsing = AnnovarTxtParser(self.sample_csv_vcf_tuple[2], sample_names_list=hgvs.samples,
                                        extra_data=self.sample_csv_vcf_tuple[5])
         num_lines = csv_parsing.num_lines
         n_steps = int(num_lines / self.annotator_wrapper.chunksize) + 1
@@ -126,7 +126,7 @@ class TestParallelAnnotationFunctions(unittest.TestCase):
         """
     def test_parse_by_step_2(self):
         hgvs = HgvsParser(self.minimapper[1])
-        csv_parsing = AnnovarTxtParser(self.minimapper[2], samples=hgvs.samples,
+        csv_parsing = AnnovarTxtParser(self.minimapper[2], sample_names_list=hgvs.samples,
                                        extra_data=self.minimapper[5])
         num_lines = csv_parsing.num_lines
         n_steps = int(num_lines / self.annotator_wrapper.chunksize) + 1
