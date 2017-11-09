@@ -2,6 +2,7 @@ import os
 import logging
 import vcf
 import sys
+import pandas
 
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
@@ -14,89 +15,31 @@ except:
     pass
 
 
-class VcfMappingsMaker:
-    def __init__(self, input_dir, output_dir):
-        self.base_dir = input_dir
-        self.out_dir = output_dir
+def get_vcf_file_paths_list(input_dir, design_file=None):
+    if design_file is not None:
+        design_df = pandas.read_csv(design_file)
+        vcf_file_paths_list = design_df[0].tolist()
+    else:
+        vcf_file_paths_list = _get_vcf_file_paths_list_in_directory(input_dir)
 
-        self.list_of_vcf_mapping_dicts = []
-        self.single_vcf_mapping_maker = SingleVcfFileMappingMaker
+    return vcf_file_paths_list
 
-    def get_mappings_from_directory(self):
-        """ Creates list of mapping dicts for VCF files found by walking the files in the base directory"""
-        VCF_EXTENSION = ".vcf"
-        walker = os.walk(self.base_dir)
-        for folder, _, files in walker:
-            for curr_file in files:
-                if curr_file.endswith(VCF_EXTENSION):
-                    full_path_single_file = os.path.join(os.path.abspath(folder), curr_file)
-                    self._store_mapping_for_single_vcf(full_path_single_file)
+def _get_vcf_file_paths_list_in_directory(base_dir):
+    """ Creates list of mapping dicts for VCF files found by walking the files in the base directory"""
 
-    def get_mappings_from_design_file(self, design_df):
-        """ Creates list of mapping dicts for VCF files referenced in dataframe containing contents of design file """
+    VCF_EXTENSION = ".vcf"
 
-        VCF_EXTENSION = ".vcf"
+    vcf_file_paths_list = []
+    walker = os.walk(base_dir)
+    for folder, _, files in walker:
+        for curr_file in files:
+            if curr_file.endswith(VCF_EXTENSION):
+                full_path_single_file = os.path.join(os.path.abspath(folder), curr_file)
+                vcf_file_paths_list.append(full_path_single_file)
 
-        # TODO: Find out required format for a design file; apparently it has to have a column named Sample_Names ...
-        # what else?
-        # TODO: Figure out what this line is doing
-        design_file_mapping = design_df.set_index('Sample_Names').T.to_dict()
-
-        # TODO: I personally think we shouldn't support a design file that mixes the two, but
-        # the code as it is allows that without error or comment
-        for sample_identifier in design_file_mapping.keys():
-            if sample_identifier.endswith(VCF_EXTENSION):  # Design file contains file names
-                sample_dir = self.base_dir
-                vcf_file = [i for i in os.listdir(sample_dir) if i.startswith(sample_identifier) and i.endswith(VCF_EXTENSION)]
-                if len(vcf_file) > 1:
-                    raise NameError("More than one vcf file found that starts with sample identifier '{0}' from the "
-                                    "design file".format(sample_identifier))
-                else:
-                    logging.info('Found %i unique vcf files for sample %s' % (len(set(vcf_file)), sample_identifier))
-                    full_path_single_file = os.path.join(os.path.abspath(sample_dir), vcf_file[0])
-                    self._store_mapping_for_single_vcf(full_path_single_file, sample_id=sample_identifier,
-                                                       sample_id_type='files',
-                                                       extra_data=design_file_mapping[sample_identifier])
-
-            else:  # Design file contains directory (sample) names
-                sample_dir = os.path.join(self.base_dir, sample_identifier)
-                if not os.path.exists(sample_dir) or os.listdir(sample_dir) == []:
-                    raise NameError('Could not find directory named %s as provided in design file' % sample_identifier)
-
-                vcf_files = [i for i in os.listdir(sample_dir) if i.endswith(VCF_EXTENSION)]
-                for vcf_file in vcf_files:
-                    full_path_single_file = os.path.join(os.path.abspath(sample_dir), vcf_file)
-                    self._store_mapping_for_single_vcf(full_path_single_file, sample_id=sample_identifier,
-                                                       sample_id_type='dirs',
-                                                       extra_data=design_file_mapping[sample_identifier])
-
-    def _store_mapping_for_single_vcf(self, single_input_file_path, sample_id='infer', sample_id_type='files',
-                                      extra_data=None):
-        """ Digests input data from input directory """
-        vcf_mapping_maker = self.single_vcf_mapping_maker(single_input_file_path, self.base_dir, self.out_dir,
-                                                          sample_id=sample_id, sample_id_type=sample_id_type,
-                                                          extra_data=extra_data)
-
-        # reach into mapping maker above to get mapping for the single input vcf file, add that mapping to the list
-        # of mappings for all vcf files
-        self.list_of_vcf_mapping_dicts.append(vcf_mapping_maker.vcf_mapping_dict)
-
-        # Eliminates possible duplicates--by creating a dictionary in which each value is an original dictionary
-        # from self.mapping_list and each key is the value of 'raw_vcf_file_full_path' in that dictionary,
-        # *then* pulling out only the values (which is to say, original dictionaries) from that new dictionary.
-        # This has the effect of ensuring that there are no duplicates in the value of 'raw_vcf_file_full_path',
-        # although if two dictionaries have the same 'raw_vcf_file_full_path' value but different other values,
-        # this approach will pick one arbitrarily (and probably not stably across runs).
-        # TODO: Figure out whether this approach really accomplishes what we want here
-        # TODO: Pull out string keys into symbolic constants
-        self.list_of_vcf_mapping_dicts = list(
-            {v['raw_vcf_file_full_path']: v for v in self.list_of_vcf_mapping_dicts}.values()
-        )
+    return vcf_file_paths_list
 
 
-# TODO: Again, not sure that class-based approach is the best way to go here, as we don't really need this object to
-# stick around and hold state over time--we just want a one-shot, get-it-and-go approach.  Consider refactoring as
-# top-level function in its own module, supported by private functions as necessary.
 class SingleVcfFileMappingMaker:
     """ Populate mapping dictionary for single VCF file """
 

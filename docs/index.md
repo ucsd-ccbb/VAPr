@@ -193,7 +193,7 @@ The first four arguments are required to run the full annotation pipeline. These
 Once the `AnnotationProject` instance has been initiated, you can call a variety of methods from it. In particular, 
 the API lets you call any core method for the annotation part. These include:
  - Annovar methods: `download_dbs` and `run_annovar` and `update_dbs`
- - Annotation and storing methods: `parallel_annotation_and_saving` and `quick_annotate_and_save`
+ - Annotation and storing methods: `parallel_annotation` and `quick_annotate`
 
 The differences and nuances of each will be discussed next.
 
@@ -233,9 +233,9 @@ _Optional_:
 <a id='parallel'></a>
 ### Parallel Annotation
 
-#### `parallel_annotation_and_saving`
+#### `parallel_annotation`
 
-`parallel_annotation_and_saving()`: this requires running Annovar beforehand, and will kick-start the main functionality 
+`parallel_annotation()`: this requires running Annovar beforehand, and will kick-start the main functionality
 of this package. Namely, it will collect all the variant data from Annovar annotations, combine it with data coming
 from MyVariant.info, and parse it to MongoDB, in the database and collection specified in `project_data`.
 
@@ -254,9 +254,9 @@ _Optional_:
   MyVariant.info and will result in much faster annotation. It takes a Boolean True of False. Default: False
 
 
-#### `quick_annotate_and_save` (not recommended)
+#### `quick_annotate` (not recommended)
 
-`quick_annotate_and_save()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
+`quick_annotate()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
 vcf files and query the variant data from MyVariant.info. It is subject to the issue of potentially having completely
 empty data for some of the variants, and inability to run native VAPr queries on the data. 
 

@@ -31,4 +31,4 @@ if __name__ == '__main__':
                                                    # design_file=design_file,
                                                    build_ver='hg19')
 
-    Project.parallel_annotation_and_saving(n_processes=8, verbose=2)
+    Project.parallel_annotation(n_processes=8, verbose=2)
