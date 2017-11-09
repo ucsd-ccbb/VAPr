@@ -7,7 +7,7 @@ import logging
 
 # project-specific libraries
 from VAPr.annotation_project import AnnotationProject
-from VAPr.annovar import AnnovarWrapper, AnnovarJobHandler
+from VAPr.annovar_runner import AnnovarWrapper #, AnnovarJobHandler
 from VAPr.vcf_merge import MergeVcfs
 from VAPr.vcf_mappings_maker import SingleVcfFileMappingMaker
 
