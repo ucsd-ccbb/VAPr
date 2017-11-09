@@ -3,7 +3,7 @@ import unittest
 import warnings
 
 # project-specific libraries
-import VAPr.vcf_parsing as ns_test
+import VAPr.vcf_genotype_fields_parsing as ns_test
 
 __author__ = 'Birmingham'
 
@@ -37,9 +37,9 @@ class TestFunctions(unittest.TestCase):
         genotype_to_fill = ns_test.VCFGenotypeInfo('')
         ns_test._fill_unfiltered_reads_counts('0,64,12', genotype_to_fill)
         self.assertEqual(3, len(genotype_to_fill.alleles))
-        self.assertEqual(0, genotype_to_fill.alleles[0].read_counts)
-        self.assertEqual(64, genotype_to_fill.alleles[1].read_counts)
-        self.assertEqual(12, genotype_to_fill.alleles[2].read_counts)
+        self.assertEqual(0, genotype_to_fill.alleles[0].unfiltered_read_counts)
+        self.assertEqual(64, genotype_to_fill.alleles[1].unfiltered_read_counts)
+        self.assertEqual(12, genotype_to_fill.alleles[2].unfiltered_read_counts)
 
     def test_fill_unfiltered_reads_counts_warn(self):
         genotype_to_fill = ns_test.VCFGenotypeInfo('')
@@ -201,16 +201,16 @@ class TestAllele(unittest.TestCase):
 
     def test_read_counts_setter(self):
         dummy_allele = ns_test.Allele(0)
-        self.assertEqual(0, dummy_allele.read_counts)
-        dummy_allele.read_counts = 94
-        self.assertEqual(94, dummy_allele.read_counts)
+        self.assertEqual(0, dummy_allele.unfiltered_read_counts)
+        dummy_allele.unfiltered_read_counts = 94
+        self.assertEqual(94, dummy_allele.unfiltered_read_counts)
 
     def test_read_counts_setter_error(self):
         dummy_allele = ns_test.Allele(0)
         with self.assertRaises(ValueError):
-            dummy_allele.read_counts = -94
+            dummy_allele.unfiltered_read_counts = -94
         with self.assertRaises(ValueError):
-            dummy_allele.read_counts = 48.5
+            dummy_allele.unfiltered_read_counts = 48.5
 
 
 class TestGenotypeLikelihood(unittest.TestCase):
@@ -313,9 +313,9 @@ class TestVCFGenotypeString(unittest.TestCase):
         self.assertEqual(99, genotype_to_fill.genotype_confidence)
         self.assertEqual(2, len(genotype_to_fill.alleles))
         self.assertEqual(3, len(genotype_to_fill.genotype_likelihoods))
-        self.assertEqual(0, genotype_to_fill.alleles[0].read_counts)
+        self.assertEqual(0, genotype_to_fill.alleles[0].unfiltered_read_counts)
         self.assertEqual(1187.2, genotype_to_fill.genotype_likelihoods[0].likelihood_neg_exponent)
-        self.assertEqual(34, genotype_to_fill.alleles[1].read_counts)
+        self.assertEqual(34, genotype_to_fill.alleles[1].unfiltered_read_counts)
         self.assertEqual(101, genotype_to_fill.genotype_likelihoods[1].likelihood_neg_exponent)
         self.assertEqual(0, genotype_to_fill.genotype_likelihoods[2].likelihood_neg_exponent)
 

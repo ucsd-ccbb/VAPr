@@ -349,24 +349,25 @@ class VCFGenotypeInfo(object):
 class Allele(object):
     """Store unfiltered read counts, if any, for a particular allele."""
 
-    def __init__(self, read_counts=None):
+    def __init__(self, unfiltered_read_counts=None):
         """Create Allele object.
 
         Args:
-            read_counts (Optional[str]): Number of unfiltered reads counts for this sample at this site, from AD field.
+            unfiltered_read_counts (Optional[str]): Number of unfiltered reads counts for this sample at this site,
+                from AD field.
         """
-        self._read_counts = None
-        if read_counts is not None:
-            self.read_counts = read_counts
+        self._unfiltered_read_counts = None
+        if unfiltered_read_counts is not None:
+            self.unfiltered_read_counts = unfiltered_read_counts
 
     @property
-    def read_counts(self):
+    def unfiltered_read_counts(self):
         """int or None: Number of unfiltered reads counts for this sample at this site, from AD field."""
-        return self._read_counts
+        return self._unfiltered_read_counts
 
-    @read_counts.setter
-    def read_counts(self, value):
-        self._read_counts = VAPr.validation.convert_to_nonneg_int(value, nullable=True)
+    @unfiltered_read_counts.setter
+    def unfiltered_read_counts(self, value):
+        self._unfiltered_read_counts = VAPr.validation.convert_to_nonneg_int(value, nullable=True)
 
 
 class GenotypeLikelihood(object):
