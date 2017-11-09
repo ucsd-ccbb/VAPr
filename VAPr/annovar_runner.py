@@ -1,13 +1,12 @@
 import os
 import sys
 import shlex
-import glob
 import time
 import subprocess
 import logging
 from collections import OrderedDict
 
-# TODO: Is this really necessary?
+# TODO: Understand, vet this logging set-up
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 try:
@@ -55,8 +54,7 @@ def listen(out_path, num_batch_jobs, num_files):
         # TODO: Possible bug:
         # why check whether the number of text files *added this time around* matches the number of batch
         # jobs??  Why check if the number of *initial* text files this time around matches the expected total
-        # number?Why not just check if the total number of text files ever seen (later_text_file_names)
-        # matches
+        # number? Why not just check if the total number of text files ever seen (later_text_file_names) matches?
         if num_added_text_files == num_batch_jobs:
             break
         if len(initial_text_file_names) >= num_files:
@@ -64,7 +62,7 @@ def listen(out_path, num_batch_jobs, num_files):
 
 
 class AnnovarWrapper(object):
-    """ Wrapper around ANNOVAR download and annotation functions """
+    """Wrapper around ANNOVAR download and annotation functions """
 
     hg_19_databases = OrderedDict({'knownGene': 'g',
                                    # 'tfbsConsSites': 'r',
@@ -86,7 +84,6 @@ class AnnovarWrapper(object):
                                    # 'clinvar_20161128': 'f',
                                    # 'cosmic70': 'f',
                                    # 'nci60': 'f'})
-
 
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
                  list_of_vcf_mapping_dicts, design_file=None, genome_build_version=None,
@@ -153,47 +150,6 @@ class AnnovarWrapper(object):
             logging.info('Finished downloading databases to {}'.format(
                 os.path.join(self.annovar_path, self.HUMANDB_FOLDER_NAME)))
 
-    # def run_annovar(self, num_batch_jobs=10, vcf_is_multisample=False):
-    #     """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
-    #
-    #     handler = AnnovarJobHandler(num_batch_jobs, self.list_of_vcf_mapping_dicts)
-    #     num_files_created = 0
-    #     for index, job in enumerate(handler.chunkenize):
-    #         logging.info('Job %i/%i sent for processing' %
-    #                      (index + 1, len(self.list_of_vcf_mapping_dicts) / num_batch_jobs + 1))
-    #         num_files_created += len(job)
-    #         self._submit_job(job, vcf_is_multisample=vcf_is_multisample)
-    #         logging.info('Annovar jobs submitted for %i files: %s' % (len(job),
-    #                                                                   ', '.join([os.path.basename(
-    #                                                                       i['raw_vcf_file_full_path']) for i in
-    #                                                                              job])))
-    #
-    #         listen(self.output_csv_path, len(job), num_files_created)
-    #         logging.info('Finished running Annovar on this batch')
-    #     logging.info('Finished running Annovar on all files')
-
-    # def _submit_job(self, job, vcf_is_multisample):
-    #     unique_annotation_dirs = set()
-    #     for idx, _map in enumerate(job):
-    #         annotation_dir = _map['csv_file_full_path']
-    #         #if annotation_dir not in annotation_dir_list:
-    #         unique_annotation_dirs.add(annotation_dir)
-    #         for unique_annotation_dir in unique_annotation_dirs:
-    #             if os.path.isdir(unique_annotation_dir):
-    #                 logging.info('Directory already exists for %s. '
-    #                              'Writing output files there for file %s.' % (unique_annotation_dir,
-    #                                                                           _map['raw_vcf_file_full_path']))
-    #             else:
-    #                 os.makedirs(unique_annotation_dir)
-    #
-    #         vcf_path = _map['raw_vcf_file_full_path']
-    #         csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
-    #         cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
-    #                                                            vcf_is_multisample=vcf_is_multisample)
-    #         args = shlex.split(cmd_string)
-    #         #_filter_annovar(self.output_csv_path, vcf_path)
-    #         subprocess.Popen(args, stdout=subprocess.PIPE)
-
     def run_annovar(self, vcf_is_multisample=False):
         """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
         for idx, _map in enumerate(self.list_of_vcf_mapping_dicts):
@@ -214,29 +170,6 @@ class AnnovarWrapper(object):
             subprocess.call(args)#, stdout=subprocess.PIPE)
             #listen(vcf_path, len(self.list_of_vcf_mapping_dicts), num_files=1)
             logging.info('Finished running Annovar')
-
-    # def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
-    #     """Generate command string to run table_annovar.pl, which annotates a VCF file."""
-    #
-    #     # TODO: check for newer version of databases
-    #     dbs = ",".join(list(self.annovar_dbs_to_use.keys()))
-    #     dbs_args = ",".join(list(self.annovar_dbs_to_use.values()))
-    #
-    #     # TODO: Explain why this replacement is being done?
-    #     if '1000g2015aug' in dbs:
-    #         dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
-    #     command = " ".join([
-    #         'perl', os.path.join(self.annovar_path, 'table_annovar.pl'),
-    #         vcf_path, "".join([self.annovar_path, self.HUMANDB_FOLDER_NAME]),
-    #         '-genome_build_version', self.genome_build_version,
-    #         '-out', csv_path, '-remove -protocol', dbs,
-    #         '-operation', dbs_args, '-nastring .', '-otherinfo -vcfinput'
-    #     ])
-    #
-    #     if vcf_is_multisample:
-    #         command += ' -format vcf4 -allsample -withfreq'
-    #
-    #     return command
 
     def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
         """Generate command string to run table_annovar.pl, which annotates a VCF file."""
@@ -297,6 +230,71 @@ class AnnovarWrapper(object):
             raise NameError('Genome {0} not supported by VAPr, genome must be one of the following: hg19, or hg38'.format(self.genome_build_version))
 
         return databases
+
+    # def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
+    #     """Generate command string to run table_annovar.pl, which annotates a VCF file."""
+    #
+    #     # TODO: check for newer version of databases
+    #     dbs = ",".join(list(self.annovar_dbs_to_use.keys()))
+    #     dbs_args = ",".join(list(self.annovar_dbs_to_use.values()))
+    #
+    #     # TODO: Explain why this replacement is being done?
+    #     if '1000g2015aug' in dbs:
+    #         dbs = dbs.replace('1000g2015aug', '1000g2015aug_all')
+    #     command = " ".join([
+    #         'perl', os.path.join(self.annovar_path, 'table_annovar.pl'),
+    #         vcf_path, "".join([self.annovar_path, self.HUMANDB_FOLDER_NAME]),
+    #         '-genome_build_version', self.genome_build_version,
+    #         '-out', csv_path, '-remove -protocol', dbs,
+    #         '-operation', dbs_args, '-nastring .', '-otherinfo -vcfinput'
+    #     ])
+    #
+    #     if vcf_is_multisample:
+    #         command += ' -format vcf4 -allsample -withfreq'
+    #
+    #     return command
+
+    # def run_annovar(self, num_batch_jobs=10, vcf_is_multisample=False):
+    #     """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
+    #
+    #     handler = AnnovarJobHandler(num_batch_jobs, self.list_of_vcf_mapping_dicts)
+    #     num_files_created = 0
+    #     for index, job in enumerate(handler.chunkenize):
+    #         logging.info('Job %i/%i sent for processing' %
+    #                      (index + 1, len(self.list_of_vcf_mapping_dicts) / num_batch_jobs + 1))
+    #         num_files_created += len(job)
+    #         self._submit_job(job, vcf_is_multisample=vcf_is_multisample)
+    #         logging.info('Annovar jobs submitted for %i files: %s' % (len(job),
+    #                                                                   ', '.join([os.path.basename(
+    #                                                                       i['raw_vcf_file_full_path']) for i in
+    #                                                                              job])))
+    #
+    #         listen(self.output_csv_path, len(job), num_files_created)
+    #         logging.info('Finished running Annovar on this batch')
+    #     logging.info('Finished running Annovar on all files')
+
+    # def _submit_job(self, job, vcf_is_multisample):
+    #     unique_annotation_dirs = set()
+    #     for idx, _map in enumerate(job):
+    #         annotation_dir = _map['csv_file_full_path']
+    #         #if annotation_dir not in annotation_dir_list:
+    #         unique_annotation_dirs.add(annotation_dir)
+    #         for unique_annotation_dir in unique_annotation_dirs:
+    #             if os.path.isdir(unique_annotation_dir):
+    #                 logging.info('Directory already exists for %s. '
+    #                              'Writing output files there for file %s.' % (unique_annotation_dir,
+    #                                                                           _map['raw_vcf_file_full_path']))
+    #             else:
+    #                 os.makedirs(unique_annotation_dir)
+    #
+    #         vcf_path = _map['raw_vcf_file_full_path']
+    #         csv_path = os.path.join(_map['csv_file_full_path'], _map['csv_file_basename'])
+    #         cmd_string = self._build_table_annovar_command_str(vcf_path, csv_path,
+    #                                                            vcf_is_multisample=vcf_is_multisample)
+    #         args = shlex.split(cmd_string)
+    #         #_filter_annovar(self.output_csv_path, vcf_path)
+    #         subprocess.Popen(args, stdout=subprocess.PIPE)
+
 
 
 # class AnnovarJobHandler:

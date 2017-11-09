@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 # project-specific libraries
 from VAPr.annotation_project import AnnotationProject
-from VAPr.annovar import AnnovarWrapper, AnnovarJobHandler
+from VAPr.annovar_runner import AnnovarWrapper, AnnovarJobHandler
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
