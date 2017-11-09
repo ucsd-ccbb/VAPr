@@ -28,7 +28,7 @@ except:
 
 class VariantParsing:
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
-                 list_of_vcf_mapping_dicts, design_file=None, build_ver=None, mongod_cmd=None):
+                 vcf_mapping_dict, design_file=None, build_ver=None, mongod_cmd=None):
 
         # Project data
         self.input_dir = input_dir
@@ -37,7 +37,7 @@ class VariantParsing:
         self.project_data = mongo_db_and_collection_names_dict
         self.design_file = design_file
         self.genome_build_version = build_ver
-        self.list_of_vcf_mapping_dicts = list_of_vcf_mapping_dicts
+        self.vcf_mapping_dict = vcf_mapping_dict
         self.chunksize = definitions.chunk_size
         self.step = 0
 
@@ -54,26 +54,25 @@ class VariantParsing:
 
         list_tuples = []
 
-        for _map in self.list_of_vcf_mapping_dicts:
-            matching_csv = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
-                            and i.endswith('txt')]
+        matching_csv = [i for i in os.listdir(self.vcf_mapping_dict['csv_file_full_path']) if i.startswith(self.vcf_mapping_dict['csv_file_basename'])
+                        and i.endswith('txt')]
 
-            matching_vcf = [i for i in os.listdir(_map['csv_file_full_path']) if i.startswith(_map['csv_file_basename'])
-                            and i.endswith('vcf')]
+        matching_vcf = [i for i in os.listdir(self.vcf_mapping_dict['csv_file_full_path']) if i.startswith(self.vcf_mapping_dict['csv_file_basename'])
+                        and i.endswith('vcf')]
 
-            if len(matching_csv) > 1 or len(matching_vcf) > 1:
-                raise ValueError('Too many matching csvs')
-            elif len(matching_csv) == 0 or len(matching_vcf) == 0:
-                raise ValueError('Csv not found')
-            else:
-                csv_path = os.path.join(_map['csv_file_full_path'], matching_csv[0])
-                vcf_path = os.path.join(_map['csv_file_full_path'], matching_vcf[0])
-                list_tuples.append((_map['sample_names'],
-                                   vcf_path,
-                                   csv_path,
-                                   self.db,
-                                   self.collection,
-                                   _map['extra_data']))
+        if len(matching_csv) > 1 or len(matching_vcf) > 1:
+            raise ValueError('Too many matching csvs')
+        elif len(matching_csv) == 0 or len(matching_vcf) == 0:
+            raise ValueError('Csv not found')
+        else:
+            csv_path = os.path.join(self.vcf_mapping_dict['csv_file_full_path'], matching_csv[0])
+            vcf_path = os.path.join(self.vcf_mapping_dict['csv_file_full_path'], matching_vcf[0])
+            list_tuples.append((self.vcf_mapping_dict['sample_names'],
+                               vcf_path,
+                               csv_path,
+                               self.db,
+                               self.collection,
+                               self.vcf_mapping_dict['extra_data']))
 
         return list_tuples
 

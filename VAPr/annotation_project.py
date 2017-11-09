@@ -5,7 +5,6 @@ import logging
 from VAPr.vcf_merge import MergeVcfs
 from VAPr.annovar import AnnovarWrapper
 from VAPr.parsers import VariantParsing
-import VAPr.vcf_mappings_maker
 
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
@@ -29,7 +28,7 @@ class AnnotationProject:
     # TODO: Consider making this an enum?
     supported_build_vers = ['hg19', 'hg38']
 
-    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, mongo_db_and_collection_names_dict,
+    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, vcf_file_extension, mongo_db_and_collection_names_dict,
                  design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
         # type: (object, object, object, object, object, object, object, object, object) -> object
         # TODO: Why is the above here?
@@ -47,14 +46,13 @@ class AnnotationProject:
         self.times_called = 0
         self.split = split_vcf
         self.mongod = mongod_cmd
-
-        vcf_file_path_list = VAPr.vcf_mappings_maker.get_vcf_file_paths_list(input_dir, design_file)
-
+        self.vcf_file_extension = vcf_file_extension
         # return vcf mapping dict
         self.vcf_mapping_dict = MergeVcfs(self.input_dir,
                                           self.output_csv_path,
-                                          vcf_file_path_list,
-                                          self.analysis_name).merge_vcfs()
+                                          self.analysis_name,
+                                          self.design_file,
+                                          self.vcf_file_extension).merge_vcfs()
 
         # TODO: These two calls takes in exactly the same parameters; Consider storing them to an object and passing
         # object around?
