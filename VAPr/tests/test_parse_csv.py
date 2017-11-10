@@ -4,7 +4,7 @@ import os
 import csv
 import myvariant
 import zipfile
-from VAPr import models as parser_models
+from VAPr import annovar_output_parsing as parser_models
 
 
 vcf_file = os.path.join(os.getcwd(), 'test_files/test_out_csv_path/real_files/X7/X7.raw.11_annotated.hg19_multianno.vcf')
@@ -21,7 +21,7 @@ class OpenParseTest(unittest.TestCase):
         self.txt_len = sum(1 for _ in open(self.txt_file))
         self.chunksize = 10
         self.hgvs = parser_models.HgvsParser(self.vcf_file)
-        self.csv_parsing = parser_models.AnnovarTxtParser(self.txt_file, samples='SAMPLE')
+        self.csv_parsing = parser_models.AnnovarTxtParser(self.txt_file, sample_names_list='SAMPLE')
 
     def tearDown(self):
         os.remove(txt_file)
@@ -35,7 +35,7 @@ class OpenParseTest(unittest.TestCase):
         zip_csv.extractall(os.path.join(os.getcwd(), 'test_files/test_out_csv_path/real_files/X7/'))
 
     def test_csv_read_data_headers(self):
-        dat = self.csv_parsing.open_and_parse_chunks(self.step, build_ver='hg19')
+        dat = self.csv_parsing.mine_chunk_of_annovar_annotations(self.step, build_ver='hg19')
         l = ['chr',
              'start',
              'end',

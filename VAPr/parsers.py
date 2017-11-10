@@ -1,19 +1,27 @@
 from __future__ import division, print_function
 
-import myvariant
+# built-in libraries
+import itertools
 import os
 import sys
-from pymongo import MongoClient
-import VAPr.definitions as definitions
-from VAPr.models import AnnovarTxtParser, HgvsParser
-from VAPr.writes import Writer
-from VAPr.queries import Filters
 from multiprocessing import Pool
 import logging
 import subprocess
 import shlex
 import time
 import tqdm
+
+# third-party libraries
+import myvariant
+from pymongo import MongoClient
+import vcf
+
+# project libraries
+import VAPr.definitions as definitions
+import VAPr.annovar_output_parsing
+from VAPr.writes import Writer
+from VAPr.queries import Filters
+
 
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
 
@@ -26,6 +34,9 @@ except:
     pass
 
 
+def _get_num_lines_in_file(file_path):
+    return sum(1 for _ in open(file_path))
+
 class VariantParsing:
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
                  vcf_mapping_dict, design_file=None, build_ver=None, mongod_cmd=None):
@@ -37,7 +48,7 @@ class VariantParsing:
         self.project_data = mongo_db_and_collection_names_dict
         self.design_file = design_file
         self.genome_build_version = build_ver
-        self.vcf_mapping_dict = vcf_mapping_dict
+        self._vcf_mapping_dict = vcf_mapping_dict
         self.chunksize = definitions.chunk_size
         self.step = 0
 
@@ -54,25 +65,25 @@ class VariantParsing:
 
         list_tuples = []
 
-        matching_csv = [i for i in os.listdir(self.vcf_mapping_dict['csv_file_full_path']) if i.startswith(self.vcf_mapping_dict['csv_file_basename'])
-                        and i.endswith('txt')]
+        matching_csv = [i for i in os.listdir(self._vcf_mapping_dict['csv_file_full_path']) if
+                        i.startswith(self._vcf_mapping_dict['csv_file_basename']) and i.endswith('txt')]
 
-        matching_vcf = [i for i in os.listdir(self.vcf_mapping_dict['csv_file_full_path']) if i.startswith(self.vcf_mapping_dict['csv_file_basename'])
-                        and i.endswith('vcf')]
+        matching_vcf = [i for i in os.listdir(self._vcf_mapping_dict['csv_file_full_path'])
+                        if i.startswith(self._vcf_mapping_dict['csv_file_basename']) and i.endswith('vcf')]
 
         if len(matching_csv) > 1 or len(matching_vcf) > 1:
             raise ValueError('Too many matching csvs')
         elif len(matching_csv) == 0 or len(matching_vcf) == 0:
             raise ValueError('Csv not found')
         else:
-            csv_path = os.path.join(self.vcf_mapping_dict['csv_file_full_path'], matching_csv[0])
-            vcf_path = os.path.join(self.vcf_mapping_dict['csv_file_full_path'], matching_vcf[0])
-            list_tuples.append((self.vcf_mapping_dict['sample_names'],
+            csv_path = os.path.join(self._vcf_mapping_dict['csv_file_full_path'], matching_csv[0])
+            vcf_path = os.path.join(self._vcf_mapping_dict['csv_file_full_path'], matching_vcf[0])
+            list_tuples.append((self._vcf_mapping_dict['sample_names'],
                                vcf_path,
                                csv_path,
                                self.db,
                                self.collection,
-                               self.vcf_mapping_dict['extra_data']))
+                                self._vcf_mapping_dict['extra_data']))
 
         return list_tuples
 
@@ -98,9 +109,8 @@ class VariantParsing:
         list_tuples = self._get_sample_csv_vcf_tuple()
         map_job = []
         for tpl in list_tuples:
-            hgvs = HgvsParser(tpl[1])
-            csv_parsing = AnnovarTxtParser(tpl[2], samples=hgvs.samples, extra_data=tpl[5])
-            num_lines = csv_parsing.num_lines
+            # hgvs = HgvsParser(tpl[1])
+            num_lines = _get_num_lines_in_file(tpl[2])  # num lines in csv_path
             n_steps = int(num_lines/self.chunksize) + 1
             map_job.extend(self.parallel_annotator_mapper(tpl, n_steps, extra_data=tpl[5], mongod_cmd=self.mongod))
         pool = Pool(num_processes)
@@ -136,13 +146,12 @@ class VariantParsing:
         """ Annotation that doesn't require annovar """
 
         list_tuples = []
-        for _map in self.list_of_vcf_mapping_dicts:
-            simple_map = {k: v for k, v in _map.items() if k not in ['csv_file_basename', 'sample_names']}
-            list_tuples.append((simple_map['raw_vcf_file_full_path'], self.db, self.collection))
+        simple_map = {k: v for k, v in self._vcf_mapping_dict.items() if k not in ['csv_file_basename', 'sample_names']}
+        list_tuples.append((simple_map['raw_vcf_file_full_path'], self.db, self.collection))
 
         for _tuple in list_tuples:
-            hgvs = HgvsParser(_tuple[0])
-            num_lines = hgvs.get_num_lines()
+            # hgvs = HgvsParser(_tuple[0])
+            num_lines = _get_num_lines_in_file(_tuple[0])
             n_steps = int(num_lines / self.chunksize) + 1
             map_job = self.quick_annotate_mapper(_tuple, n_steps)
             pool = Pool(n_processes)
@@ -150,7 +159,6 @@ class VariantParsing:
                 pass
             pool.close()
             pool.join()
-
 
     def quick_annotate_mapper(self, _tuple, n_steps):
         new_tuple_list = []
@@ -193,7 +201,7 @@ class VariantParsing:
 def parse_by_step(maps):
     """ The function that implements the parsing """
 
-    sample = maps[0]
+    sample_names_list = maps[0]
     vcf_file = maps[1]
     csv_file = maps[2]
     extra_data = maps[3]
@@ -207,9 +215,9 @@ def parse_by_step(maps):
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-    annovar_txt_parser = AnnovarTxtParser(csv_file, samples=sample, extra_data=extra_data)
-    annovar_variants, list_hgvs_ids = annovar_txt_parser.open_and_parse_chunks(step, build_ver=genome_build_version)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample, fields, genome_build_version)
+    annovar_variants, list_hgvs_ids = VAPr.annovar_output_parsing.AnnovarTxtParser.mine_chunk_of_annovar_annotations(csv_file, sample_names_list,
+                                                                                                                     step, definitions.chunk_size)
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample_names_list, fields, genome_build_version)
 
     merged_list = []
 
@@ -265,9 +273,9 @@ def parallel_get_dict_mv(maps):
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-    hgvs = HgvsParser(vcf_path)
-    list_hgvs_ids = hgvs.get_variants_from_vcf(step)
-    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, hgvs.samples, fields, genome_build_version)
+    #hgvs = HgvsParser(vcf_path)
+    samples, list_hgvs_ids = _get_hgvs_ids_and_samples_from_vcf(vcf_path, step, definitions.chunk_size)
+    myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, samples, fields, genome_build_version)
     # logging.info('Parsing Buffer...')
     collection.insert_many(myvariants_variants, ordered=False)
     client.close()
@@ -303,3 +311,28 @@ def remove_id_key(variant_data, sample_id):
         dic['hgvs_id'] = dic.pop("_id", None)
         dic['hgvs_id'] = dic.pop("query", None)
     return variant_data
+
+
+def _get_hgvs_ids_and_samples_from_vcf(vcf_file_path, step_number, chunk_size):
+    reader = vcf.Reader(open(vcf_file_path, 'r'))
+    hgvs_ids = []
+
+    for record in itertools.islice(reader, step_number * chunk_size, (step_number + 1) * chunk_size):
+        hgvs_id = myvariant.format_hgvs(record.CHROM, record.POS, record.REF, str(record.ALT[0]))
+        normed_hgvs_id = _complete_chromosome(hgvs_id)
+        hgvs_ids.append(normed_hgvs_id)
+
+    return reader.samples, hgvs_ids
+
+
+def _complete_chromosome(hgvs_id):
+        """ Ensuring syntax consistency """
+
+        result = hgvs_id
+        if 'M' in hgvs_id:
+            one = hgvs_id.split(':')[0]
+            two = hgvs_id.split(':')[1]
+            if 'MT' not in one:
+                one = 'chrMT'
+            result = "".join([one, ':', two])
+        return result

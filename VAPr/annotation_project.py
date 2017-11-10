@@ -3,7 +3,7 @@ import sys
 import pandas
 import logging
 from VAPr.vcf_merge import MergeVcfs
-from VAPr.annovar import AnnovarWrapper
+from VAPr.annovar_runner import AnnovarWrapper
 from VAPr.parsers import VariantParsing
 
 __author__ = 'Carlo Mazzaferro<cmazzafe@ucsd.edu>'
