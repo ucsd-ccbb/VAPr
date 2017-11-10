@@ -317,11 +317,6 @@ class VCFGenotypeInfo(object):
         self.genotype_subclass_by_class = None
 
     @property
-    def contains_no_genotype_call(self):
-        """bool: True if the raw string starts with './.:' and false otherwise."""
-        return self._raw_string.startswith('./.:')
-
-    @property
     def genotype_confidence(self):
         """str: Genotype quality (confidence) of this sample at this site, from the GQ field."""
         return self._genotype_confidence
@@ -461,6 +456,20 @@ class GenotypeLikelihood(object):
 class VCFGenotypeParser(object):
     """Mine format string and genotype fields string to create a filled VCFGenotypeInfo object."""
 
+    @staticmethod
+    def is_valid_genotype_fields_string(genotype_fields_string):
+        """Return true if input has any real genotype fields content, false if it is just periods and delimiters.
+
+        Args:
+            genotype_fields_string (str): A VCF-style genotype fields string, such as 1/1:0,2:2:6:89,6,0 or ./.:.:.:.:.
+
+        Returns
+            bool: true if input has any real genotype fields content, false if it is just periods and delimiters.
+        """
+        field_pieces = genotype_fields_string.split(VCFGenotypeParser._DELIMITER)
+        real_content_pieces = [i for i in field_pieces if i != "." and i != "./."]
+        return len(real_content_pieces) > 0
+
     GENOTYPE_TAG = "GT"  # str: VCF tag for the genotype of this sample at this site.
     UNFILTERED_ALLELE_DEPTH_TAG = "AD"  # str: VCF tag for the unfiltered allele depth of this sample at this site.
     FILTERED_ALLELE_DEPTH_TAG = "DP"  # str: VCF tag for the filtered depth of coverage of this sample at this site.
@@ -493,9 +502,8 @@ class VCFGenotypeParser(object):
         """
 
         try:
-            result = VCFGenotypeInfo(format_value_string)
-
-            if not result.contains_no_genotype_call:
+            if cls.is_valid_genotype_fields_string(format_value_string):
+                result = VCFGenotypeInfo(format_value_string)
                 format_subkeys = format_key_string.split(cls._DELIMITER)
                 format_values = format_value_string.split(cls._DELIMITER)
 

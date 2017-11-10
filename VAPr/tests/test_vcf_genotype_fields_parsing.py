@@ -147,17 +147,6 @@ class TestVCFGenotypeInfo(unittest.TestCase):
     # No tests of __init__ as it is just setting empty values
     # No explicit tests of getter properties as they're just returning an internal variable
 
-    # region contains_no_genotype_call tests
-    def test_contains_no_genotype_call_true(self):
-        dummy_vcfgenotypeinfo = ns_test.VCFGenotypeInfo('./.:whatevs')
-        self.assertTrue(dummy_vcfgenotypeinfo.contains_no_genotype_call)
-
-    def test_contains_no_genotype_call_false(self):
-        dummy_vcfgenotypeinfo = ns_test.VCFGenotypeInfo('1/1:0,34:34:99:1187.2,101,0')
-        self.assertFalse(dummy_vcfgenotypeinfo.contains_no_genotype_call)
-
-    # endregion
-
     # region genotype_confidence setter tests
     def test_genotype_confidence_setter(self):
         dummy_vcfgenotypeinfo = ns_test.VCFGenotypeInfo('')
@@ -288,6 +277,16 @@ class TestGenotypeLikelihood(unittest.TestCase):
 
 
 class TestVCFGenotypeString(unittest.TestCase):
+    def test_is_valid_genotype_fields_string_true(self):
+        self.assertTrue(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("1/1:0,2:2:6:89,6,0"))
+        self.assertTrue(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("./.:0,2:.:.:."))
+
+    def test_is_valid_genotype_fields_string_false_period(self):
+        self.assertFalse(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("."))
+
+    def test_is_valid_genotype_fields_string_false_delimited(self):
+        self.assertFalse(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("./.:.:.:.:."))
+
     def test_parse_GT_GQ_PL(self):
         format_string = 'GT:GQ:PL'
         info_string = '1/1:99:1187.2,101,0'
