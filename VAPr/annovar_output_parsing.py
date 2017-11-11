@@ -8,7 +8,7 @@ import sys
 import myvariant
 
 # project libraries
-import VAPr.vcf_genotype_fields_parsing
+from VAPr.vcf_genotype_fields_parsing import VCFGenotypeParser
 
 # TODO: Understand, vet this logging set-up
 logger = logging.getLogger()
@@ -38,8 +38,11 @@ class AnnovarTxtParser(object):
     GENE_KNOWNGENE_HEADER = 'gene_knowngene'
     GENEDETAIL_KNOWNGENE_HEADER = 'genedetail_knowngene'
     EXONICFUNC_KNOWNGENE_HEADER = 'exonicfunc_knowngene'
+    SCORE_KEY = "Score"
+    RAW_CHR_MT_VAL = "chrM"
+    STANDARDIZED_CHR_MT_VAL = "chrMT"
 
-    ANNOVAR_OUTPUT_COLS = [CHR_HEADER,
+    _ANNOVAR_OUTPUT_COLS = [CHR_HEADER,
                            START_HEADER,
                            END_HEADER,
                            REF_HEADER,
@@ -50,15 +53,22 @@ class AnnovarTxtParser(object):
                            EXONICFUNC_KNOWNGENE_HEADER,
                            # CYTOBAND_HEADER,
                            # GENOMIC_SUPERDUPS_HEADER,
-                           THOU_G_2015_ALL_HEADER,
+                           THOU_G_2015_ALL_HEADER] #,
                            # ESP6500_ALL_HEADER,
                            # 'cosmic70',
                            # NCI60_HEADER,
-                           OTHERINFO_HEADER]
+                           #OTHERINFO_HEADER]
 
     @staticmethod
     def _normalize_header(raw_headers_list):
-        """Lower-case all header strings and replace periods with underscores."""
+        """Lower-case all header strings and replace periods with underscores.
+
+        Args:
+            raw_headers_list (List[str]): A list of the headers from the Annovar txt output file.
+
+        Returns:
+            List[str]: A list of the normalized headers, in the same order as the input list.
+        """
 
         normalized_headers_list = []
 
@@ -68,43 +78,108 @@ class AnnovarTxtParser(object):
         return normalized_headers_list
 
     @classmethod
-    def mine_chunk_of_annovar_annotations(cls, annovar_txt_file_path, sample_names_list, chunk_number, chunk_size):
+    def read_chunk_of_annotations_to_dicts_list(cls, annovar_txt_file_like_obj, sample_names_list, chunk_number,
+                                                chunk_size):
         annotations_dict_per_variant_list = []
         hgvsid_list = []
 
-        with open(annovar_txt_file_path, 'r') as txt:
-            # read in the header line and normalize the header names
-            reader = csv.reader(txt, delimiter='\t')
-            header = cls._normalize_header(next(reader))
+        # read in the header line and normalize the header names
+        reader = csv.reader(annovar_txt_file_like_obj, delimiter='\t')
+        normed_headers_list = cls._normalize_header(next(reader))
 
-            # for each row in this chunk--which is to say, each variant
-            for curr_line_fields in itertools.islice(reader, (chunk_number * chunk_size),
-                                                     ((chunk_number + 1) * chunk_size)):
-                # make a dictionary of all the fields in this line keyed by all the headers
-                last_field_index = len(header) - 1
-                all_fields_dict = dict(zip(header[0:last_field_index], curr_line_fields[0:last_field_index]))
+        # for each row in this chunk--which is to say, each variant
+        for curr_line_fields_list in itertools.islice(reader, (chunk_number * chunk_size),
+                                                      ((chunk_number + 1) * chunk_size)):
+            hgvs_id, annotations_dict_for_curr_variant = cls._parse_single_variant_record(
+                normed_headers_list, curr_line_fields_list, sample_names_list)
+            hgvsid_list.append(hgvs_id)
+            annotations_dict_per_variant_list.append(annotations_dict_for_curr_variant)
 
-                # TODO: figure out this slice again and make in-line comment to explain
-                all_fields_dict[cls.OTHERINFO_HEADER] = curr_line_fields[-1 - len(sample_names_list)::]
+        return hgvsid_list, annotations_dict_per_variant_list
 
-                # drop out any key/value pairs for fields that are empty
-                filled_fields_dict = {k: all_fields_dict[k] for k in cls.ANNOVAR_OUTPUT_COLS
-                                      if all_fields_dict[k] != '.'}
+    @classmethod
+    def _parse_single_variant_record(cls, normed_headers_list, curr_line_fields_list, sample_names_list):
+        # This code assumes that the VCF-produced format string and the genotype fields string(s) for the sample(s)
+        # will be the last fields on every line and that they will NOT all have their own headers--rather, it
+        # assumes the last header will indicate that the rest of the fields are "other info".  Here is a simplified
+        # example:
+        # chr	start	end	ref	alt	func_knowngene	    otherinfo
+        # chrM	146     146	T	C	upstream;downstream 1	    61.74	AC=2;AF=1.00;AN=2;DP=2;FS=0.000	GT:AD:DP:GQ:PL	1/1:0,22:22:66:794,66,0	./.:0,0	1/1:0,40:40:99:1494,119,0
+        # Note that the content at and after the position of the otherinfo header may list additional information
+        # before the format string and genotype fields info (which are required to be at the end of the line);
+        # any such extra info is ignored.
 
-                # generate the hgvs id for this variant
-                hgvs_id = myvariant.format_hgvs(filled_fields_dict[cls.CHR_HEADER],
-                                                filled_fields_dict[cls.START_HEADER],
-                                                filled_fields_dict[cls.REF_HEADER],
-                                                filled_fields_dict[cls.ALT_HEADER])
-                hgvsid_list.append(hgvs_id)
+        # make a dictionary that pairs every named header *except* the last one with its content in this line
+        last_field_index = len(normed_headers_list) - 1
+        raw_fields_dict = dict(zip(normed_headers_list[0:last_field_index], curr_line_fields_list[0:last_field_index]))
 
-                # turn the dictionary of annovar fields into a dictionary of annotations for the variant, including
-                # nested structures containing sample-specific genotype-related info
-                annotations_dict_for_curr_variant = AnnovarAnnotatedVariant.make_annotations_dict(
-                    hgvs_id, filled_fields_dict, sample_names_list)
-                annotations_dict_per_variant_list.append(annotations_dict_for_curr_variant)
+        # TODO: find out why we're limiting this to only the fields in ANNOVAR_OUTPUT_COLS instead of all
+        # For only a limited subset of columns, look those columns up in raw_fields_dict; if they hold real content,
+        # do any clean-up necessary to their values and write them into a new dict
+        cleaned_fields_dict = {}
+        for curr_header in cls._ANNOVAR_OUTPUT_COLS:
+            curr_value = raw_fields_dict[curr_header]
+            if curr_value != ".":
+                curr_value = cls._rewrite_value_if_special_header(curr_header, curr_value)
+                cleaned_fields_dict[curr_header] = curr_value
 
-        return annotations_dict_per_variant_list, hgvsid_list
+        # generate the hgvs id for this variant
+        hgvs_id = myvariant.format_hgvs(cleaned_fields_dict[cls.CHR_HEADER],
+                                        cleaned_fields_dict[cls.START_HEADER],
+                                        cleaned_fields_dict[cls.REF_HEADER],
+                                        cleaned_fields_dict[cls.ALT_HEADER])
+
+        # now grab the number-of-samples-plus-one-th field from the *end* of the line--this holds the format
+        # string--and also grab a list of the number-of-samples fields from the *end* of the line--these are
+        # the genotype fields strings for each sample.
+        num_samples_plus_one = len(sample_names_list) + 1
+        format_string = curr_line_fields_list[-num_samples_plus_one]
+        genotype_field_strings_per_sample = curr_line_fields_list[-len(sample_names_list)::]
+        genotype_field_strings_by_sample_name = dict(zip(sample_names_list, genotype_field_strings_per_sample))
+
+        # turn the dictionary of annovar fields into a dictionary of annotations for the variant, including
+        # nested structures containing sample-specific genotype-related info
+        annotations_dict_for_curr_variant = AnnovarAnnotatedVariant.make_per_variant_annotation_dict(
+            cleaned_fields_dict, hgvs_id, format_string, genotype_field_strings_by_sample_name)
+
+        return hgvs_id, annotations_dict_for_curr_variant
+
+    @classmethod
+    def _rewrite_value_if_special_header(cls, format_header, field_value):
+        result = field_value  # by default, assume no special coddling needed
+
+        if format_header == cls.CHR_HEADER:
+            if field_value == cls.RAW_CHR_MT_VAL:
+                result = cls.STANDARDIZED_CHR_MT_VAL
+        elif format_header in [cls.THOU_G_2015_ALL_HEADER, cls.ESP6500_ALL_HEADER, cls.NCI60_HEADER]:
+            result = float(field_value)
+        elif format_header in [cls.START_HEADER, cls.END_HEADER]:
+            result = int(field_value)
+        # elif curr_header == cls.CYTOBAND_HEADER:
+        #    cytoband_data = CytoBand(curr_value)
+        #    result = cytoband_data.fill()
+        elif format_header in [cls.GENOMIC_SUPERDUPS_HEADER, cls.TFBS_CONS_SITES_HEADER]:
+            result = cls._parse_to_dict_with_score_key(field_value)
+        # end checking if this is a field that needs special coddling
+
+        return result
+
+    @classmethod
+    def _parse_to_dict_with_score_key(cls, delimited_str):
+        """Parse delimited string of key/value pairs to a dictionary, with Score key's value cast to a float.
+
+        Args:
+            delimited_str (str): A string of key/value pairs, with each pair delimited from the next by a ';' and,
+                with each pair, the key delimited from the value by an '='.  A key named 'Score' must be present.
+
+        Returns:
+            dict(str, Any): Dictionary of key/value pairs from the input string; the value for the 'Score' key is cast
+                to a float.
+        """
+        key_val_pairs_as_str = delimited_str.split(";")
+        result = dict(curr_key_val_pair_str.split("=") for curr_key_val_pair_str in key_val_pairs_as_str)
+        result[cls.SCORE_KEY] = float(result[cls.SCORE_KEY])
+        return result
 
 
 class AnnovarAnnotatedVariant(object):
@@ -118,88 +193,65 @@ class AnnovarAnnotatedVariant(object):
     ALLELE_DEPTH_KEY = 'AD'
 
     @staticmethod
-    def to_dict(delimited_str):
-        as_dict = dict(item.split("=") for item in delimited_str.split(";"))
-        as_dict["Score"] = float(as_dict["Score"])
-        return as_dict
-
-    @staticmethod
     def _list_has_valid_content(a_list):
-        # if there are entries in the list and they are not ALL none (ok if some are none):
+        """Return true if list has at least one non-None entry, false otherwise.
+
+        Args:
+            a_list (List[Any]): The list to evaluate for validity.
+
+        Returns:
+            bool: True if list has at least one non-None entry, false otherwise.
+        """
+
         is_valid = len(a_list) > 0 and not all(curr_item is None for curr_item in a_list)
         return is_valid
 
     @classmethod
-    def make_annotations_dict(cls, hgvs_id, fields_by_annovar_header, sample_names_list):
-        # result = {} if extra_data is None else dict(extra_data.items())
-        result = {cls.HGVS_ID_KEY: hgvs_id}
+    def make_per_variant_annotation_dict(cls, fields_by_annovar_header, hgvs_id, format_string,
+                                         genotype_field_strings_by_sample_name):
+        result = fields_by_annovar_header
+        result[cls.HGVS_ID_KEY] = hgvs_id
 
-        # first, loop over the keys, fix up any entries whose keys need special coddling, and create new clean dict
-        for curr_header, curr_value in fields_by_annovar_header.items():
-            if curr_header == AnnovarTxtParser.CHR_HEADER:
-                if curr_value == 'chrM':
-                    curr_value = 'chrMT'
-            elif curr_header in [AnnovarTxtParser.THOU_G_2015_ALL_HEADER, AnnovarTxtParser.ESP6500_ALL_HEADER,
-                                 AnnovarTxtParser.NCI60_HEADER]:
-                curr_value = float(curr_value)
-            elif curr_header in [AnnovarTxtParser.START_HEADER, AnnovarTxtParser.END_HEADER]:
-                curr_value = int(curr_value)
-            # elif curr_header == AnnovarTxtParser.CYTOBAND_HEADER:
-            #    cytoband_data = CytoBand(curr_value)
-            #    curr_value = cytoband_data.fill()
-            elif curr_header in [AnnovarTxtParser.GENOMIC_SUPERDUPS_HEADER, AnnovarTxtParser.TFBS_CONS_SITES_HEADER]:
-                curr_value = cls.to_dict(curr_header)
-            # end checking if this is a field that needs special coddling
+        # parse sample-level info into a list of per-sample dicts and add that list to the variant-level dict
+        sample_specific_dicts_list = []
+        for curr_sample_name, genotype_fields_string_for_curr_sample in genotype_field_strings_by_sample_name.items():
+            sample_specific_dict = cls._make_per_sample_annotation_dict(curr_sample_name, format_string,
+                                                                        genotype_fields_string_for_curr_sample)
 
-            result[curr_header] = curr_value
-        # end loop over input dict to create clean dict
+            if sample_specific_dict is not None:
+                sample_specific_dicts_list.append(sample_specific_dict)
 
-        # then parse the genotype info out of the cleaned-up dictionary
-        sample_specific_dicts_list = cls._generate_sample_specific_dicts_list(result, sample_names_list)
         result[cls.SAMPLES_KEY] = sample_specific_dicts_list
-
-        # remove the otherinfo field--we have parsed the info out of it, so it is now redundant
-        result.pop(AnnovarTxtParser.OTHERINFO_HEADER, None)
-
         return result
 
     @classmethod
-    def _generate_sample_specific_dicts_list(cls, fields_by_annovar_header, sample_names_list):
-        format_string = fields_by_annovar_header[AnnovarTxtParser.OTHERINFO_HEADER][0]
-        sample_specific_dicts_list = []
+    def _make_per_sample_annotation_dict(cls, sample_name, format_string, genotype_fields_string):
 
-        for index, curr_sample_name in enumerate(sample_names_list):
-            sample_specific_dict = {cls.SAMPLE_ID_KEY: curr_sample_name}
+        if not VCFGenotypeParser.is_valid_genotype_fields_string(genotype_fields_string):
+            return None
 
-            genotype_fields_string_for_curr_sample = fields_by_annovar_header[AnnovarTxtParser.OTHERINFO_HEADER][
-                index + 1]
-            # TODO: need to handle more complexity here: '.' OR a string like './.:.<etc>'
-            if genotype_fields_string_for_curr_sample == '.':
-                continue
+        genotype_info = VCFGenotypeParser.parse(format_string, genotype_fields_string)
+        if genotype_info is None:
+            return None
 
-            genotype_info = VAPr.vcf_genotype_fields_parsing.VCFGenotypeParser.parse(
-                format_string, genotype_fields_string_for_curr_sample)
+        # Always include a genotype key, EVEN IF the value for that key is None
+        result = {cls.SAMPLE_ID_KEY: sample_name, cls.GENOTYPE_KEY: genotype_info.genotype}
 
-            # Always include a genotype key, EVEN IF the value for that key is None
-            sample_specific_dict[cls.GENOTYPE_KEY] = genotype_info.genotype
+        # for all other keys, include them only if they have meaningful values
+        if genotype_info.genotype is not None:
+            result[cls.GENOTYPE_SUBCLASS_BY_CLASS_KEY] = genotype_info.genotype_subclass_by_class
+        if genotype_info.filter_passing_reads_count is not None:
+            result[cls.FILTER_PASSING_READS_COUNT_KEY] = genotype_info.filter_passing_reads_count
 
-            # for all other keys, include them only if they have meaningful values
-            if genotype_info.genotype is not None:
-                sample_specific_dict[cls.GENOTYPE_SUBCLASS_BY_CLASS_KEY] = genotype_info.genotype_subclass_by_class
-            if genotype_info.filter_passing_reads_count is not None:
-                sample_specific_dict[cls.FILTER_PASSING_READS_COUNT_KEY] = genotype_info.filter_passing_reads_count
+        genotype_likelihoods_list = [i.likelihood_neg_exponent for i in genotype_info.genotype_likelihoods]
+        if cls._list_has_valid_content(genotype_likelihoods_list):
+            result[cls.GENOTYPE_LIKELIHOODS_KEY] = genotype_likelihoods_list
 
-            genotype_likelihoods_list = [i.likelihood_neg_exponent for i in genotype_info.genotype_likelihoods]
-            if cls._list_has_valid_content(genotype_likelihoods_list):
-                sample_specific_dict[cls.GENOTYPE_LIKELIHOODS_KEY] = genotype_likelihoods_list
+        unfiltered_read_depths_list = [i.unfiltered_read_counts for i in genotype_info.alleles]
+        if cls._list_has_valid_content(unfiltered_read_depths_list):
+            result[cls.ALLELE_DEPTH_KEY] = unfiltered_read_depths_list
 
-            unfiltered_read_depths_list = [i.unfiltered_read_counts for i in genotype_info.alleles]
-            if cls._list_has_valid_content(unfiltered_read_depths_list):
-                sample_specific_dict[cls.ALLELE_DEPTH_KEY] = unfiltered_read_depths_list
-
-            sample_specific_dicts_list.append(sample_specific_dict)
-
-        return sample_specific_dicts_list
+        return result
 
     # # Gets its own class because it is particularly pesky to parse
     # class CytoBand(object):
@@ -232,52 +284,3 @@ class AnnovarAnnotatedVariant(object):
     #         if '.' in spliced:
     #             processed[self.SUBBAND_KEY] = spliced[-1]
     #         return processed
-
-    # class HgvsParser(object):
-    #     """ Process a vcf file and extract its hgvs ids."""
-    #
-    #     @staticmethod
-    #     def complete_chromosome(expanded_list):
-    #         """ Ensuring syntax consistency """
-    #
-    #         for i in range(0, len(expanded_list)):
-    #             if 'M' in expanded_list[i]:
-    #                 one = expanded_list[i].split(':')[0]
-    #                 two = expanded_list[i].split(':')[1]
-    #                 if 'MT' not in one:
-    #                     one = 'chrMT'
-    #                 expanded_list[i] = "".join([one, ':', two])
-    #         return expanded_list
-    #
-    # def __init__(self, vcf_file):
-    #     self.vcf = vcf_file
-    #     self.chunksize = definitions.chunk_size
-    #     self.samples = vcf.Reader(open(self.vcf, 'r')).samples
-    #     self.num_samples = len(self.samples)
-    #
-    #
-    # # For debugging mostly
-    # def get_all_variants_from_vcf(self):
-    #     list_ids = []
-    #
-    #     reader = vcf.Reader(open(self.vcf, 'r'))
-    #     for record in reader:
-    #         list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-    #                                               record.REF, str(record.ALT[0])))
-    #
-    #     return self.complete_chromosome(list_ids)
-    #
-    # def get_variants_from_vcf(self, step):
-    #     """ Retrieve variant names from a LARGE vcf file.
-    #
-    #     :param step: tells the parallel processing where to start and end the hgvs id creation
-    #     :return: a list of variants formatted according to HGVS standards
-    #     """
-    #     reader = vcf.Reader(open(self.vcf, 'r'))
-    #     list_ids = []
-    #
-    #     for record in itertools.islice(reader, step * self.chunksize, (step + 1) * self.chunksize):
-    #         list_ids.append(myvariant.format_hgvs(record.CHROM, record.POS,
-    #                                               record.REF, str(record.ALT[0])))
-    #
-    #     return self.complete_chromosome(list_ids)

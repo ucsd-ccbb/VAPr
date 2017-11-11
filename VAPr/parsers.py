@@ -215,8 +215,8 @@ def parse_by_step(maps):
     client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
     db = getattr(client, db_name)
     collection = getattr(db, collection_name)
-    annovar_variants, list_hgvs_ids = VAPr.annovar_output_parsing.AnnovarTxtParser.mine_chunk_of_annovar_annotations(csv_file, sample_names_list,
-                                                                                                                     step, definitions.chunk_size)
+    annovar_variants, list_hgvs_ids = VAPr.annovar_output_parsing.AnnovarTxtParser.read_chunk_of_annotations_to_dicts_list(csv_file, sample_names_list,
+                                                                                                                           step, definitions.chunk_size)
     myvariants_variants = get_dict_myvariant(list_hgvs_ids, 1, sample_names_list, fields, genome_build_version)
 
     merged_list = []
