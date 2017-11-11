@@ -1,5 +1,6 @@
 # standard libraries
 import logging
+import re
 import warnings
 
 # project libraries
@@ -458,17 +459,23 @@ class VCFGenotypeParser(object):
 
     @staticmethod
     def is_valid_genotype_fields_string(genotype_fields_string):
-        """Return true if input has any real genotype fields content, false if it is just periods and delimiters.
+        """Return true if input has any real genotype fields content, false if is just periods, zeroes, and delimiters.
 
         Args:
             genotype_fields_string (str): A VCF-style genotype fields string, such as 1/1:0,2:2:6:89,6,0 or ./.:.:.:.:.
 
         Returns
-            bool: true if input has any real genotype fields content, false if it is just periods and delimiters.
+            bool: true if input has any real genotype fields content, false if is just periods, zeroes, and delimiters.
         """
-        field_pieces = genotype_fields_string.split(VCFGenotypeParser._DELIMITER)
-        real_content_pieces = [i for i in field_pieces if i != "." and i != "./."]
-        return len(real_content_pieces) > 0
+        result = False
+        # this regex means "one or more characters that is not a comma, period, colon, zero, or forward slash"
+        content_char_match = re.search(r"[^,.:0\/]+", genotype_fields_string)
+        # NB: necessary to ALSO check first character of string, even if no match to above regex is found, because
+        # "0/0" should be a valid genotype (even though all the characters it contains could signal null content in
+        # other configurations), and a genotype fields string with nothing but a genotype in it should be legal.
+        if content_char_match is not None or not genotype_fields_string.startswith("."):
+            result = True
+        return result
 
     GENOTYPE_TAG = "GT"  # str: VCF tag for the genotype of this sample at this site.
     UNFILTERED_ALLELE_DEPTH_TAG = "AD"  # str: VCF tag for the unfiltered allele depth of this sample at this site.
@@ -500,6 +507,7 @@ class VCFGenotypeParser(object):
                 encountered, in which case None is returned.
 
         """
+        result = None
 
         try:
             if cls.is_valid_genotype_fields_string(format_value_string):
@@ -520,6 +528,6 @@ class VCFGenotypeParser(object):
             warn_msg = "Encountered error '{0}' so genotype fields information could not be captured for the " \
                        "current variant.".format(e)
             warnings.warn(warn_msg)
-            result = None
+            result = None  # reset result to None, as contents can't be trusted
 
         return result

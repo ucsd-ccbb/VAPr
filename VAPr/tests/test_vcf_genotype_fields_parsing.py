@@ -280,12 +280,14 @@ class TestVCFGenotypeString(unittest.TestCase):
     def test_is_valid_genotype_fields_string_true(self):
         self.assertTrue(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("1/1:0,2:2:6:89,6,0"))
         self.assertTrue(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("./.:0,2:.:.:."))
+        self.assertTrue(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("0/0"))
 
     def test_is_valid_genotype_fields_string_false_period(self):
         self.assertFalse(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("."))
 
     def test_is_valid_genotype_fields_string_false_delimited(self):
         self.assertFalse(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("./.:.:.:.:."))
+        self.assertFalse(ns_test.VCFGenotypeParser.is_valid_genotype_fields_string("./.:0,0"))
 
     def test_parse_GT_GQ_PL(self):
         format_string = 'GT:GQ:PL'
