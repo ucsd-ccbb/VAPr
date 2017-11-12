@@ -78,7 +78,7 @@ class AnnovarTxtParser(object):
         return normalized_headers_list
 
     @classmethod
-    def read_chunk_of_annotations_to_dicts_list(cls, annovar_txt_file_like_obj, sample_names_list, chunk_number,
+    def read_chunk_of_annotations_to_dicts_list(cls, annovar_txt_file_like_obj, sample_names_list, chunk_index,
                                                 chunk_size):
         annotations_dict_per_variant_list = []
         hgvsid_list = []
@@ -88,8 +88,8 @@ class AnnovarTxtParser(object):
         normed_headers_list = cls._normalize_header(next(reader))
 
         # for each row in this chunk--which is to say, each variant
-        for curr_line_fields_list in itertools.islice(reader, (chunk_number * chunk_size),
-                                                      ((chunk_number + 1) * chunk_size)):
+        for curr_line_fields_list in itertools.islice(reader, (chunk_index * chunk_size),
+                                                      ((chunk_index + 1) * chunk_size)):
             hgvs_id, annotations_dict_for_curr_variant = cls._parse_single_variant_record(
                 normed_headers_list, curr_line_fields_list, sample_names_list)
             hgvsid_list.append(hgvs_id)
