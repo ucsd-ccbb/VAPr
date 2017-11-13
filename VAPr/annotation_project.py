@@ -53,11 +53,8 @@ class AnnotationProject:
 
         return jobs_params_tuples_list
 
-    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, vcf_file_extension, mongo_db_and_collection_names_dict,
-
-
-    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, mongo_db_name, mongo_collection_name,
-                 design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
+    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, vcf_file_extension, mongo_db_name,
+                 mongo_collection_name, design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
 
         self._input_dir = input_dir
         self._output_dir = output_dir
@@ -104,7 +101,7 @@ class AnnotationProject:
     def write_output_files_by_sample(self):
         # TODO: finish refactoring this functionality
         raise NotImplementedError("function has not been refactored yet")
-        generate_output_files_by_sample(self._mongo_db_name, self._mongo_collection_name,  self._output_dir)
+        # generate_output_files_by_sample(self._mongo_db_name, self._mongo_collection_name,  self._output_dir)
 
     # TODO: someday: update AnnovarWrapper init to take db_name and collection_name as individual arguments
     # However, for now, to avoid breaking existing interface, continue to send in as a dict.
@@ -117,7 +114,7 @@ class AnnotationProject:
 
     # TODO: someday: extra_data from design file needs to come back in here ...
     def _collect_annotations_and_store(self, file_path, chunk_size, num_processes, sample_names_list=None,
-                                      verbose_level=1):
+                                       verbose_level=1):
         jobs_params_tuples_list = self._make_jobs_params_tuples_list(
             file_path, chunk_size, self._mongo_db_name, self._mongo_collection_name, self._genome_build_version,
             sample_names_list, verbose_level)
@@ -268,19 +265,19 @@ def _merge_annovar_and_myvariant_dicts(myvariant_dict, annovar_dict):
     return annovar_dict
 
 
-    # def _find_annovar_output_file_path(self):
-    #     # Get the annovar output file
-    #     annovar_output_dir = self.vcf_mapping_dict[VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_DIR]
-    #     annovar_output_basename = self.vcf_mapping_dict[
-    #         VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_BASENAME_KEY]
-    #     annovar_output_file_names = [curr_file_name for curr_file_name in os.listdir(annovar_output_dir) if
-    #                                  curr_file_name.startswith(annovar_output_basename) and
-    #                                  curr_file_name.endswith('txt')]
-    #
-    #     if len(annovar_output_file_names) > 1:
-    #         raise ValueError('Too many matching annovar output files found')
-    #     elif len(annovar_output_file_names) == 0:
-    #         raise ValueError('No matching annovar output files found')
-    #
-    #     result = os.path.join(annovar_output_dir, annovar_output_file_names[0])
-    #     return result
+# def _find_annovar_output_file_path(self):
+#     # Get the annovar output file
+#     annovar_output_dir = self.vcf_mapping_dict[VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_DIR]
+#     annovar_output_basename = self.vcf_mapping_dict[
+#         VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_BASENAME_KEY]
+#     annovar_output_file_names = [curr_file_name for curr_file_name in os.listdir(annovar_output_dir) if
+#                                  curr_file_name.startswith(annovar_output_basename) and
+#                                  curr_file_name.endswith('txt')]
+#
+#     if len(annovar_output_file_names) > 1:
+#         raise ValueError('Too many matching annovar output files found')
+#     elif len(annovar_output_file_names) == 0:
+#         raise ValueError('No matching annovar output files found')
+#
+#     result = os.path.join(annovar_output_dir, annovar_output_file_names[0])
+#     return result
