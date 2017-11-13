@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 .idea/
+*.DS_Store
 
 awsCluster/cfnCluster/CFNClusterManager_refactored.py
 notebooks/Untitled.ipynb
@@ -76,6 +77,7 @@ results/
 *.bam
 *.bam.gz
 *.fastq.gz
+*.vcf.gz.tbi
 *.vcf.gz
 *.vcf
 
@@ -85,5 +87,5 @@ results/
 # .tsv files
 *.tsv
 
-# perl files
-tests/test_files/annovar_dir/
+# annovar files
+VAPr/tests/test_files/annovar_dir/

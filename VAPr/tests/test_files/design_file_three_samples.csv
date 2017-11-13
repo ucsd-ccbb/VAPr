@@ -1,4 +1,0 @@
-Sample_Names,libType,Patient,Condition,Treatment,Tissue
-C90,singleend,JNJ005,BD_lithium_responder,CTRL,lymphoblast
-X7,singleend,JNJ005,BD_lithium_responder,VPA,lymphoblast
-X45,singleend,JNJ005,BD_lithium_responder,Li,lymphoblast

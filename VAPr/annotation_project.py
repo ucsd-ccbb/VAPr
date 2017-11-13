@@ -53,6 +53,9 @@ class AnnotationProject:
 
         return jobs_params_tuples_list
 
+    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, vcf_file_extension, mongo_db_and_collection_names_dict,
+
+
     def __init__(self, input_dir, output_dir, analysis_name, annovar_path, mongo_db_name, mongo_collection_name,
                  design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
 
@@ -67,14 +70,13 @@ class AnnotationProject:
         # self.times_called = 0
         # self.split = split_vcf
         # self.mongod = mongod_cmd
-
-        vcf_file_path_list = VAPr.vcf_mappings_maker.get_vcf_file_paths_list(input_dir, self._design_file)
-
+        self._vcf_file_extension = vcf_file_extension
         # return vcf mapping dict
         self.vcf_mapping_dict = MergeVcfs(self._input_dir,
                                           self._output_dir,
-                                          vcf_file_path_list,
-                                          self._analysis_name).merge_vcfs()
+                                          self._analysis_name,
+                                          self._design_file,
+                                          self._vcf_file_extension).merge_vcfs()
 
         self.annovar_wrapper = AnnovarWrapper(self._input_dir, self._output_dir, self._path_to_annovar_install,
                                               self._make_mongo_db_and_collection_names_dict(), self.vcf_mapping_dict,

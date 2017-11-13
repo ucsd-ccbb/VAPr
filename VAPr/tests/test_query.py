@@ -37,7 +37,7 @@ class TestQueries(unittest.TestCase):
 
     def test_query_one(self):
         pass
-        # self.project.parallel_annotation_and_saving(n_processes=6)
+        # self.project.parallel_annotation(n_processes=6)
         """
 
         :return:
