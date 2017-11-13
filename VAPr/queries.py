@@ -1,3 +1,9 @@
+import logging
+import os
+import shlex
+import subprocess
+import time
+
 from pymongo import MongoClient
 
 
@@ -154,3 +160,64 @@ class Filters(object):
         de_novo = list(de_novo)
         print('Variants found that match de novo criteria: {}'.format(len(de_novo)))
         return list(de_novo)
+
+
+def store_annotations_to_db(annotation_dicts_list, db_name, collection_name, client=None, mongod_cmd=None):
+    if client is None:
+        client = MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
+
+    db = getattr(client, db_name)
+    collection = getattr(db, collection_name)
+
+    logging.info('Parsing Buffer...')
+    if len(annotation_dicts_list) == 0:
+        logging.info('Empty list of documents trying to be parsed, skipping and continuing operation...')
+        return None
+    else:
+        try:
+            collection.insert_many(annotation_dicts_list, ordered=False)
+        except Exception as error:
+            if "Connection refused" in str(error):
+                if mongod_cmd:
+                    logging.info('MongoDB Server seems to be off. Attempting restart...')
+                    args = shlex.split(mongod_cmd)
+                    subprocess.Popen(args, stdout=subprocess.PIPE)
+                else:
+                    logging.error('Error connecting to mongodb.' + str(error))
+
+                logging.info('Retrying to parse...')
+                time.sleep(4)
+
+                store_annotations_to_db(annotation_dicts_list, collection, client, mongod_cmd)  # Recurse!
+            else:
+                logging.error('Unrecoverable error: ' + str(error))
+
+    try:
+        client.close()
+    except:
+        pass  # if the client is already closed, just move along
+
+
+def generate_output_files_by_sample(db_name, collection_name, output_dir):
+    # TODO: finish refactor of this method
+    raise NotImplementedError("Not refactored yet")
+
+    client = MongoClient()
+    db = getattr(client, db_name)
+    collection = getattr(db, collection_name)
+
+    # Get all distinct sample_ids
+    samples = collection.distinct('sample_id')
+
+    fwriter = Writer(db_name, collection_name)
+    filt = Filters(db_name, collection_name)
+
+    # Generate files for each sample
+    for sample in samples:
+        q = filt.variants_from_sample(sample)
+        list_docs = list(q)
+        out_path_by_sample = os.path.join(output_dir, 'csv_by_sample')
+        if not os.path.exists(out_path_by_sample):
+            os.makedirs(out_path_by_sample)
+        fname = os.path.join(out_path_by_sample, 'annotated_csv_' + sample + '_all_vars.csv')
+        fwriter.generate_annotated_csv(list_docs, fname)
