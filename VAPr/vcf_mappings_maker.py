@@ -43,6 +43,14 @@ def _get_vcf_file_paths_list_in_directory(base_dir):
 class SingleVcfFileMappingMaker:
     """ Populate mapping dictionary for single VCF file """
 
+    VCF_FILE_PATH_KEY = 'raw_vcf_file_full_path'
+    VCF_FILE_BASENAME_KEY = 'vcf_file_basename'
+    ANNOVAR_OUTPUT_BASENAME_KEY = 'csv_file_basename'
+    SAMPLE_NAMES_LIST_KEY = 'sample_names'
+    NUM_SAMPLES_IN_CSV_KEY = 'num_samples_in_csv'
+    ANNOVAR_OUTPUT_DIR = 'csv_file_full_path'
+    VCF_SAMPLE_DIR_KEY = 'vcf_sample_dir'
+
     def __init__(self, single_input_file_path, input_dir, out_dir, sample_id='infer', sample_id_type='files',
                  extra_data=None):
 
@@ -58,13 +66,13 @@ class SingleVcfFileMappingMaker:
         # TODO: Why store a bunch of this info in properties of the object instance but ALSO store it in a dictionary?
         # Increases chance for bugs--if data changed in one place but not another, data in object will be inconsistent
         # and output will depend on whether data was accessed through property or dictionary.
-        self.vcf_mapping_dict = {'raw_vcf_file_full_path': os.path.abspath(self.single_vcf_file_path),
-                                 'vcf_file_basename': os.path.basename(self.single_vcf_file_path),
-                                 'csv_file_basename': self._fill_csv_file_basename(),
-                                 'sample_names': self._fill_sample_names(),
-                                 'num_samples_in_csv': len(self._fill_sample_names()),
-                                 'csv_file_full_path': os.path.join(self.out_dir, self._sample_dir_name()),
-                                 'vcf_sample_dir': os.path.join(self.input_dir, self._sample_dir_name())}
+        self.vcf_mapping_dict = {self.VCF_FILE_PATH_KEY: os.path.abspath(self.single_vcf_file_path),
+                                 self.VCF_FILE_BASENAME_KEY: os.path.basename(self.single_vcf_file_path),
+                                 self.ANNOVAR_OUTPUT_BASENAME_KEY: self._fill_csv_file_basename(),
+                                 self.SAMPLE_NAMES_LIST_KEY: self._fill_sample_names(),
+                                 self.NUM_SAMPLES_IN_CSV_KEY: len(self._fill_sample_names()),
+                                 self.ANNOVAR_OUTPUT_DIR: os.path.join(self.out_dir, self._sample_dir_name()),
+                                 self.VCF_SAMPLE_DIR_KEY: os.path.join(self.input_dir, self._sample_dir_name())}
 
         self._add_extra_data()
         #self._create_csv_output_dir()
