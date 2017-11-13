@@ -4,6 +4,7 @@ import shlex
 import subprocess
 import logging
 import pandas
+from vcf import Reader
 from VAPr.vcf_mappings_maker import SingleVcfFileMappingMaker
 
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
@@ -59,12 +60,19 @@ class MergeVcfs:
         else:
             single_vcf_path = self.raw_vcf_path_list[0]
 
-        return SingleVcfFileMappingMaker(single_input_file_path=single_vcf_path,
-                                          input_dir=self.input_dir,
-                                          out_dir=self.output_dir,
-                                          sample_id='infer',
-                                          sample_id_type='files',
-                                          extra_data=None).vcf_mapping_dict
+        reader = Reader(open(single_vcf_path, 'r'))
+        # return SingleVcfFileMappingMaker(single_input_file_path=single_vcf_path,
+        #                                  input_dir=self.input_dir,
+        #                                  out_dir=self.output_dir,
+        #                                  extra_data=None).vcf_mapping_dict
+        vcf_mapping_dict = {'raw_vcf_file_full_path': single_vcf_path,
+                            'vcf_file_basename': single_vcf_path,
+                            'csv_file_basename': os.path.splitext(os.path.basename(single_vcf_path))[0] + '_annotated',
+                            'sample_names': reader.samples,
+                            'num_samples_in_csv': len(reader.samples),
+                            'csv_file_full_path': self.output_dir,
+                            'vcf_sample_dir': os.path.dirname(os.path.abspath(single_vcf_path))}
+        return vcf_mapping_dict
 
     def execute_merge(self, vcf_list, out_vcf):
         merge_cmd_string = self._build_merge_vcf_command_str(vcf_list)
