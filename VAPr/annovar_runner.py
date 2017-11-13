@@ -64,6 +64,13 @@ def listen(out_path, num_batch_jobs, num_files):
 class AnnovarWrapper(object):
     """ Wrapper around ANNOVAR download and annotation functions """
 
+    HG19_VERSION = "hg19"
+    HG38_VERSION = "hg38"
+    DEFAULT_VERSION = HG19_VERSION
+
+    # TODO: someday: Refactor to dict, so there is guaranteed to be a list of dbs for each supported build version?
+    SUPPORTED_GENOME_BUILD_VERSIONS = [HG19_VERSION, HG38_VERSION]
+
     hg_19_databases = OrderedDict({'knownGene': 'g',
                                    # 'tfbsConsSites': 'r',
                                    # 'cytoBand': 'r',
@@ -84,6 +91,21 @@ class AnnovarWrapper(object):
                                    # 'clinvar_20161128': 'f',
                                    # 'cosmic70': 'f',
                                    # 'nci60': 'f'})
+
+    @classmethod
+    def get_validated_genome_version(cls, input_genome_build_version):
+        """ Make sure genome version is acceptable """
+
+        if input_genome_build_version is None:
+            result = cls.DEFAULT_VERSION
+        elif input_genome_build_version not in cls.SUPPORTED_GENOME_BUILD_VERSIONS:
+            str_of_acceptable_versions = ", ".join(cls.SUPPORTED_GENOME_BUILD_VERSIONS)
+            raise ValueError('Build version must not recognized. Supported builds are {0}'.format(
+                str_of_acceptable_versions))
+        else:
+            result = input_genome_build_version
+
+        return result
 
     def __init__(self, input_dir, output_csv_path, annovar_path, mongo_db_and_collection_names_dict,
                  vcf_mapping_dict, design_file=None, genome_build_version=None,
@@ -253,7 +275,7 @@ class AnnovarWrapper(object):
     #
     #     return command
 
-    # def run_annovar(self, num_batch_jobs=10, vcf_is_multisample=False):
+    # def run_annovar_annotation(self, num_batch_jobs=10, vcf_is_multisample=False):
     #     """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
     #
     #     handler = AnnovarJobHandler(num_batch_jobs, self.list_of_vcf_mapping_dicts)
