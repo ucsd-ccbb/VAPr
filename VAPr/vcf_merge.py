@@ -23,7 +23,7 @@ class MergeVcfs:
         # User must provide analysis_name without .vcf extension: if one single vcf file
         # If multiple vcf files, analysis name will be name of merged vcf file
         self.output_vcf_path = os.path.join(self.output_dir, self.vcf_name + ".vcf")
-        self.raw_vcf_path_list =  vcf_file_path_list
+        self.raw_vcf_path_list = vcf_file_path_list
 
     def merge_vcfs(self):
         """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
