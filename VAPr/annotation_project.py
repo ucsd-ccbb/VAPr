@@ -13,9 +13,8 @@ import myvariant
 import vcf
 
 # project libraries
-from VAPr.vcf_merge import MergeVcfs
+import VAPr.vcf_merge
 from VAPr.annovar_runner import AnnovarWrapper
-import VAPr.vcf_mappings_maker
 from VAPr.annovar_output_parsing import AnnovarTxtParser
 import VAPr.queries
 
@@ -54,7 +53,7 @@ class AnnotationProject:
         return jobs_params_tuples_list
 
     def __init__(self, input_dir, output_dir, analysis_name, annovar_path, vcf_file_extension, mongo_db_name,
-                 mongo_collection_name, design_file=None, build_ver=None, mongod_cmd=None, split_vcf=False):
+                 mongo_collection_name, design_file=None, build_ver=None, mongod_cmd=None):
 
         self._input_dir = input_dir
         self._output_dir = output_dir
@@ -64,19 +63,17 @@ class AnnotationProject:
         self._mongo_db_name = mongo_db_name
         self._mongo_collection_name = mongo_collection_name
         self._genome_build_version = AnnovarWrapper.get_validated_genome_version(build_ver)
-        # self.times_called = 0
-        # self.split = split_vcf
         # self.mongod = mongod_cmd
         self._vcf_file_extension = vcf_file_extension
-        # return vcf mapping dict
-        self.vcf_mapping_dict = MergeVcfs(self._input_dir,
-                                          self._output_dir,
+
+        self._single_vcf_path, self._annovar_output_basename, self._sample_names_list = VAPr.vcf_merge.merge_vcfs(
+            self._input_dir,
+                                          self._output_dir, self._design_file,
                                           self._analysis_name,
-                                          self._design_file,
-                                          self._vcf_file_extension).merge_vcfs()
+                                          self._vcf_file_extension)
 
         self.annovar_wrapper = AnnovarWrapper(self._input_dir, self._output_dir, self._path_to_annovar_install,
-                                              self._make_mongo_db_and_collection_names_dict(), self.vcf_mapping_dict,
+                                              self._single_vcf_path, self._annovar_output_basename,
                                               design_file=self._design_file,
                                               genome_build_version=self._genome_build_version)
 
@@ -85,28 +82,18 @@ class AnnotationProject:
         self.annovar_wrapper.download_dbs()
 
     def gather_basic_annotations(self, num_processes=8, chunk_size=2000, verbose_level=1):
-        vcf_fp = self.vcf_mapping_dict[VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.VCF_FILE_PATH_KEY]
-
-        self._collect_annotations_and_store(vcf_fp, chunk_size, num_processes, sample_names_list=None,
+        self._collect_annotations_and_store(self._single_vcf_path, chunk_size, num_processes, sample_names_list=None,
                                             verbose_level=verbose_level)
 
     def gather_detailed_annotations(self, num_processes=4, chunk_size=2000, verbose_level=1, multisample=False):
-        sample_names_list = self.vcf_mapping_dict[
-            VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.SAMPLE_NAMES_LIST_KEY]
-
         annovar_output_fp = self._run_annovar_annotation(multisample)
         self._collect_annotations_and_store(annovar_output_fp, chunk_size, num_processes,
-                                            sample_names_list=sample_names_list, verbose_level=verbose_level)
+                                            sample_names_list=self._sample_names_list, verbose_level=verbose_level)
 
     def write_output_files_by_sample(self):
         # TODO: finish refactoring this functionality
         raise NotImplementedError("function has not been refactored yet")
         # generate_output_files_by_sample(self._mongo_db_name, self._mongo_collection_name,  self._output_dir)
-
-    # TODO: someday: update AnnovarWrapper init to take db_name and collection_name as individual arguments
-    # However, for now, to avoid breaking existing interface, continue to send in as a dict.
-    def _make_mongo_db_and_collection_names_dict(self):
-        return {'db_name': self._mongo_db_name, 'collection_name': self._mongo_collection_name}
 
     def _run_annovar_annotation(self, multisample=False):
         """Run ANNOVAR to annotate variants in a vcf file."""
