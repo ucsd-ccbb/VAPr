@@ -192,6 +192,8 @@ class AnnovarWrapper(object):
         #listen(vcf_path, len(self.vcf_mapping_dict), num_files=1)
         logging.info('Finished running Annovar')
 
+        return csv_path
+
     def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
         """Generate command string to run table_annovar.pl, which annotates a VCF file."""
         dbs = ",".join(list(self.annovar_dbs_to_use.keys()))
@@ -275,7 +277,7 @@ class AnnovarWrapper(object):
     #
     #     return command
 
-    # def run_annovar_annotation(self, num_batch_jobs=10, vcf_is_multisample=False):
+    # def _run_annovar_annotation(self, num_batch_jobs=10, vcf_is_multisample=False):
     #     """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
     #
     #     handler = AnnovarJobHandler(num_batch_jobs, self.list_of_vcf_mapping_dicts)
