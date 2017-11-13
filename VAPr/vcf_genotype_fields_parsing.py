@@ -1,5 +1,6 @@
 # standard libraries
 import logging
+import re
 import warnings
 
 # project libraries
@@ -317,11 +318,6 @@ class VCFGenotypeInfo(object):
         self.genotype_subclass_by_class = None
 
     @property
-    def contains_no_genotype_call(self):
-        """bool: True if the raw string starts with './.:' and false otherwise."""
-        return self._raw_string.startswith('./.:')
-
-    @property
     def genotype_confidence(self):
         """str: Genotype quality (confidence) of this sample at this site, from the GQ field."""
         return self._genotype_confidence
@@ -461,6 +457,26 @@ class GenotypeLikelihood(object):
 class VCFGenotypeParser(object):
     """Mine format string and genotype fields string to create a filled VCFGenotypeInfo object."""
 
+    @staticmethod
+    def is_valid_genotype_fields_string(genotype_fields_string):
+        """Return true if input has any real genotype fields content, false if is just periods, zeroes, and delimiters.
+
+        Args:
+            genotype_fields_string (str): A VCF-style genotype fields string, such as 1/1:0,2:2:6:89,6,0 or ./.:.:.:.:.
+
+        Returns
+            bool: true if input has any real genotype fields content, false if is just periods, zeroes, and delimiters.
+        """
+        result = False
+        # this regex means "one or more characters that is not a comma, period, colon, zero, or forward slash"
+        content_char_match = re.search(r"[^,.:0\/]+", genotype_fields_string)
+        # NB: necessary to ALSO check first character of string, even if no match to above regex is found, because
+        # "0/0" should be a valid genotype (even though all the characters it contains could signal null content in
+        # other configurations), and a genotype fields string with nothing but a genotype in it should be legal.
+        if content_char_match is not None or not genotype_fields_string.startswith("."):
+            result = True
+        return result
+
     GENOTYPE_TAG = "GT"  # str: VCF tag for the genotype of this sample at this site.
     UNFILTERED_ALLELE_DEPTH_TAG = "AD"  # str: VCF tag for the unfiltered allele depth of this sample at this site.
     FILTERED_ALLELE_DEPTH_TAG = "DP"  # str: VCF tag for the filtered depth of coverage of this sample at this site.
@@ -491,11 +507,11 @@ class VCFGenotypeParser(object):
                 encountered, in which case None is returned.
 
         """
+        result = None
 
         try:
-            result = VCFGenotypeInfo(format_value_string)
-
-            if not result.contains_no_genotype_call:
+            if cls.is_valid_genotype_fields_string(format_value_string):
+                result = VCFGenotypeInfo(format_value_string)
                 format_subkeys = format_key_string.split(cls._DELIMITER)
                 format_values = format_value_string.split(cls._DELIMITER)
 
@@ -512,6 +528,6 @@ class VCFGenotypeParser(object):
             warn_msg = "Encountered error '{0}' so genotype fields information could not be captured for the " \
                        "current variant.".format(e)
             warnings.warn(warn_msg)
-            result = None
+            result = None  # reset result to None, as contents can't be trusted
 
         return result
