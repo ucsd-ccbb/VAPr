@@ -28,7 +28,7 @@ class MergeVcfs:
     def get_vcf_file_paths_list(self, input_dir, design_file):
         if design_file is not None:
             design_df = pandas.read_csv(design_file)
-            vcf_file_paths_list = design_df[0].tolist()
+            vcf_file_paths_list = design_df['Sample_Names'].tolist()
         else:
             vcf_file_paths_list = self._get_vcf_file_paths_list_in_directory(input_dir)
 

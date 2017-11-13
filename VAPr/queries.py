@@ -95,7 +95,7 @@ class Filters(object):
                 "$and":
                         [
                             {"clinvar.rcv.accession": {"$exists": True}},
-                            {"clinvar.rcv.accession": {"$nin": ["Benign", "Likely benign"]}},
+                            {"clinvar.rcv.clinical_significance": {"$nin": ["Benign", "Likely benign"]}},
                             {"cosmic.cosmic_id": {"$exists": True}}
                         ]
             }
@@ -149,8 +149,15 @@ class Filters(object):
                             "$and":
                                     [
                                         {"samples.sample_id": sample1},
-                                        {"samples.sample_id" : {"$nin": [sample2, sample3]}}
-                                    ]})
+                                        {
+                                            "$or":
+                                                [
+                                                    {"samples.sample_id" : {"$ne": sample2}},
+                                                    {"samples.sample_id": {"$ne": sample3}}
+                                                ]
+                                        }
+                                    ]
+                        })
         de_novo = list(de_novo)
         print('Variants found that match de novo criteria: {}'.format(len(de_novo)))
         return list(de_novo)
