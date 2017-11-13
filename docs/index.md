@@ -157,9 +157,9 @@ Project = AnnotationProject(input_dir,
  ```
  
 This will allow you to use any of [core methods](#core) in the package. They are accessible as methods using dot notation.
-That is, if you'd like to use the method `run_annovar()`, you'll do so by simply running:
+That is, if you'd like to use the method `_run_annovar_annotation()`, you'll do so by simply running:
 
-`Project.run_annovar()`
+`Project._run_annovar_annotation()`
 
 
 <a id='required'></a>
@@ -192,16 +192,16 @@ The first four arguments are required to run the full annotation pipeline. These
 ## Core Methods
 Once the `AnnotationProject` instance has been initiated, you can call a variety of methods from it. In particular, 
 the API lets you call any core method for the annotation part. These include:
- - Annovar methods: `download_dbs` and `run_annovar` and `update_dbs`
- - Annotation and storing methods: `parallel_annotation` and `quick_annotate`
+ - Annovar methods: `download_annovar_databases` and `_run_annovar_annotation` and `update_dbs`
+ - Annotation and storing methods: `gather_detailed_annotations` and `gather_basic_annotations`
 
 The differences and nuances of each will be discussed next.
 
 <a id='anno'></a>
 ### Annovar Methods
 
-#### `download_dbs`
-`download_dbs()`: this function downloads the databases required to run Annovar to the `.../annovar/humandb/` directory. 
+#### `download_annovar_databases`
+`download_annovar_databases()`: this function downloads the databases required to run Annovar to the `.../annovar/humandb/` directory. 
 It will download the databases according to the genome version specified. If your databases are out-of-date, re-running
 this command will download the latest version of them.
 
@@ -213,9 +213,9 @@ _Required_:
 _Optional_: 
   - None
 
-#### `run_annovar`
+#### `_run_annovar_annotation`
 
-`run_annovar()`: will spawn Annovar jobs for the files found in the specified directory. This will run Annovar's command
+`_run_annovar_annotation()`: will spawn Annovar jobs for the files found in the specified directory. This will run Annovar's command
 line script on every file and generate output files in the specified `output_dir`. 
 
 **Args**: 
@@ -233,9 +233,9 @@ _Optional_:
 <a id='parallel'></a>
 ### Parallel Annotation
 
-#### `parallel_annotation`
+#### `gather_detailed_annotations`
 
-`parallel_annotation()`: this requires running Annovar beforehand, and will kick-start the main functionality
+`gather_detailed_annotations()`: this requires running Annovar beforehand, and will kick-start the main functionality
 of this package. Namely, it will collect all the variant data from Annovar annotations, combine it with data coming
 from MyVariant.info, and parse it to MongoDB, in the database and collection specified in `project_data`.
 
@@ -254,9 +254,9 @@ _Optional_:
   MyVariant.info and will result in much faster annotation. It takes a Boolean True of False. Default: False
 
 
-#### `quick_annotate` (not recommended)
+#### `gather_basic_annotations` (not recommended)
 
-`quick_annotate()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
+`gather_basic_annotations()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
 vcf files and query the variant data from MyVariant.info. It is subject to the issue of potentially having completely
 empty data for some of the variants, and inability to run native VAPr queries on the data. 
 
