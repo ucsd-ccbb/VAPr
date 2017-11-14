@@ -4,6 +4,7 @@ from __future__ import division, print_function
 import itertools
 import logging
 import multiprocessing
+import os
 import sys
 import time
 import tqdm
@@ -89,13 +90,20 @@ class AnnotationProject:
         self._genome_build_version = self._get_validated_genome_version(build_ver)
         # self.mongod = mongod_cmd
 
-        self._single_vcf_path, self._annovar_output_basename, self._sample_names_list = VAPr.vcf_merge.merge_vcfs(
-            self._input_dir, self._output_dir, self._design_file, self._analysis_name, self._vcf_file_extension)
+        self._single_vcf_path = VAPr.vcf_merge.merge_vcfs(self._input_dir, self._output_dir, self._design_file,
+                                                          self._analysis_name, self._vcf_file_extension)
+        self._output_basename = os.path.splitext(os.path.basename(self._single_vcf_path))[0]
+        self._sample_names_list = vcf.Reader(open(self._single_vcf_path, 'r')).samples
 
         self.annovar_wrapper = AnnovarWrapper(self._input_dir, self._output_dir, self._path_to_annovar_install,
-                                              self._single_vcf_path, self._annovar_output_basename,
+                                              self._single_vcf_path, self._output_basename,
                                               design_file=self._design_file,
                                               genome_build_version=self._genome_build_version)
+
+        try:
+            os.mkdir(output_dir)
+        except OSError:
+            logging.info('Output directory %s for analysis already exists; using existing directory' % output_dir)
 
     def download_annovar_databases(self):
         """Run ANNOVAR to download its databases."""
