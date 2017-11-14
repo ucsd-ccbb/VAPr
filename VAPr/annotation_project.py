@@ -31,7 +31,14 @@ class AnnotationProject:
     @staticmethod
     def _make_jobs_params_tuples_list(file_path, chunk_size, db_name, collection_name, genome_build_version,
                                       sample_names_list=None, verbose_level=1):
-        shared_job_params = []
+
+        num_params = AnnotationJobParamsIndices.get_num_possible_indices()
+        if sample_names_list is not None:
+            shared_job_params = [None] * num_params
+            shared_job_params[AnnotationJobParamsIndices.SAMPLE_LIST_INDEX] = sample_names_list
+        else:
+            shared_job_params = [None] * (num_params - 1)
+
         shared_job_params[AnnotationJobParamsIndices.CHUNK_SIZE_INDEX] = chunk_size
         shared_job_params[AnnotationJobParamsIndices.FILE_PATH_INDEX] = file_path
         shared_job_params[AnnotationJobParamsIndices.DB_NAME_INDEX] = db_name
@@ -39,15 +46,13 @@ class AnnotationProject:
         shared_job_params[AnnotationJobParamsIndices.GENOME_BUILD_VERSION_INDEX] = genome_build_version
         shared_job_params[AnnotationJobParamsIndices.VERBOSE_LEVEL_INDEX] = verbose_level
 
-        if sample_names_list is not None:
-            shared_job_params[AnnotationJobParamsIndices.SAMPLE_LIST_INDEX] = sample_names_list
-
         num_lines = _get_num_lines_in_file(file_path)
         num_steps = int(num_lines / chunk_size) + 1
 
         jobs_params_tuples_list = []
         for curr_chunk_index in range(num_steps):
-            curr_job_params_tuple = tuple([curr_chunk_index] + shared_job_params)
+            shared_job_params[AnnotationJobParamsIndices.CHUNK_INDEX_INDEX] = curr_chunk_index
+            curr_job_params_tuple = tuple(shared_job_params)
             jobs_params_tuples_list.append(curr_job_params_tuple)
 
         return jobs_params_tuples_list
@@ -126,9 +131,18 @@ class AnnotationJobParamsIndices:
     VERBOSE_LEVEL_INDEX = 6
     SAMPLE_LIST_INDEX = 7
 
+    @classmethod
+    def get_num_possible_indices(cls):
+        max_index = max(cls.CHUNK_INDEX_INDEX, cls.FILE_PATH_INDEX, cls.CHUNK_SIZE_INDEX, cls.DB_NAME_INDEX,
+                        cls.COLLECTION_NAME_INDEX, cls.GENOME_BUILD_VERSION_INDEX, cls.VERBOSE_LEVEL_INDEX,
+                        cls.SAMPLE_LIST_INDEX)
+        return max_index+1
+
 
 def _get_num_lines_in_file(file_path):
-    return sum(1 for _ in open(file_path))
+    with open(file_path) as file_obj:
+        result = sum(1 for _ in file_obj)
+    return result
 
 
 def _collect_chunk_annotations_and_store(job_params_tuple):
