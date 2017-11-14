@@ -91,7 +91,7 @@ class TestAnnovarTxtParser(unittest.TestCase):
     def test_read_chunk_of_annotations_to_dicts_list(self):
         # NB: first 4 variants are ignored because test starts on chunk index = 1 (i.e., the second chunk) and the
         # chunk size is 4.  Likewise, since the test only processes a single 4-variant chunk, the last 2 variants
-        # are ignored.  This is as expected and demonstrates that the chunking function is working correctly.
+        # are ignored.  This is as expected and demonstrates that the chunking functionality is working correctly.
         annovar_txt_str = """Chr	Start	End	Ref	Alt	Func.knownGene	Gene.knownGene	GeneDetail.knownGene	ExonicFunc.knownGene	AAChange.knownGene	tfbsConsSites	cytoBand	targetScanS	genomicSuperDups	esp6500siv2_all	1000g2015aug_all	PopFreqMax	1000G_ALL	1000G_AFR	1000G_AMR	1000G_EAS	1000G_EUR	1000G_SAS	ExAC_ALL	ExAC_AFR	ExAC_AMR	ExAC_EAS	ExAC_FIN	ExAC_NFE	ExAC_OTH	ExAC_SAS	ESP6500siv2_ALL	ESP6500siv2_AA	ESP6500siv2_EA	CG46	CLINSIG	CLNDBN	CLNACC	CLNDSDB	CLNDSDBID	cosmic70	nci60	Otherinfo
 chrM	516	517	CA	-	upstream	DQ582201,JB137816	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	43.70	2	chrM	515	.	GCA	G	43.70	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=21.85;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:80,6,0	./.:0,0
 chrM	1890	1890	G	A	ncRNA_exonic	TVAS5	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	56.74	2	chrM	1890	.	G	A	56.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=43.64;MQ0=0;QD=28.37;SOR=2.303	GT:AD:DP:GQ:PL	1/1:0,2:2:6:84,6,0	./.:0,0
