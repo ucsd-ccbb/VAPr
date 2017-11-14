@@ -6,6 +6,19 @@ import VAPr.annovar_output_parsing as ns_test
 
 # Most test info taken from test_files/test_out_csv_path/real_files/X7/X7.raw.11_annotated.hg19_multianno.txt'
 class TestAnnovarTxtParser(unittest.TestCase):
+    ANNOVAR_ANNOTATION_CONTENT = """Chr	Start	End	Ref	Alt	Func.knownGene	Gene.knownGene	GeneDetail.knownGene	ExonicFunc.knownGene	AAChange.knownGene	tfbsConsSites	cytoBand	targetScanS	genomicSuperDups	esp6500siv2_all	1000g2015aug_all	PopFreqMax	1000G_ALL	1000G_AFR	1000G_AMR	1000G_EAS	1000G_EUR	1000G_SAS	ExAC_ALL	ExAC_AFR	ExAC_AMR	ExAC_EAS	ExAC_FIN	ExAC_NFE	ExAC_OTH	ExAC_SAS	ESP6500siv2_ALL	ESP6500siv2_AA	ESP6500siv2_EA	CG46	CLINSIG	CLNDBN	CLNACC	CLNDSDB	CLNDSDBID	cosmic70	nci60	Otherinfo
+chrM	516	517	CA	-	upstream	DQ582201,JB137816	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	43.70	2	chrM	515	.	GCA	G	43.70	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=21.85;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:80,6,0	./.:0,0
+chrM	1890	1890	G	A	ncRNA_exonic	TVAS5	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	56.74	2	chrM	1890	.	G	A	56.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=43.64;MQ0=0;QD=28.37;SOR=2.303	GT:AD:DP:GQ:PL	1/1:0,2:2:6:84,6,0	./.:0,0
+chrM	6262	6262	G	A	ncRNA_exonic	BC018860	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	185.90	5	chrM	6262	.	G	A	185.90	.	AC=2;AF=1.00;AN=2;DP=5;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=29.97;SOR=1.981	GT:AD:DP:GQ:PL	1/1:0,5:5:15:214,15,0	./.:0,0
+chrM	8698	8698	G	A	ncRNA_exonic	OK/SW-cl.16	.	.	.	Score=908;Name=V$FOXD3_01	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	107.28	3	chrM	8698	.	G	A	107.28	.	AC=2;AF=1.00;AN=2;DP=4;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=49.57;MQ0=0;QD=26.82;SOR=1.179	GT:AD:DP:GQ:PL	1/1:0,3:3:9:135,9,0	./.:0,0
+chrM	146	146	T	C	upstream;downstream	JB137816;DQ582201	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	62.74	2	chrM	146	rs370482130	T	C	62.74	.	AC=2;AF=1.00;AN=2;DB;DP=3;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=20.91;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:90,6,0	./.:0,0
+chrM	150	150	T	C	upstream;downstream	JB137816;DQ582201	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	62.74	2	chrM	150	.	T	C	62.74	.	AC=2;AF=1.00;AN=2;DP=3;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=20.91;SOR=0.693	GT:AD:DP:GQ:PL	./.:0,0	1/1:0,2:2:6:90,6,0
+chr1	195	195	C	T	upstream;downstream	JB137816;DQ582201	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	61.74	2	chrM	195	.	C	T	61.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=30.87;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:89,6,0	1/1:0,3:3:9:135,9,0
+chrM	410	410	A	T	upstream	DQ582201,JB137816	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	62.74	2	chrM	410	.	A	T	62.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=31.37;SOR=0.693	GT:AD:DP:GQ:PL	./.:0,0	./.:0,0
+chr2	626	626	G	A	ncRNA_exonic	BC018860	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	185.90	5	chrM	6262	.	G	A	185.90	.	AC=2;AF=1.00;AN=2;DP=5;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=29.97;SOR=1.981	GT:AD:DP:GQ:PL	1/1:0,5:5:15:214,15,0	./.:0,0
+chr4	698	698	G	A	ncRNA_exonic	OK/SW-cl.16	.	.	.	Score=908;Name=V$FOXD3_01	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	107.28	3	chrM	8698	.	G	A	107.28	.	AC=2;AF=1.00;AN=2;DP=4;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=49.57;MQ0=0;QD=26.82;SOR=1.179	GT:AD:DP:GQ:PL	1/1:0,3:3:9:135,9,0	./.:0,0
+"""
+
     def test__normalize_header(self):
         input_raw_headers = ["Chr", "Start", "End", "Ref", "Alt", "Func.knownGene", "Gene.knownGene",
                              "GeneDetail.knownGene", "ExonicFunc.knownGene", "AAChange.knownGene", "tfbsConsSites",
@@ -91,19 +104,8 @@ class TestAnnovarTxtParser(unittest.TestCase):
     def test_read_chunk_of_annotations_to_dicts_list(self):
         # NB: first 4 variants are ignored because test starts on chunk index = 1 (i.e., the second chunk) and the
         # chunk size is 4.  Likewise, since the test only processes a single 4-variant chunk, the last 2 variants
-        # are ignored.  This is as expected and demonstrates that the chunking function is working correctly.
-        annovar_txt_str = """Chr	Start	End	Ref	Alt	Func.knownGene	Gene.knownGene	GeneDetail.knownGene	ExonicFunc.knownGene	AAChange.knownGene	tfbsConsSites	cytoBand	targetScanS	genomicSuperDups	esp6500siv2_all	1000g2015aug_all	PopFreqMax	1000G_ALL	1000G_AFR	1000G_AMR	1000G_EAS	1000G_EUR	1000G_SAS	ExAC_ALL	ExAC_AFR	ExAC_AMR	ExAC_EAS	ExAC_FIN	ExAC_NFE	ExAC_OTH	ExAC_SAS	ESP6500siv2_ALL	ESP6500siv2_AA	ESP6500siv2_EA	CG46	CLINSIG	CLNDBN	CLNACC	CLNDSDB	CLNDSDBID	cosmic70	nci60	Otherinfo
-chrM	516	517	CA	-	upstream	DQ582201,JB137816	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	43.70	2	chrM	515	.	GCA	G	43.70	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=21.85;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:80,6,0	./.:0,0
-chrM	1890	1890	G	A	ncRNA_exonic	TVAS5	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	56.74	2	chrM	1890	.	G	A	56.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=43.64;MQ0=0;QD=28.37;SOR=2.303	GT:AD:DP:GQ:PL	1/1:0,2:2:6:84,6,0	./.:0,0
-chrM	6262	6262	G	A	ncRNA_exonic	BC018860	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	185.90	5	chrM	6262	.	G	A	185.90	.	AC=2;AF=1.00;AN=2;DP=5;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=29.97;SOR=1.981	GT:AD:DP:GQ:PL	1/1:0,5:5:15:214,15,0	./.:0,0
-chrM	8698	8698	G	A	ncRNA_exonic	OK/SW-cl.16	.	.	.	Score=908;Name=V$FOXD3_01	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	107.28	3	chrM	8698	.	G	A	107.28	.	AC=2;AF=1.00;AN=2;DP=4;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=49.57;MQ0=0;QD=26.82;SOR=1.179	GT:AD:DP:GQ:PL	1/1:0,3:3:9:135,9,0	./.:0,0
-chrM	146	146	T	C	upstream;downstream	JB137816;DQ582201	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	62.74	2	chrM	146	rs370482130	T	C	62.74	.	AC=2;AF=1.00;AN=2;DB;DP=3;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=20.91;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:90,6,0	./.:0,0
-chrM	150	150	T	C	upstream;downstream	JB137816;DQ582201	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	62.74	2	chrM	150	.	T	C	62.74	.	AC=2;AF=1.00;AN=2;DP=3;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=20.91;SOR=0.693	GT:AD:DP:GQ:PL	./.:0,0	1/1:0,2:2:6:90,6,0
-chr1	195	195	C	T	upstream;downstream	JB137816;DQ582201	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	61.74	2	chrM	195	.	C	T	61.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=30.87;SOR=0.693	GT:AD:DP:GQ:PL	1/1:0,2:2:6:89,6,0	1/1:0,3:3:9:135,9,0
-chrM	410	410	A	T	upstream	DQ582201,JB137816	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	62.74	2	chrM	410	.	A	T	62.74	.	AC=2;AF=1.00;AN=2;DP=2;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=31.37;SOR=0.693	GT:AD:DP:GQ:PL	./.:0,0	./.:0,0
-chr2	626	626	G	A	ncRNA_exonic	BC018860	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	185.90	5	chrM	6262	.	G	A	185.90	.	AC=2;AF=1.00;AN=2;DP=5;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=60.00;MQ0=0;QD=29.97;SOR=1.981	GT:AD:DP:GQ:PL	1/1:0,5:5:15:214,15,0	./.:0,0
-chr4	698	698	G	A	ncRNA_exonic	OK/SW-cl.16	.	.	.	Score=908;Name=V$FOXD3_01	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	107.28	3	chrM	8698	.	G	A	107.28	.	AC=2;AF=1.00;AN=2;DP=4;FS=0.000;MLEAC=2;MLEAF=1.00;MQ=49.57;MQ0=0;QD=26.82;SOR=1.179	GT:AD:DP:GQ:PL	1/1:0,3:3:9:135,9,0	./.:0,0
-"""
+        # are ignored.  This is as expected and demonstrates that the chunking functionality is working correctly.
+        input_txt_stream = io.StringIO(self.ANNOVAR_ANNOTATION_CONTENT)
 
         expected_hgvs_list = ["chrMT:g.146T>C", "chrMT:g.150T>C", "chr1:g.195C>T", "chrMT:g.410A>T"]
         # The first variant exists only in sample 1, the second only in sample 2, the third in both, and the fourth
@@ -126,7 +128,6 @@ chr4	698	698	G	A	ncRNA_exonic	OK/SW-cl.16	.	.	.	Score=908;Name=V$FOXD3_01	.	.	.	
             {'chr': 'chrMT', 'start': 410, 'end': 410, 'ref': 'A', 'alt': 'T', 'func_knowngene': 'upstream',
              'gene_knowngene': 'DQ582201,JB137816', 'hgvs_id': 'chrMT:g.410A>T', 'samples': []}]
 
-        input_txt_stream = io.StringIO(annovar_txt_str)
         real_hgvs_list, real_dict_list = ns_test.AnnovarTxtParser.read_chunk_of_annotations_to_dicts_list(
             input_txt_stream, ['test_sample1', 'test_sample2'], 1, 4)
         self.assertListEqual(expected_hgvs_list, real_hgvs_list)
