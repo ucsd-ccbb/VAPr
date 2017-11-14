@@ -62,7 +62,7 @@ class Filters(object):
                         {
                             "$or":
                                 [
-                                    {"cadd.esp.af": {"$lt": 0.05}},
+                                    {"cadd.esp.af": {"$lt": 0.051}},
                                     {"cadd.esp.af": {"$exists": False}}
                                 ]
                         },
@@ -74,8 +74,8 @@ class Filters(object):
                                 ]
                         },
                         {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                        {"1000g2015aug_all": {"$lt": 0.05}},
-                        {'samples.sample_id': {'$in': samples}}
+                        {"1000g2015aug_all": {"$lt": 0.051}},
+                        {"samples.sample_id": {"$in": samples}}
 
                     ]
             }
@@ -98,10 +98,15 @@ class Filters(object):
 
         filtered = collection.find(
             {
-                "$and":
+                "$or" :
                         [
-                            {"clinvar.rcv.accession": {"$exists": True}},
-                            {"clinvar.rcv.clinical_significance": {"$nin": ["Benign", "Likely benign"]}},
+                            {
+                                "$and":
+                                    [
+                                        {"clinvar.rcv.accession": {"$exists": True}},
+                                        {"clinvar.rcv.clinical_significance": {"$nin": ["Benign", "Likely benign"]}}
+                                    ]
+                            },
                             {"cosmic.cosmic_id": {"$exists": True}}
                         ]
             }
