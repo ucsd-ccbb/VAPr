@@ -15,7 +15,7 @@ import vcf
 # project libraries
 import VAPr.vcf_merge
 from VAPr.annovar_runner import AnnovarWrapper
-from VAPr.annovar_output_parsing import AnnovarTxtParser
+from VAPr.annovar_output_parsing import AnnovarTxtParser, AnnovarAnnotatedVariant
 import VAPr.queries
 
 # TODO: Understand, vet this logging set-up
@@ -28,9 +28,14 @@ except:
 
 
 class AnnotationProject:
+    HG19_VERSION = "hg19"
+    HG38_VERSION = "hg38"
+    DEFAULT_GENOME_VERSION = HG19_VERSION
+    SUPPORTED_GENOME_BUILD_VERSIONS = [HG19_VERSION, HG38_VERSION]
+
     @staticmethod
-    def _make_jobs_params_tuples_list(file_path, chunk_size, db_name, collection_name, genome_build_version,
-                                      sample_names_list=None, verbose_level=1):
+    def _make_jobs_params_tuples_list(file_path, num_file_lines, chunk_size, db_name, collection_name,
+                                      genome_build_version, sample_names_list=None, verbose_level=1):
 
         num_params = AnnotationJobParamsIndices.get_num_possible_indices()
         if sample_names_list is not None:
@@ -46,10 +51,8 @@ class AnnotationProject:
         shared_job_params[AnnotationJobParamsIndices.GENOME_BUILD_VERSION_INDEX] = genome_build_version
         shared_job_params[AnnotationJobParamsIndices.VERBOSE_LEVEL_INDEX] = verbose_level
 
-        num_lines = _get_num_lines_in_file(file_path)
-        num_steps = int(num_lines / chunk_size) + 1
-
         jobs_params_tuples_list = []
+        num_steps = int(num_file_lines / chunk_size) + 1
         for curr_chunk_index in range(num_steps):
             shared_job_params[AnnotationJobParamsIndices.CHUNK_INDEX_INDEX] = curr_chunk_index
             curr_job_params_tuple = tuple(shared_job_params)
@@ -57,25 +60,37 @@ class AnnotationProject:
 
         return jobs_params_tuples_list
 
-    def __init__(self, input_dir, output_dir, annovar_path, vcf_file_extension, mongo_db_name,
+    @classmethod
+    def _get_validated_genome_version(cls, input_genome_build_version):
+        """ Make sure genome version is acceptable """
+
+        if input_genome_build_version is None:
+            result = cls.DEFAULT_GENOME_VERSION
+        elif input_genome_build_version not in cls.SUPPORTED_GENOME_BUILD_VERSIONS:
+            str_of_acceptable_versions = ", ".join(cls.SUPPORTED_GENOME_BUILD_VERSIONS)
+            raise ValueError("Input genome build version '{0}' is not recognized. Supported builds are {1}".format(
+                input_genome_build_version, str_of_acceptable_versions))
+        else:
+            result = input_genome_build_version
+
+        return result
+
+    def __init__(self, input_dir, output_dir, path_to_annovar_install, vcf_file_extension, mongo_db_name,
                  mongo_collection_name, design_file=None, build_ver=None, mongod_cmd=None):
 
         self._input_dir = input_dir
         self._output_dir = output_dir
         self._analysis_name = mongo_db_name
         self._design_file = design_file
-        self._path_to_annovar_install = annovar_path
+        self._path_to_annovar_install = path_to_annovar_install
+        self._vcf_file_extension = vcf_file_extension
         self._mongo_db_name = mongo_db_name
         self._mongo_collection_name = mongo_collection_name
-        self._genome_build_version = AnnovarWrapper.get_validated_genome_version(build_ver)
+        self._genome_build_version = self._get_validated_genome_version(build_ver)
         # self.mongod = mongod_cmd
-        self._vcf_file_extension = vcf_file_extension
 
         self._single_vcf_path, self._annovar_output_basename, self._sample_names_list = VAPr.vcf_merge.merge_vcfs(
-            self._input_dir,
-            self._output_dir, self._design_file,
-            self._analysis_name,
-            self._vcf_file_extension)
+            self._input_dir, self._output_dir, self._design_file, self._analysis_name, self._vcf_file_extension)
 
         self.annovar_wrapper = AnnovarWrapper(self._input_dir, self._output_dir, self._path_to_annovar_install,
                                               self._single_vcf_path, self._annovar_output_basename,
@@ -107,9 +122,10 @@ class AnnotationProject:
     # TODO: someday: extra_data from design file needs to come back in here ...
     def _collect_annotations_and_store(self, file_path, chunk_size, num_processes, sample_names_list=None,
                                        verbose_level=1):
+        num_file_lines = _get_num_lines_in_file(file_path)
         jobs_params_tuples_list = self._make_jobs_params_tuples_list(
-            file_path, chunk_size, self._mongo_db_name, self._mongo_collection_name, self._genome_build_version,
-            sample_names_list, verbose_level)
+            file_path, num_file_lines, chunk_size, self._mongo_db_name, self._mongo_collection_name,
+            self._genome_build_version, sample_names_list, verbose_level)
 
         pool = multiprocessing.Pool(num_processes)
         for _ in tqdm.tqdm(pool.imap_unordered(_collect_chunk_annotations_and_store, jobs_params_tuples_list),
@@ -131,6 +147,7 @@ class AnnotationJobParamsIndices:
     VERBOSE_LEVEL_INDEX = 6
     SAMPLE_LIST_INDEX = 7
 
+    # TODO: someday: refactor so one doesn't have to remember to add new indices to the below function
     @classmethod
     def get_num_possible_indices(cls):
         max_index = max(cls.CHUNK_INDEX_INDEX, cls.FILE_PATH_INDEX, cls.CHUNK_SIZE_INDEX, cls.DB_NAME_INDEX,
@@ -146,65 +163,67 @@ def _get_num_lines_in_file(file_path):
 
 
 def _collect_chunk_annotations_and_store(job_params_tuple):
+    db_name = job_params_tuple[AnnotationJobParamsIndices.DB_NAME_INDEX]
+    collection_name = job_params_tuple[AnnotationJobParamsIndices.COLLECTION_NAME_INDEX]
+    variant_dicts_to_store = _collect_chunk_annotations(job_params_tuple)
+    VAPr.queries.store_annotations_to_db(variant_dicts_to_store, db_name, collection_name)
+
+
+def _collect_chunk_annotations(job_params_tuple):
     chunk_index = job_params_tuple[AnnotationJobParamsIndices.CHUNK_INDEX_INDEX]
     chunk_size = job_params_tuple[AnnotationJobParamsIndices.CHUNK_SIZE_INDEX]
     file_path = job_params_tuple[AnnotationJobParamsIndices.FILE_PATH_INDEX]
-    db_name = job_params_tuple[AnnotationJobParamsIndices.DB_NAME_INDEX]
-    collection_name = job_params_tuple[AnnotationJobParamsIndices.COLLECTION_NAME_INDEX]
     genome_build_version = job_params_tuple[AnnotationJobParamsIndices.GENOME_BUILD_VERSION_INDEX]
     verbose_level = job_params_tuple[AnnotationJobParamsIndices.VERBOSE_LEVEL_INDEX]
 
-    if len(job_params_tuple) > AnnotationJobParamsIndices.SAMPLE_LIST_INDEX:
-        merge_variants = True
-        sample_names_list = job_params_tuple[AnnotationJobParamsIndices.SAMPLE_LIST_INDEX]
-        annovar_variants, hgvs_ids_list = AnnovarTxtParser.read_chunk_of_annotations_to_dicts_list(
-            file_path, sample_names_list, chunk_index, chunk_size)
-    else:
-        merge_variants = False
-        annovar_variants = None
-        hgvs_ids_list = _get_hgvs_ids_from_vcf(file_path, chunk_index, chunk_size)
+    with open(file_path, 'r') as input_file_obj:
+        if len(job_params_tuple) > AnnotationJobParamsIndices.SAMPLE_LIST_INDEX:
+            merge_variants = True
+            sample_names_list = job_params_tuple[AnnotationJobParamsIndices.SAMPLE_LIST_INDEX]
+            hgvs_ids_list, annovar_variants = AnnovarTxtParser.read_chunk_of_annotations_to_dicts_list(
+                input_file_obj, sample_names_list, chunk_index, chunk_size)
+        else:
+            merge_variants = False
+            annovar_variants = None
+            hgvs_ids_list = _get_hgvs_ids_from_vcf(input_file_obj, chunk_index, chunk_size)
 
     myvariants_variants = _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version,
                                                               verbose_level)
 
-    variant_dicts_to_store = myvariants_variants
+    result = myvariants_variants
     if merge_variants:
-        variant_dicts_to_store = []
+        result = []
         for i in range(0, len(hgvs_ids_list)):
-            variant_dicts_to_store.append(
-                _merge_annovar_and_myvariant_dicts(myvariants_variants[i], annovar_variants[i]))
+            result.append(_merge_annovar_and_myvariant_dicts(myvariants_variants[i], annovar_variants[i]))
 
-    return VAPr.queries.store_annotations_to_db(variant_dicts_to_store, db_name, collection_name)
+    return result
 
 
-def _get_hgvs_ids_from_vcf(vcf_file_path, chunk_index, chunk_size):
-    reader = vcf.Reader(open(vcf_file_path, 'r'))
+def _get_hgvs_ids_from_vcf(vcf_file_obj, chunk_index, chunk_size):
+    reader = vcf.Reader(vcf_file_obj)
     hgvs_ids = []
 
     for record in itertools.islice(reader, chunk_index * chunk_size, (chunk_index + 1) * chunk_size):
         hgvs_id = myvariant.format_hgvs(record.CHROM, record.POS, record.REF, str(record.ALT[0]))
-        normed_hgvs_id = _complete_chromosome(hgvs_id)
-        hgvs_ids.append(normed_hgvs_id)
+
+        # ensure syntax consistency for chromosome M variants
+        if 'M' in hgvs_id:
+            one = hgvs_id.split(':')[0]
+            two = hgvs_id.split(':')[1]
+            if 'MT' not in one:
+                one = 'chrMT'
+                hgvs_id = "".join([one, ':', two])
+
+        hgvs_ids.append(hgvs_id)
 
     return hgvs_ids
 
 
-def _complete_chromosome(hgvs_id):
-    """ Ensuring syntax consistency """
-
-    result = hgvs_id
-    if 'M' in hgvs_id:
-        one = hgvs_id.split(':')[0]
-        two = hgvs_id.split(':')[1]
-        if 'MT' not in one:
-            one = 'chrMT'
-        result = "".join([one, ':', two])
-    return result
-
-
-def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, verbose):
+def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, verbose_level, num_failed_attempts=0):
     """ Retrieve variants from MyVariant.info"""
 
+    max_failed_attempts = 5
+    # TODO: Ask Adam who picked these fields; e.g., why only getting freq from wellderly.alleles but not allele??
     myvariant_fields = [
         'cadd.1000g',
         'cadd.esp',
@@ -225,44 +244,63 @@ def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, ver
         'wellderly.alleles.freq'
     ]
 
-    if verbose >= 2:
-        verbose = True
-    else:
-        verbose = False
-
+    be_verbose = verbose_level >= 2
     mv = myvariant.MyVariantInfo()
-    # This will retrieve a list of dictionaries
     try:
-        getvariants = mv.getvariants(hgvs_ids_list, verbose=1, as_dataframe=False, fields=myvariant_fields,
-                                     assembly=genome_build_version)
-        variant_data = getvariants
+        myvariantinfo_dicts_list = mv.getvariants(hgvs_ids_list, verbose=int(be_verbose), as_dataframe=False,
+                                                  fields=myvariant_fields, assembly=genome_build_version)
     except Exception as error:
-        logging.info('Error: ' + str(error) + 'while fetching from MyVariant, retrying...')
-        time.sleep(5)
-        variant_data = _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, verbose)
+        # TODO: Discuss w/Adam what kinds of errors really should be retried; some def shouldn't
+        logging.info('Error: ' + str(error) + 'while fetching from MyVariant')
+        num_failed_attempts += 1
+        if num_failed_attempts < max_failed_attempts:
+            time.sleep(5)
+            logging.info("Retrying MyVariant.info fetch")
+            myvariantinfo_dicts_list = _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version,
+                                                                           verbose_level, num_failed_attempts)
+        else:
+            # give up and raise error
+            raise error
 
-    variant_data = _remove_id_key(variant_data)
-    return variant_data
+    myvariantinfo_dicts_list = _remove_unwanted_keys(myvariantinfo_dicts_list)
+    return myvariantinfo_dicts_list
 
 
-def _remove_id_key(variant_data):
-    """ Let mongo create an _id key to prevent insert attempts of documents with same key """
+def _remove_unwanted_keys(myvariantinfo_dicts_list):
+    for curr_myvariantinfo_dict in myvariantinfo_dicts_list:
+        # Put the contents of the query key into a new hgvs_id key; NB, use AnnovarAnnotatedVariant.HGVS_ID_KEY
+        # as the value of this key because later, when we combine this dict with the annovar-generated dict (if any),
+        # we want to make sure the keys are duplicates and thus collapse into one.
+        curr_myvariantinfo_dict[AnnovarAnnotatedVariant.HGVS_ID_KEY] = curr_myvariantinfo_dict.pop("query", None)
+        # Also, just drop the _id key--we want mongo db to create its own _id key.
+        curr_myvariantinfo_dict.pop("_id", None)
+    return myvariantinfo_dicts_list
 
-    for dic in variant_data:
-        dic['hgvs_id'] = dic.pop("_id", None)
-        dic['hgvs_id'] = dic.pop("query", None)
-    return variant_data
 
-
-def _merge_annovar_and_myvariant_dicts(myvariant_dict, annovar_dict):
-    """
-    Merge myvariant_dict with annovar_dict
-    """
-    if myvariant_dict['hgvs_id'] != annovar_dict['hgvs_id']:
+def _merge_annovar_and_myvariant_dicts(myvariantinfo_annotations_dict, annovar_annotations_dict):
+    hgvs_id_key = AnnovarAnnotatedVariant.HGVS_ID_KEY
+    if myvariantinfo_annotations_dict[hgvs_id_key] != annovar_annotations_dict[hgvs_id_key]:
         raise ValueError(
-            "myvariant hgvs_id {0} not equal to annovar hgvs_id {1}".format(myvariant_dict['hgvs_id'],
-                                                                            annovar_dict['hgvs_id']))
-    annovar_dict.update(myvariant_dict)
-    return annovar_dict
+            "myvariant HGVS id '{0}' not equal to annovar HGVS id '{1}'".format(
+                myvariantinfo_annotations_dict[hgvs_id_key], annovar_annotations_dict[hgvs_id_key]))
+
+    annovar_annotations_dict.update(myvariantinfo_annotations_dict)
+    return annovar_annotations_dict
 
 
+# def _find_annovar_output_file_path(self):
+#     # Get the annovar output file
+#     annovar_output_dir = self.vcf_mapping_dict[VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_DIR]
+#     annovar_output_basename = self.vcf_mapping_dict[
+#         VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_BASENAME_KEY]
+#     annovar_output_file_names = [curr_file_name for curr_file_name in os.listdir(annovar_output_dir) if
+#                                  curr_file_name.startswith(annovar_output_basename) and
+#                                  curr_file_name.endswith('txt')]
+#
+#     if len(annovar_output_file_names) > 1:
+#         raise ValueError('Too many matching annovar output files found')
+#     elif len(annovar_output_file_names) == 0:
+#         raise ValueError('No matching annovar output files found')
+#
+#     result = os.path.join(annovar_output_dir, annovar_output_file_names[0])
+#     return result
