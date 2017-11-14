@@ -52,12 +52,12 @@ class AnnotationProject:
 
         return jobs_params_tuples_list
 
-    def __init__(self, input_dir, output_dir, analysis_name, annovar_path, vcf_file_extension, mongo_db_name,
+    def __init__(self, input_dir, output_dir, annovar_path, vcf_file_extension, mongo_db_name,
                  mongo_collection_name, design_file=None, build_ver=None, mongod_cmd=None):
 
         self._input_dir = input_dir
         self._output_dir = output_dir
-        self._analysis_name = analysis_name
+        self._analysis_name = mongo_db_name
         self._design_file = design_file
         self._path_to_annovar_install = annovar_path
         self._mongo_db_name = mongo_db_name
@@ -68,9 +68,9 @@ class AnnotationProject:
 
         self._single_vcf_path, self._annovar_output_basename, self._sample_names_list = VAPr.vcf_merge.merge_vcfs(
             self._input_dir,
-                                          self._output_dir, self._design_file,
-                                          self._analysis_name,
-                                          self._vcf_file_extension)
+            self._output_dir, self._design_file,
+            self._analysis_name,
+            self._vcf_file_extension)
 
         self.annovar_wrapper = AnnovarWrapper(self._input_dir, self._output_dir, self._path_to_annovar_install,
                                               self._single_vcf_path, self._annovar_output_basename,
@@ -252,19 +252,3 @@ def _merge_annovar_and_myvariant_dicts(myvariant_dict, annovar_dict):
     return annovar_dict
 
 
-# def _find_annovar_output_file_path(self):
-#     # Get the annovar output file
-#     annovar_output_dir = self.vcf_mapping_dict[VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_DIR]
-#     annovar_output_basename = self.vcf_mapping_dict[
-#         VAPr.vcf_mappings_maker.SingleVcfFileMappingMaker.ANNOVAR_OUTPUT_BASENAME_KEY]
-#     annovar_output_file_names = [curr_file_name for curr_file_name in os.listdir(annovar_output_dir) if
-#                                  curr_file_name.startswith(annovar_output_basename) and
-#                                  curr_file_name.endswith('txt')]
-#
-#     if len(annovar_output_file_names) > 1:
-#         raise ValueError('Too many matching annovar output files found')
-#     elif len(annovar_output_file_names) == 0:
-#         raise ValueError('No matching annovar output files found')
-#
-#     result = os.path.join(annovar_output_dir, annovar_output_file_names[0])
-#     return result

@@ -1,34 +1,18 @@
-import sys
 import os
 import shlex
 import subprocess
 import logging
 import pandas
 from vcf import Reader
+from shutil import copyfile
 
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-try:
-    logger.handlers[0].stream = sys.stdout
-except:
-    pass
 
-
-# class MergeVcfs:
-#     def __init__(self, input_dir, output_dir, analysis_name, design_file, vcf_file_extension):
-#         self.input_dir = input_dir
-#         self.output_dir = output_dir
-#         self.vcf_name = analysis_name
-#         self.output_vcf_path = os.path.join(self.output_dir, self.vcf_name + ".vcf")
-#         self.vcf_file_extension = vcf_file_extension
-#         self.raw_vcf_path_list = self._get_vcf_file_paths_list(input_dir, design_file)
-
-def merge_vcfs(input_dir, output_dir, design_file, analysis_name, vcf_file_extension):
+def merge_vcfs(input_dir, output_dir, design_file, project_name, vcf_file_extension):
     """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
 
-    output_vcf_path = os.path.join(output_dir, analysis_name + ".vcf")
+    output_vcf_path = os.path.join(output_dir, project_name + ".vcf")
     raw_vcf_path_list = _get_vcf_file_paths_list(input_dir, design_file, vcf_file_extension)
 
     try:
@@ -41,20 +25,13 @@ def merge_vcfs(input_dir, output_dir, design_file, analysis_name, vcf_file_exten
         bgzipped_vcf_path_list = set([_bgzip_index_vcf(vcf) for vcf in raw_vcf_path_list])
         single_vcf_path = _execute_merge(bgzipped_vcf_path_list, output_vcf_path)
     else:
-        single_vcf_path = raw_vcf_path_list[0]
+        single_vcf_path = os.path.join(output_dir, project_name + vcf_file_extension)
+        copyfile(raw_vcf_path_list[0], single_vcf_path)
 
     reader = Reader(open(single_vcf_path, 'r'))
     annovar_output_basename = os.path.splitext(os.path.basename(single_vcf_path))[0] + '_annotated'
-    # vcf_mapping_dict = {'raw_vcf_file_full_path': single_vcf_path,
-    #                     # 'vcf_file_basename': single_vcf_path,
-    #                     'csv_file_basename': os.path.splitext(os.path.basename(single_vcf_path))[0] + '_annotated',
-    #                     'sample_names': reader.samples,
-    #                     # 'num_samples_in_csv': len(reader.samples),
-    #                     'csv_file_full_path': output_dir }  #,
-    #                     # 'vcf_sample_dir': os.path.dirname(os.path.abspath(single_vcf_path))}
 
     return single_vcf_path, annovar_output_basename, reader.samples
-    #return vcf_mapping_dict
 
 
 def _get_vcf_file_paths_list(input_dir, design_file, vcf_file_extension):
