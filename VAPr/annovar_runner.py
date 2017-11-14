@@ -61,7 +61,7 @@ class AnnovarWrapper(object):
 
         return result
 
-    def __init__(self, input_dir, output_dir, annovar_path, single_vcf_path, annovar_output_basename,
+    def __init__(self, input_dir, output_dir, annovar_path, single_vcf_path, output_basename,
                  design_file=None, genome_build_version=None, custom_annovar_dbs_to_use=None):
 
         self.HUMANDB_FOLDER_NAME = "/humandb/"
@@ -90,7 +90,7 @@ class AnnovarWrapper(object):
         self.design_file = design_file
         self._single_vcf_path = single_vcf_path
         self._output_dir = output_dir
-        self._annovar_output_basename = annovar_output_basename
+        self._output_basename = output_basename
         # self.vcf_mapping_dict = vcf_mapping_dict
 
         # Databases data
@@ -129,7 +129,8 @@ class AnnovarWrapper(object):
     def run_annovar(self, vcf_is_multisample=False):
         """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
 
-        annovar_output_base = os.path.join(self._output_dir, self._annovar_output_basename)
+        annovar_output_basename = self._output_basename + '_annotated'
+        annovar_output_base = os.path.join(self._output_dir, annovar_output_basename)
         annovar_txt_output_fp = annovar_output_base + '.' + self.genome_build_version + '_multianno.txt'
         cmd_string = self._build_table_annovar_command_str(self._single_vcf_path, annovar_output_base,
                                                            vcf_is_multisample=vcf_is_multisample)
