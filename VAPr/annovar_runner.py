@@ -129,8 +129,9 @@ class AnnovarWrapper(object):
     def run_annovar(self, vcf_is_multisample=False):
         """ Spawn ANNOVAR VCF annotation jobs in batches of five/ten? files at a time to prevent memory overflow """
 
-        annovar_txt_output_fp = os.path.join(self._output_dir, self._annovar_output_basename)
-        cmd_string = self._build_table_annovar_command_str(self._single_vcf_path, annovar_txt_output_fp,
+        annovar_output_base = os.path.join(self._output_dir, self._annovar_output_basename)
+        annovar_txt_output_fp = annovar_output_base + '.' + self.genome_build_version + '_multianno.txt'
+        cmd_string = self._build_table_annovar_command_str(self._single_vcf_path, annovar_output_base,
                                                            vcf_is_multisample=vcf_is_multisample)
         args = shlex.split(cmd_string)
         logging.info('Running Annovar')
