@@ -2,7 +2,7 @@ import os
 import shlex
 import subprocess
 import pandas
-from shutil import copyfile
+import shutil
 
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
 
@@ -20,7 +20,12 @@ def merge_vcfs(input_dir, output_dir, design_file, project_name, vcf_file_extens
         _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, single_vcf_path)
     else:
         single_vcf_path = os.path.join(output_dir, project_name + vcf_file_extension)
-        copyfile(raw_vcf_path_list[0], single_vcf_path)
+        try:
+            shutil.copyfile(raw_vcf_path_list[0], single_vcf_path)
+        except shutil.SameFileError:
+            # if there is just one input file and we can't copy it to the output dir because it is already there--
+            # i.e., if the input and output dir are the SAME--that's fine; do nothing
+            pass
 
     return single_vcf_path
 
