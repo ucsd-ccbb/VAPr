@@ -115,6 +115,9 @@ def _fill_genotype(field_value, genotype_info_to_fill):
     """
 
     alleles = field_value.split('/')
+    if len(alleles) == 1:
+        alleles = field_value.split('|')
+
     if len(alleles) != 2:
         _warn_of_unparseable_format_field("genotype", VCFGenotypeParser.GENOTYPE_TAG, field_value,
                                           "does not split into exactly two values")
