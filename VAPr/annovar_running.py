@@ -115,7 +115,7 @@ class AnnovarWrapper(object):
         """Concatenate command string arguments for Annovar download database jobs"""
 
         command_list = []
-        # TODO: refactor to remove duplicated command components :(
+        # TODO: someday: refactor to remove duplicated command components :(
         for annovar_db_name in self._annovar_dbs_to_use:
             if self._ANNOVAR_DB_IS_HOSTED_BY_ANNOVAR[annovar_db_name]:
                 command_list.append(" ".join(
