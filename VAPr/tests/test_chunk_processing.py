@@ -2,11 +2,18 @@ import io
 import tempfile
 import unittest
 
-import VAPr.annotation_project as ns_test
+import VAPr.vapr_core as ns_ann_project
+import VAPr.chunk_processing as ns_test
 import VAPr.tests.test_annovar_output_parsing as ns_test_help
 
 
 # TODO: Discuss with Adam: all tests involving myvariant.info are inherently fragile given myvariant.info's live updates
+
+class TestAnnotationJobParamsIndices(unittest.TestCase):
+    def test_get_num_possible_indices(self):
+        real_output = ns_test.AnnotationJobParamsIndices.get_num_possible_indices()
+        self.assertEqual(8, real_output)
+
 
 class TestFunctions(unittest.TestCase):
     _VCF_FILE_CONTENTS = """##fileformat=VCFv4.1
@@ -276,17 +283,6 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
 1	18849	rs533090414	C	G	100	PASS	AC=2;AF=0.951877;AN=2;NS=2504;DP=4700;EAS_AF=1;AMR_AF=0.9769;AFR_AF=0.8411;EUR_AF=0.9911;SAS_AF=0.9939;AA=g|||;VT=SNP	GT	1|1
 """
 
-    def test__get_num_lines_in_file(self):
-        # create a temporary file with 10,000 lines and ensure that is how many lines we get back
-        num_lines = 10000
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        for _ in range(0, num_lines):
-            temp_file.write(b'test line\n')
-        temp_file.close()  # but don't delete yet, as delete=False
-
-        real_output = ns_test._get_num_lines_in_file(temp_file.name)
-        self.assertEqual(num_lines, real_output)
-
     # region _collect_chunk_annotations tests
     def test__collect_chunk_annotations_with_sample_info(self):
         temp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -294,7 +290,8 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
         temp_file.close()  # but DON'T delete yet
 
         input_params_tuple = (1, temp_file.name, 4, "dummy_name", "dummy_collection_name",
-                              ns_test.AnnotationProject.DEFAULT_GENOME_VERSION, 1, ['test_sample1', 'test_sample2'])
+                              ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, 1,
+                              ['test_sample1', 'test_sample2'])
         expected_output = [
             {'chr': 'chrMT', 'start': 146, 'end': 146, 'ref': 'T', 'alt': 'C', 'func_knowngene': 'upstream;downstream',
              'gene_knowngene': 'JB137816;DQ582201', 'hgvs_id': 'chrMT:g.146T>C', 'samples': [
@@ -326,7 +323,7 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
         temp_file.close()  # but DON'T delete yet
 
         input_params_tuple = (1, temp_file.name, 2, "dummy_name", "dummy_collection_name",
-                              ns_test.AnnotationProject.DEFAULT_GENOME_VERSION, 1)
+                              ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, 1)
         expected_output = [{'notfound': True, 'hgvs_id': 'chrMT:g.10617_10637del'},
                            {'cadd': {'_license': 'http://goo.gl/bkpNhq', 'gerp': {'n': 0.848, 's': -1.7},
                                      'phred': 0.603},
@@ -359,24 +356,23 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
                                           'alleles': [{'freq': 0.0625}, {'freq': 0.9375}]},
                             'hgvs_id': 'chrMT:g.146T>C'},
                            {'notfound': True, 'hgvs_id': 'chr1:g.195C>T'}]
-        real_output = ns_test._get_myvariantinfo_annotations_dict(input_hgvs_ids,
-                                                                  ns_test.AnnotationProject.DEFAULT_GENOME_VERSION,
-                                                                  verbose_level=0)
+        real_output = ns_test._get_myvariantinfo_annotations_dict(
+            input_hgvs_ids, ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, verbose_level=0)
         self.assertListEqual(expected_output, real_output)
 
     def test__get_myvariantinfo_annotations_dict_fatal_error_after_attempts(self):
         # sending in a None value for the list of ids causes a ValueError that can't be recovered from
         # TODO: Expand test to verify logging of the attempts
         with self.assertRaises(ValueError):
-            ns_test._get_myvariantinfo_annotations_dict(None, ns_test.AnnotationProject.DEFAULT_GENOME_VERSION,
-                                                        verbose_level=0)
+            ns_test._get_myvariantinfo_annotations_dict(
+                None, ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, verbose_level=0)
 
     def test__get_myvariantinfo_annotations_dict_fatal_error_immediately(self):
         # sending in a None value for the list of ids causes a ValueError that can't be recovered from
         # TODO: Expand test to verify NO logging of multiple attempts?
         with self.assertRaises(ValueError):
-            ns_test._get_myvariantinfo_annotations_dict(None, ns_test.AnnotationProject.DEFAULT_GENOME_VERSION,
-                                                        verbose_level=0, num_failed_attempts=4)
+            ns_test._get_myvariantinfo_annotations_dict(
+                None, ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, verbose_level=0, num_failed_attempts=4)
 
     # endregion
 
@@ -440,94 +436,5 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
 
         with self.assertRaises(ValueError):
             ns_test._merge_annovar_and_myvariant_dicts(myvariantinfo_input_dict, annovar_input_dict)
-
-            # endregion
-
-
-class TestAnnotationJobParamsIndices(unittest.TestCase):
-    def test_get_num_possible_indices(self):
-        real_output = ns_test.AnnotationJobParamsIndices.get_num_possible_indices()
-        self.assertEqual(8, real_output)
-
-
-class TestAnnotationProject(unittest.TestCase):
-    # region _make_jobs_params_tuples_list tests
-    def test__make_jobs_params_tuples_list_no_samples_default_verbose(self):
-        input_file_path = "my/path/to/file.txt"
-        input_num_file_lines = 21
-        input_chunk_size = 10
-        input_db_name = "mydb"
-        input_collection_name = "mycol"
-        input_build_version = "hg19"
-        default_verbose_level = 1
-
-        expected_output = [(0, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, default_verbose_level),
-                           (1, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, default_verbose_level),
-                           (2, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, default_verbose_level)]
-
-        real_output = ns_test.AnnotationProject._make_jobs_params_tuples_list(
-            input_file_path, input_num_file_lines, input_chunk_size, input_db_name, input_collection_name,
-            input_build_version)
-
-        self.assertListEqual(expected_output, real_output)
-
-    def test__make_jobs_params_tuples_list_no_samples_default_verbose_less_than_chunk(self):
-        input_file_path = "my/path/to/file.txt"
-        input_num_file_lines = 2
-        input_chunk_size = 10
-        input_db_name = "mydb"
-        input_collection_name = "mycol"
-        input_build_version = "hg19"
-        default_verbose_level = 1
-
-        expected_output = [(0, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, default_verbose_level)]
-
-        real_output = ns_test.AnnotationProject._make_jobs_params_tuples_list(
-            input_file_path, input_num_file_lines, input_chunk_size, input_db_name, input_collection_name,
-            input_build_version)
-
-        self.assertListEqual(expected_output, real_output)
-
-    def test__make_jobs_params_tuples_list_samples_with_verbose(self):
-        input_file_path = "my/path/to/file.txt"
-        input_num_file_lines = 21
-        input_chunk_size = 10
-        input_db_name = "mydb"
-        input_collection_name = "mycol"
-        input_build_version = "hg19"
-        input_verbose_level = 2
-        input_sample_names_list = ["sample_1", "sample_2"]
-
-        expected_output = [(0, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, input_verbose_level, input_sample_names_list),
-                           (1, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, input_verbose_level, input_sample_names_list),
-                           (2, input_file_path, input_chunk_size, input_db_name, input_collection_name,
-                            input_build_version, input_verbose_level, input_sample_names_list)]
-
-        real_output = ns_test.AnnotationProject._make_jobs_params_tuples_list(
-            input_file_path, input_num_file_lines, input_chunk_size, input_db_name, input_collection_name,
-            input_build_version, sample_names_list=input_sample_names_list, verbose_level=input_verbose_level)
-
-        self.assertListEqual(expected_output, real_output)
-
-    # endregion
-
-    # region _get_validated_genome_version tests
-    def test__get_validated_genome_version_default(self):
-        real_output = ns_test.AnnotationProject._get_validated_genome_version(None)
-        self.assertEqual(ns_test.AnnotationProject.DEFAULT_GENOME_VERSION, real_output)
-
-    def test__get_validated_genome_version_error(self):
-        with self.assertRaises(ValueError):
-            ns_test.AnnotationProject._get_validated_genome_version("blue")
-
-    def test__get_validated_genome_version(self):
-        real_output = ns_test.AnnotationProject._get_validated_genome_version(ns_test.AnnotationProject.HG38_VERSION)
-        self.assertEqual(ns_test.AnnotationProject.HG38_VERSION, real_output)
 
     # endregion

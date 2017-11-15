@@ -140,7 +140,7 @@ An annotation project can be started by providing the API with a small set of in
  ```python
  
 # Import core module
-from VAPr.base import AnnotationProject
+from VAPr.base import VaprAnnotator
 
 # Start by specifying the project information
 input_dir = '/path/to/vcf/dir'
@@ -150,7 +150,7 @@ project_data = {'db_name': 'VariantDatabase',
                 'collection_name': 'VarCollection'}  # Database and Collection names (optional)
 
 
-Project = AnnotationProject(input_dir,
+Project = VaprAnnotator(input_dir,
                             output_dir,
                             annovar_path,
                             project_data)
@@ -190,7 +190,7 @@ The first four arguments are required to run the full annotation pipeline. These
 [Table of contents](#toc)
 <a id='core'></a>
 ## Core Methods
-Once the `AnnotationProject` instance has been initiated, you can call a variety of methods from it. In particular, 
+Once the `VaprAnnotator` instance has been initiated, you can call a variety of methods from it. In particular, 
 the API lets you call any core method for the annotation part. These include:
  - Annovar methods: `download_annovar_databases` and `_run_annovar_annotation` and `update_dbs`
  - Annotation and storing methods: `gather_detailed_annotations` and `gather_basic_annotations`
