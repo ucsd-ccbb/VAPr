@@ -2,7 +2,7 @@ import os
 import shlex
 import subprocess
 import pandas
-from shutil import copyfile
+import shutil
 
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
 
@@ -11,14 +11,21 @@ def merge_vcfs(input_dir, output_dir, design_file, project_name, vcf_file_extens
     """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
 
     raw_vcf_path_list = _get_vcf_file_paths_list(input_dir, design_file, vcf_file_extension)
-    if len(raw_vcf_path_list) > 1:
+    if len(raw_vcf_path_list) == 0:
+        raise ValueError("No VCFs found with extension '{0}'.".format(vcf_file_extension))
+    elif len(raw_vcf_path_list) > 1:
         bgzipped_vcf_path_list = set([_bgzip_and_index_vcf(vcf_fp) for vcf_fp in raw_vcf_path_list])
         # TODO: Should this use the input vcf extension for its output?
         single_vcf_path = os.path.join(output_dir, project_name + ".vcf")
         _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, single_vcf_path)
     else:
         single_vcf_path = os.path.join(output_dir, project_name + vcf_file_extension)
-        copyfile(raw_vcf_path_list[0], single_vcf_path)
+        try:
+            shutil.copyfile(raw_vcf_path_list[0], single_vcf_path)
+        except shutil.SameFileError:
+            # if there is just one input file and we can't copy it to the output dir because it is already there--
+            # i.e., if the input and output dir are the SAME--that's fine; do nothing
+            pass
 
     return single_vcf_path
 

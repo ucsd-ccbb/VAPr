@@ -6,6 +6,7 @@ import multiprocessing
 import os
 import pymongo
 import tqdm
+import warnings
 
 # third-party libraries
 import pandas
@@ -19,39 +20,6 @@ import VAPr.chunk_processing
 
 
 class VaprDataset(object):
-    # TODO: I'd like to do a bit more work on this one; not sure it is in the right place
-    # TODO: Should the vcf_input_path be specified by the user, or should it be the single_vcf_path?
-    @staticmethod
-    def _write_annotated_vcf(filtered_variants, vcf_input_path, vcf_output_path, info_out=True):
-        """
-        :param vcf_input_path: template vcf file (initial vcf from which a new one will be created)
-        :param vcf_output_path: name and filepath to where new vcf file will be written
-        :param filtered_variants: list of dictionaries (one per variant) containing annotations
-        :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
-        """
-        chr_vars = []
-        location_vars_ant = []
-        location_vars_pos = []
-
-        for i in range(0, len(filtered_variants)):
-            if filtered_variants[i]['chr'] == 'chrMT':
-                chr_vars.append('chrM')
-            else:
-                chr_vars.append(filtered_variants[i]['chr'])
-            location_vars_ant.append(filtered_variants[i]['start'] + 1)
-            location_vars_pos.append(filtered_variants[i]['start'] - 1)
-
-        vcf_reader = vcf.Reader(filename=vcf_input_path)
-        vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
-
-        for i in range(0, len(chr_vars)):
-            for record in vcf_reader.fetch(chr_vars[i], location_vars_pos[i], location_vars_ant[i]):
-                if info_out is True:
-                    record.INFO.update(filtered_variants[i])
-                    vcf_writer.write_record(record)
-                else:
-                    vcf_writer.write_record(record)
-
     def __init__(self, mongo_db_name, mongo_collection_name):
         self._mongo_db_name = mongo_db_name
         self._mongo_collection_name = mongo_collection_name
@@ -80,7 +48,10 @@ class VaprDataset(object):
         return list(self._mongo_db_collection.find(filter_dictionary))
 
     def get_distinct_sample_ids(self):
-        return self._mongo_db_collection.distinct(VAPr.filtering.SAMPLE_ID_SELECTOR)
+        result = self._mongo_db_collection.distinct(VAPr.filtering.SAMPLE_ID_SELECTOR)
+        if len(result) == 0:
+            warnings.warn("No sample ids found in dataset '{0}'".format(self._mongo_db_collection.full_name))
+        return result
 
     def get_all_variants(self):
         return self.get_custom_filtered_variants({})
@@ -99,12 +70,11 @@ class VaprDataset(object):
         return pandas.DataFrame(filtered_variants)
 
     def write_unfiltered_annotated_csv(self, output_fp):
-        dataframe = self.get_variants_as_dataframe()
-        dataframe.to_csv(output_fp)
+        all_variants = self.get_all_variants()
+        self._write_annotated_csv("write_unfiltered_annotated_csv", all_variants, output_fp)
 
     def write_filtered_annotated_csv(self, filtered_variants, output_fp):
-        dataframe = self.get_variants_as_dataframe(filtered_variants)
-        dataframe.to_csv(output_fp)
+        self._write_annotated_csv("write_filtered_annotated_csv", filtered_variants, output_fp)
 
     def write_unfiltered_annotated_vcf(self, vcf_input_path, vcf_output_path, info_out=True):
         filtered_variants = self.get_all_variants()
@@ -115,10 +85,13 @@ class VaprDataset(object):
 
     def write_unfiltered_annotated_csvs_per_sample(self, output_dir):
         sample_ids_list = self.get_distinct_sample_ids()
+
         for curr_sample_id in sample_ids_list:
             variant_dicts_list = self.get_variants_for_sample(curr_sample_id)
             curr_output_fp = os.path.join(output_dir, curr_sample_id + 'unfiltered_annotated_variants.csv')
             self.write_filtered_annotated_csv(variant_dicts_list, curr_output_fp)
+
+        self._warn_if_no_output("write_unfiltered_annotated_csvs_per_sample", sample_ids_list)
 
     def _construct_sample_ids_list(self, sample_names):
         result = sample_names
@@ -126,12 +99,64 @@ class VaprDataset(object):
             result = self.get_distinct_sample_ids()
         elif not isinstance(sample_names, list):
             result = [sample_names]
+
+        if len(result) == 0:
+            warnings.warn("No sample ids found.")
         return result
+
+    def _write_annotated_csv(self, func_name, filtered_variants, output_fp):
+        no_output = self._warn_if_no_output(func_name, filtered_variants)
+        if not no_output:
+            dataframe = self.get_variants_as_dataframe(filtered_variants)
+            dataframe.to_csv(output_fp)
 
     def _get_filtered_variants_by_sample(self, filter_builder_func, sample_names=None):
         sample_ids_list = self._construct_sample_ids_list(sample_names)
         filter_dict = filter_builder_func(sample_ids_list)
         return self.get_custom_filtered_variants(filter_dict)
+
+    # TODO: I'd like to do a bit more work on this one; not sure it is in the right place
+    # TODO: Should the vcf_input_path be specified by the user, or should it be the single_vcf_path?
+    def _write_annotated_vcf(self, filtered_variants_dicts_list, vcf_input_path, vcf_output_path, info_out=True):
+        """
+        :param vcf_input_path: template vcf file (initial vcf from which a new one will be created)
+        :param vcf_output_path: name and filepath to where new vcf file will be written
+        :param filtered_variants_dicts_list: list of dictionaries (one per variant) containing annotations
+        :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
+        """
+        chr_vars = []
+        location_vars_ant = []
+        location_vars_pos = []
+
+        for i in range(0, len(filtered_variants_dicts_list)):
+            if filtered_variants_dicts_list[i]['chr'] == 'chrMT':
+                chr_vars.append('chrM')
+            else:
+                chr_vars.append(filtered_variants_dicts_list[i]['chr'])
+            location_vars_ant.append(filtered_variants_dicts_list[i]['start'] + 1)
+            location_vars_pos.append(filtered_variants_dicts_list[i]['start'] - 1)
+
+        vcf_reader = vcf.Reader(filename=vcf_input_path)
+        vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
+
+        for i in range(0, len(chr_vars)):
+            for record in vcf_reader.fetch(chr_vars[i], location_vars_pos[i], location_vars_ant[i]):
+                if info_out is True:
+                    record.INFO.update(filtered_variants_dicts_list[i])
+                    vcf_writer.write_record(record)
+                else:
+                    vcf_writer.write_record(record)
+
+        self._warn_if_no_output("write_unfiltered_annotated_csvs_per_sample", filtered_variants_dicts_list)
+
+    def _warn_if_no_output(self, output_func_name, items_list):
+        no_output = False
+        if len(items_list) == 0:
+            no_output = True
+            warnings.warn("{0} wrote no file(s) because no relevant samples were found in dataset '{1}'.".format(
+                output_func_name, self._mongo_db_collection.full_name))
+
+        return no_output
 
 
 class VaprAnnotator(object):
@@ -192,6 +217,7 @@ class VaprAnnotator(object):
     # TODO: Decide on what tests to write for top-level functions
     # TODO: Discuss w/Adam whether to refactor interface
     # For example, what happens if user runs get_basic_annotation and then also get_detailed_annotation?
+    # TODO: Should we warn the user if they are about to *add* records to an existing collection?
     def __init__(self, input_dir, output_dir, vcf_file_extension, mongo_db_name,
                  mongo_collection_name, design_file=None, build_ver=None, path_to_annovar_install=None):
 

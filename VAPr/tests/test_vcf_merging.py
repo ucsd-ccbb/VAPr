@@ -766,4 +766,10 @@ class TestFunctions(unittest.TestCase):
             real_output_contents = file_handle.read()
         self.assertEqual(self._HG00096_VCF_CONTENTS, real_output_contents)
 
+    def test_merge_vcfs_error_no_files_found(self):
+        # create a new, empty directory with no vcfs in it
+        temp_dir = tempfile.TemporaryDirectory()
+        with self.assertRaises(ValueError):
+            ns_test.merge_vcfs(temp_dir.name, temp_dir.name, None, "tempy", self._VCF_EXTENSION)
+
     # endregion
