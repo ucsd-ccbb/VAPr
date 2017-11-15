@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 # project-specific libraries
-import VAPr.vcf_merge as ns_test
+import VAPr.vcf_merging as ns_test
 
 
 class TestFunctions(unittest.TestCase):
