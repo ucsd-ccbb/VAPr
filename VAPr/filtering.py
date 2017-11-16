@@ -10,62 +10,6 @@ def get_sample_id_filter(sample_name):
 def get_any_of_sample_ids_filter(sample_names_list):
     return {SAMPLE_ID_SELECTOR: {'$in': sample_names_list}}
 
-# TODO: refactor so that if sample ids list is all sample ids, don't even put in sample ids condition
-
-def make_rare_deleterious_variants_filter(sample_ids_list):
-    """ Function for retrieving rare, deleterious variants """
-
-    return {
-            "$and":
-                [
-                    {
-                        "$or":
-                            [
-                                {"cadd.esp.af": {"$lt": 0.051}},
-                                {"cadd.esp.af": {"$exists": False}}
-                            ]
-                    },
-                    {
-                        "$or":
-                            [
-                                {"func_knowngene": "exonic"},
-                                {"func_knowngene": "splicing"}
-                            ]
-                    },
-                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
-                    {"1000g2015aug_all": {"$lt": 0.051}},
-                    get_any_of_sample_ids_filter(sample_ids_list)
-                ]
-        }
-
-def make_known_disease_variants_filter(sample_ids_list):
-    """ Function for retrieving known disease variants by presence in Clinvar and Cosmic."""
-
-    return {
-            "$or":
-                    [
-                        {
-                            "$and":
-                                [
-                                    {"clinvar.rcv.accession": {"$exists": True}},
-                                    {"clinvar.rcv.clinical_significance": {"$nin": ["Benign", "Likely benign"]}}
-                                ]
-                        },
-                        {"cosmic.cosmic_id": {"$exists": True}}
-                    ]
-        }
-
-
-def make_deleterious_compound_heterozygote_variants_filter(sample_ids_list):
-    return {
-            "$and":
-                [
-                    {"genotype_subclass_by_class.heterozygous": "compound"},
-                    {"cadd.phred": {"$gte": 10}},
-                    get_any_of_sample_ids_filter(sample_ids_list)
-                ]
-        }
-
 
 def make_de_novo_variants_filter(proband_sample_name, ancestor1_sample_name, ancestor2_sample_name):
     """
@@ -90,6 +34,70 @@ def make_de_novo_variants_filter(proband_sample_name, ancestor1_sample_name, anc
                     ]
             }
 
+
+def make_deleterious_compound_heterozygote_variants_filter(sample_ids_list=None):
+    and_list = [
+                    {"genotype_subclass_by_class.heterozygous": "compound"},
+                    {"cadd.phred": {"$gte": 10}}
+               ]
+
+    result = _append_sample_id_constraint_if_needed(and_list, sample_ids_list)
+    return result
+
+
+def make_known_disease_variants_filter(sample_ids_list=None):
+    """ Function for retrieving known disease variants by presence in Clinvar and Cosmic."""
+
+    result = {
+            "$or":
+                    [
+                        {
+                            "$and":
+                                [
+                                    {"clinvar.rcv.accession": {"$exists": True}},
+                                    {"clinvar.rcv.clinical_significance": {"$nin": ["Benign", "Likely benign"]}}
+                                ]
+                        },
+                        {"cosmic.cosmic_id": {"$exists": True}}
+                    ]
+        }
+
+    if sample_ids_list is not None:
+        result = _append_sample_id_constraint_if_needed([result], sample_ids_list)
+
+    return result
+
+
+def make_rare_deleterious_variants_filter(sample_ids_list=None):
+    """ Function for retrieving rare, deleterious variants """
+
+    and_list = [
+                    {
+                        "$or":
+                            [
+                                {"cadd.esp.af": {"$lt": 0.051}},
+                                {"cadd.esp.af": {"$exists": False}}
+                            ]
+                    },
+                    {
+                        "$or":
+                            [
+                                {"func_knowngene": "exonic"},
+                                {"func_knowngene": "splicing"}
+                            ]
+                    },
+                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
+                    {"1000g2015aug_all": {"$lt": 0.051}}
+                ]
+
+    result = _append_sample_id_constraint_if_needed(and_list, sample_ids_list)
+    return result
+
+
+def _append_sample_id_constraint_if_needed(and_list, sample_ids_list):
+    if sample_ids_list is not None:
+        and_list.append(get_any_of_sample_ids_filter(sample_ids_list))
+    return {"$and": and_list}
 
 # def get_rare_deleterious_variants(collection, sample_names=None):
 #     """ Function for retrieving rare, deleterious variants """
