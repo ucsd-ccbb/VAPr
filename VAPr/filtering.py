@@ -83,7 +83,7 @@ def make_de_novo_variants_filter(sample1, sample2, sample3):
                     [
                         get_sample_id_filter(sample1),
                         {
-                            "$or":
+                            "$and":
                                 [
                                     {SAMPLE_ID_SELECTOR: {"$ne": sample2}},
                                     {SAMPLE_ID_SELECTOR: {"$ne": sample3}}
