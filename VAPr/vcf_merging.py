@@ -7,9 +7,10 @@ import shutil
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
 
 
-def merge_vcfs(input_dir, output_dir, design_file, project_name, vcf_file_extension):
+def merge_vcfs(input_dir, output_dir, design_file, project_name, vcfs_gzipped=False):
     """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
 
+    vcf_file_extension = ".vcf.gz" if vcfs_gzipped else ".vcf"
     raw_vcf_path_list = _get_vcf_file_paths_list(input_dir, design_file, vcf_file_extension)
     if len(raw_vcf_path_list) == 0:
         raise ValueError("No VCFs found with extension '{0}'.".format(vcf_file_extension))
