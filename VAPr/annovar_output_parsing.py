@@ -10,14 +10,6 @@ import myvariant
 # project libraries
 from VAPr.vcf_genotype_fields_parsing import VCFGenotypeParser
 
-# TODO: Understand, vet this logging set-up
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-try:
-    logger.handlers[0].stream = sys.stdout
-except:
-    pass
-
 
 class AnnovarTxtParser(object):
     """ Class that processes an Annovar-created tab-delimited text file."""
@@ -113,7 +105,7 @@ class AnnovarTxtParser(object):
         last_field_index = len(normed_headers_list) - 1
         raw_fields_dict = dict(zip(normed_headers_list[0:last_field_index], curr_line_fields_list[0:last_field_index]))
 
-        # TODO: find out why we're limiting this to only the fields in ANNOVAR_OUTPUT_COLS instead of all
+        # TODO: someday: perhaps stop limiting this to only the fields in ANNOVAR_OUTPUT_COLS instead of all
         # For only a limited subset of columns, look those columns up in raw_fields_dict; if they hold real content,
         # do any clean-up necessary to their values and write them into a new dict
         cleaned_fields_dict = {}
