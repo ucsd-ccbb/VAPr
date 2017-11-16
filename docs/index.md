@@ -4,18 +4,19 @@
 VAPr (Variant Annotation and PRioritization package) package is aimed at providing a way of retrieving variant information 
  using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). 
  In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL 
- database (MongoDB solely at the moment).  
+ database (MongoDB at the moment).  
  
 The package provides a high-level python API to perform batch annotation jobs [efficiently](link to parallelism), alongside 
- with a powerful set of [querying and filtering protocols](FILTERS). 
+ a powerful set of [querying and filtering protocols](FILTERS). 
  
-This documentation is aimed at exposing the main methods available, and how the work from an user perspective. To understand
-more deeply what happens under the hood, we advise the user reading the source code and the docstrings provided. There 
+This documentation is aimed at exposing the main methods available, and how they work from a user perspective. To better understand
+what happens under the hood, we advise the user reading the source code and the docstrings provided. There 
 is quite a bit of information there.
 
 ## Authors
 
 * **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
+* **Adam Mark** (a1mark@ucsd.edu)
 * **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
 * **Amanda Birmingham, Ph.D** 
 * **Guorong Xu, Ph.D** 
@@ -59,6 +60,7 @@ These instructions will get you a copy of the package up and running on your loc
 
 - MongoDB Community Edition. [Instsallation instructions](https://goo.gl/TpBkcb)
 - Python (2.7 and 3.5 currently supported and tested)
+- [BCFtools](https://samtools.github.io/bcftools/)
 - [Annovar scripts](http://annovar.openbioinformatics.org/en/latest/user-guide/download/) (optional)
 
 #### Python 3 and MongoDB
@@ -92,14 +94,20 @@ which should return
 519 is the process number so it may differ every time it is run. In case it is not running, the command will return:
 
     mongod dead but subsys locked
-    
-    
-#### VAPr
 
-VAPr is available from PyPi.  Once the above requirements have been installed, VAPr itself can be installed by just running:
+### BCFtools
 
-    pip install VAPr
+BCFtools will be used for VCF file merging between samples. To download and install:
+    wget https://github.com/samtools/bcftools/releases/download/1.6/bcftools-1.6.tar.bz2
+    tar -vxjf bcftools-1.6.tar.bz2
+    cd bcftools-1.6
+    make
+    make install
+    export PATH=/where/to/install/bin:$PATH
 
+### Tabix
+
+Tabix and bgzip binaries are available through the HTSlib project: INSTALL instructions are available [here](https://github.com/samtools/htslib/blob/develop/INSTALL)	    
 
 ### ANNOVAR
 (It is possible to proceed without installing ANNOVAR. In that case, the variants that will be annotated and sent to 
@@ -118,8 +126,12 @@ providing a link to the latest ANNOVAR release file. Download this file (which w
 its data to be installed--the entire disk size of the databases will be around 25 GB, so make sure you have such space 
 available!  
 
-[Table of contents](#toc)
-<a id='examples'></a>
+#### VAPr
+
+VAPr is available from PyPi.  Once the above requirements have been installed, VAPr itself can be installed by just running:
+
+    pip install VAPr
+
 ## Quick-Start
 See this [jupyter notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr%20Quick-Start%20Guide.ipynb) to create your first annotation job
 

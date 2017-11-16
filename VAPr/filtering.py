@@ -11,7 +11,7 @@ def get_any_of_sample_ids_filter(sample_names_list):
     return {SAMPLE_ID_SELECTOR: {'$in': sample_names_list}}
 
 
-def make_de_novo_variants_filter(proband_sample_name, ancestor1_sample_name, ancestor2_sample_name):
+def make_de_novo_variants_filter(proband, ancestor1, ancestor2):
     """
     Function for de novo variant analysis. Can be performed on multisample files or or on data coming
     from a collection of files. In the former case, every sample contains the same variants, although they have
@@ -23,12 +23,12 @@ def make_de_novo_variants_filter(proband_sample_name, ancestor1_sample_name, anc
     return {
             "$and":
                     [
-                        get_sample_id_filter(proband_sample_name),
+                        get_sample_id_filter(proband),
                         {
                             "$and":
                                 [
-                                    {SAMPLE_ID_SELECTOR: {"$ne": ancestor1_sample_name}},
-                                    {SAMPLE_ID_SELECTOR: {"$ne": ancestor2_sample_name}}
+                                    {SAMPLE_ID_SELECTOR: {"$ne": ancestor1}},
+                                    {SAMPLE_ID_SELECTOR: {"$ne": ancestor2}}
                                 ]
                         }
                     ]

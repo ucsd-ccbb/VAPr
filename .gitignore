@@ -89,3 +89,4 @@ results/
 
 # annovar files
 VAPr/tests/test_files/annovar_dir/
+VAPr/tests/test_files/test_output_dir/G1000/
