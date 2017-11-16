@@ -94,7 +94,6 @@ def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, ver
     """ Retrieve variants from MyVariant.info"""
 
     max_failed_attempts = 5
-    # TODO: Ask Adam who picked these fields; e.g., why only getting freq from wellderly.alleles but not allele??
     myvariant_fields = [
         'cadd.1000g',
         'cadd.esp',
@@ -112,7 +111,7 @@ def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, ver
         'civic.evidence_items',
         'cgi',
         'gwassnps',
-        'wellderly.alleles.freq'
+        'wellderly.alleles'
     ]
 
     be_verbose = verbose_level >= 2
@@ -121,7 +120,7 @@ def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, ver
         myvariantinfo_dicts_list = mv.getvariants(hgvs_ids_list, verbose=int(be_verbose), as_dataframe=False,
                                                   fields=myvariant_fields, assembly=genome_build_version)
     except Exception as error:
-        # TODO: Discuss w/Adam what kinds of errors really should be retried; some def shouldn't
+        # TODO:Try to get error code; errors in 500 family should probably retry, others not
         logging.info('Error: ' + str(error) + 'while fetching from MyVariant')
         num_failed_attempts += 1
         if num_failed_attempts < max_failed_attempts:
