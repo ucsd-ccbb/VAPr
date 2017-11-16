@@ -10,6 +10,7 @@ def get_sample_id_filter(sample_name):
 def get_any_of_sample_ids_filter(sample_names_list):
     return {SAMPLE_ID_SELECTOR: {'$in': sample_names_list}}
 
+# TODO: refactor so that if sample ids list is all sample ids, don't even put in sample ids condition
 
 def make_rare_deleterious_variants_filter(sample_ids_list):
     """ Function for retrieving rare, deleterious variants """
@@ -37,8 +38,6 @@ def make_rare_deleterious_variants_filter(sample_ids_list):
                 ]
         }
 
-
-# TODO: the function this came from took sample ids, but didn't use them; should it?
 def make_known_disease_variants_filter(sample_ids_list):
     """ Function for retrieving known disease variants by presence in Clinvar and Cosmic."""
 
@@ -68,8 +67,7 @@ def make_deleterious_compound_heterozygote_variants_filter(sample_ids_list):
         }
 
 
-# TODO: can we come up with some more informative names for these samples, in case users don't read docstring?
-def make_de_novo_variants_filter(sample1, sample2, sample3):
+def make_de_novo_variants_filter(proband_sample_name, ancestor1_sample_name, ancestor2_sample_name):
     """
     Function for de novo variant analysis. Can be performed on multisample files or or on data coming
     from a collection of files. In the former case, every sample contains the same variants, although they have
@@ -81,12 +79,12 @@ def make_de_novo_variants_filter(sample1, sample2, sample3):
     return {
             "$and":
                     [
-                        get_sample_id_filter(sample1),
+                        get_sample_id_filter(proband_sample_name),
                         {
-                            "$or":
+                            "$and":
                                 [
-                                    {SAMPLE_ID_SELECTOR: {"$ne": sample2}},
-                                    {SAMPLE_ID_SELECTOR: {"$ne": sample3}}
+                                    {SAMPLE_ID_SELECTOR: {"$ne": ancestor1_sample_name}},
+                                    {SAMPLE_ID_SELECTOR: {"$ne": ancestor2_sample_name}}
                                 ]
                         }
                     ]
