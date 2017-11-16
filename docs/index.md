@@ -32,7 +32,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 2. [Quick-start](#examples)
 3. [Supplemental Information](#SI)  
   3.1. [Workflow Overview](#workflow)    
-  3.2. [Tips on usage](#usage_tips)    
+  3.2. [VaprAnnotator - Tips on usage](#usage_tips)    
     &nbsp;&nbsp;&nbsp;&nbsp;3.2.1 [Arguments](#required)  
   3.3. [Core Methods](#core)  
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Annovar Databases](#anno)   
