@@ -56,7 +56,7 @@ def make_known_disease_variants_filter(sample_ids_list):
         }
 
 
-def make_deleterious_compound_heterozygote_variants_filter(sample_ids_list):
+def make_deleterious_compound_heterozygous_variants_filter(sample_ids_list):
     return {
             "$and":
                 [
@@ -155,7 +155,7 @@ def make_de_novo_variants_filter(proband, ancestor1, ancestor2):
 #     return filtered
 #
 #
-# def get_deleterious_compound_heterozygote_variants(collection, sample_names=None):
+# def get_deleterious_compound_heterozygous_variants(collection, sample_names=None):
 #     """ Function for retrieving deleterious compound heterozygote variants  """
 #
 #     sample_ids_list = _construct_sample_ids_list(collection, sample_names)

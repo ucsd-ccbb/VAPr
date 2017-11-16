@@ -86,7 +86,7 @@ class TestVaprDataset(unittest.TestCase):
         test_dataset._mongo_db_collection.delete_many({})
 
         test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        dch = test_dataset.get_deleterious_compound_heterozygote_variants()
+        dch = test_dataset.get_deleterious_compound_heterozygous_variants()
         self.assertListEqual([var['hgvs_id'] for var in dch], [self.var3['hgvs_id']])
 
     def test_deleterious_compound_heterozygote_variants_specific_samples(self):
@@ -96,7 +96,7 @@ class TestVaprDataset(unittest.TestCase):
         test_dataset._mongo_db_collection.delete_many({})
 
         test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        dch = test_dataset.get_deleterious_compound_heterozygote_variants()
+        dch = test_dataset.get_deleterious_compound_heterozygous_variants()
         self.assertListEqual([var['hgvs_id'] for var in dch], [self.var3['hgvs_id']])
 
     def test_de_novo_variants(self):
