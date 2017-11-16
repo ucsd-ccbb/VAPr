@@ -16,7 +16,7 @@ is quite a bit of information there.
 ## Authors
 
 * **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
-* **Adam Mark** (a1mark@ucsd.edu)
+* **Adam Mark, M.S.** (a1mark@ucsd.edu)
 * **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
 * **Amanda Birmingham, Ph.D** 
 * **Guorong Xu, Ph.D** 
@@ -30,22 +30,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 1. [Getting started](#getting_started)  
   1.1. [Pre-requisites and setup](#setup)
 2. [Quick-start](#examples)
-3. [Supplemental Information](#SI)  
-  3.1. [Workflow Overview](#workflow)    
-  3.2. [Tips on usage](#usage_tips)    
-    &nbsp;&nbsp;&nbsp;&nbsp;3.2.1 [Required Arguments](#required)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.2.2 [Optional Arguments](#optional)  
-  3.3. [Core Methods](#core)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Annovar Methods](#anno)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Parallel Annotation](#parallel)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)  
-  3.3. [Filtering](#filt)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Available Filters](#filts)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Parallel Annotation](#parallel)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)  
-  3.4. [File Creation](#fwrite)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.1 [Available Writers](#required)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.2 [Extra](#node_specific)   
+3. [Supplemental Information](#SI)
+  3.1. [Workflow Overview](#workflow)
+  3.2. [Tips on usage](#usage_tips)
+    &nbsp;&nbsp;&nbsp;&nbsp;3.2.1 [Arguments](#required)
+  3.3. [Core Methods](#core)
+    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Annovar](#anno)
+    &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Annotation](#annotation)
+  3.3. [Filtering](#filt)
+    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Available Filters](#filts)
+  3.4. [File Creation](#fwrite)
+    &nbsp;&nbsp;&nbsp;&nbsp;3.4.1 [Available Writers](#write)
+    &nbsp;&nbsp;&nbsp;&nbsp;3.4.2 [Extra](#node_specific)
 
 
 [Table of contents](#toc)
@@ -220,7 +216,7 @@ The first four arguments are required to run the full annotation pipeline. These
 
 - `vcfs_gzipped`: Boolean. Only files with one vcf extension will be processed. If you are only analyzing one vcf, the file will not be bgzipped. If you are providing a directory or design file with multiple vcf files, they will be bgzipped and merged. If they are already bgzipped, please specify `vcfs_gzipped=True` and the bgzip step will be skipped.
 
-- `design_file`: The purpose of an optional design file is to accommodate VCF files scattered throughout a file system. The design file must be set up as a CSV file with the first field name as "Sample_Names", where the column should be populated with full file paths to each VCF you wish to include in the analysis. We anticipate in the future to be able to accommodate meta-data as successive columns which would be included as sample information in each variant document. A sample design file:
+- `design_file`: Path to design file. The purpose of an optional design file is to accommodate VCF files scattered throughout a file system. The design file must be set up as a CSV file with the first field name as "Sample_Names", where the column should be populated with full file paths to each VCF you wish to include in the analysis. We anticipate in the future to be able to accommodate meta-data as successive columns which would be included as sample information in each variant document. A sample design file:
 
             Sample_Names
             /path/to/file1.vcf
@@ -239,12 +235,12 @@ the API lets you call any core method for the annotation part. These include:
 The differences and nuances of each will be discussed next.
 
 <a id='anno'></a>
-### Annovar Methods
+### Annovar
 
 #### `download_annovar_databases`
 `download_annovar_databases()`: this function downloads the databases required to run Annovar to the `.../annovar/humandb/` directory. 
 It will download the databases according to the genome version specified. If your databases are out-of-date, re-running
-this command will download the latest version of them.
+this command will download the latest version of them. If you currently have the required databases, you may get an error.
 
 **Args**: 
 
@@ -254,8 +250,8 @@ _Required_:
 _Optional_: 
   - None
 
-<a id='parallel'></a>
-### Comprehensive Annotation
+<a id='annotation'></a>
+### Annotation
 
 #### `annotate`
 
@@ -274,7 +270,6 @@ _Optional_:
   As a rule of thumb, use at most `number of CPU cores - 1`, and for smaller vcf files (less than 50 thousand variants)
   4-5 cores at most. Default: 4.
   - `verbose`: An integer value from 0 to 3 that specifies the verbosity level. Default: 0.
-
 
 #### `annotate_lite` (not recommended)
 
@@ -392,7 +387,7 @@ filtered = collection.find({"$and": [
 filtered = list(filtered)
 ```
 
-<a id='fwrite'></a>
+<a id='write'></a>
 ## Output Files
 
 #### Write Options #1: Unfiltered Variants CSV
