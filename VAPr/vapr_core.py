@@ -27,7 +27,6 @@ class VaprDataset(object):
         self._mongo_db = getattr(self._mongo_client, self._mongo_db_name)
         self._mongo_db_collection = getattr(self._mongo_db, self._mongo_collection_name)
 
-    # TODO: Should this take sample_names_list or not?
     def get_rare_deleterious_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
                                                      sample_names_list)
@@ -116,7 +115,8 @@ class VaprDataset(object):
         return self.get_custom_filtered_variants(filter_dict)
 
     # TODO: I'd like to do a bit more work on this one; not sure it is in the right place
-    # TODO: Should the vcf_input_path be specified by the user, or should it be the single_vcf_path?
+    # TODO: Change to use the single_vcf_path from the VaprAnnotator as the vcf_input_path, remove from params
+    # TODO: Must bgzip and index vcf_input_path before writing; use method from vcf_merging
     def _write_annotated_vcf(self, filtered_variants_dicts_list, vcf_input_path, vcf_output_path, info_out=True):
         """
         :param vcf_input_path: template vcf file (initial vcf from which a new one will be created)
@@ -215,24 +215,23 @@ class VaprAnnotator(object):
         return result
 
     # TODO: Decide on what tests to write for top-level functions
-    # TODO: Discuss w/Adam whether to refactor interface
-    # For example, what happens if user runs get_basic_annotation and then also get_detailed_annotation?
-    # TODO: Should we warn the user if they are about to *add* records to an existing collection?
-    def __init__(self, input_dir, output_dir, vcf_file_extension, mongo_db_name,
-                 mongo_collection_name, design_file=None, build_ver=None, path_to_annovar_install=None):
+    # TODO: what happens if user runs get_basic_annotation and then also get_detailed_annotation?
+    # TODO: Implement allow_adds=False/True functionality
+    def __init__(self, input_dir, output_dir, mongo_db_name, mongo_collection_name, annovar_install_path=None,
+                 design_file=None, build_ver=None, vcfs_gzipped=False):
 
         self._input_dir = input_dir
         self._output_dir = output_dir
         self._analysis_name = mongo_db_name
         self._design_file = design_file
-        self._path_to_annovar_install = path_to_annovar_install
-        self._vcf_file_extension = vcf_file_extension
+        self._path_to_annovar_install = annovar_install_path
+        self._vcfs_gzipped = vcfs_gzipped
         self._genome_build_version = self._get_validated_genome_version(build_ver)
         self._mongo_db_name = mongo_db_name
         self._mongo_collection_name = mongo_collection_name
 
         self._single_vcf_path = VAPr.vcf_merging.merge_vcfs(self._input_dir, self._output_dir, self._design_file,
-                                                            self._analysis_name, self._vcf_file_extension)
+                                                            self._analysis_name, self._vcfs_gzipped)
         self._output_basename = os.path.splitext(os.path.basename(self._single_vcf_path))[0]
         self._sample_names_list = vcf.Reader(open(self._single_vcf_path, 'r')).samples
 
@@ -255,12 +254,12 @@ class VaprAnnotator(object):
 
         self._annovar_wrapper.download_databases()
 
-    def gather_basic_annotations(self, num_processes=8, chunk_size=2000, verbose_level=1):
+    def annotate_lite(self, num_processes=8, chunk_size=2000, verbose_level=1, allow_adds=False):
         self._collect_annotations_and_store(self._single_vcf_path, chunk_size, num_processes, sample_names_list=None,
                                             verbose_level=verbose_level)
         return VaprDataset(self._mongo_db_name, self._mongo_collection_name)
 
-    def gather_detailed_annotations(self, num_processes=4, chunk_size=2000, verbose_level=1):
+    def annotate(self, num_processes=4, chunk_size=2000, verbose_level=1, allow_adds=False):
         if self._path_to_annovar_install is None:
             raise ValueError("No ANNOVAR install path provided.")
 
