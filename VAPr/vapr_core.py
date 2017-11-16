@@ -45,8 +45,8 @@ class VaprDataset(object):
         return self._get_filtered_variants_by_sample(
             VAPr.filtering.make_deleterious_compound_heterozygote_variants_filter, sample_names_list)
 
-    def get_de_novo_variants(self, sample1_name, sample2_name, sample3_name):
-        filter_dict = VAPr.filtering.make_de_novo_variants_filter(sample1_name, sample2_name, sample3_name)
+    def get_de_novo_variants(self, proband, ancestor1, ancestor2):
+        filter_dict = VAPr.filtering.make_de_novo_variants_filter(proband, ancestor1, ancestor2)
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_custom_filtered_variants(self, filter_dictionary):
