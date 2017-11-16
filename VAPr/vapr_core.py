@@ -33,13 +33,13 @@ class VaprDataset(object):
     def full_name(self):
         return self._mongo_db_collection.full_name
 
-    def get_rare_deleterious_variants(self, sample_names_list=None):
+    def get_rare_deleterious_variants(self, specific_sample_names=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
-                                                     sample_names_list)
+                                                     specific_sample_names)
 
-    def get_known_disease_variants(self, sample_names_list=None):
+    def get_known_disease_variants(self, specific_sample_names=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_known_disease_variants_filter,
-                                                     sample_names_list)
+                                                     specific_sample_names)
 
     def get_deleterious_compound_heterozygous_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(
@@ -50,6 +50,8 @@ class VaprDataset(object):
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_custom_filtered_variants(self, filter_dictionary):
+        if self._mongo_db_collection.count() == 0:
+            warnings.warn("Dataset '{0}' is empty, so all filters return an empty list.".format(self.full_name))
         return list(self._mongo_db_collection.find(filter_dictionary))
 
     def get_distinct_sample_ids(self):
@@ -63,8 +65,8 @@ class VaprDataset(object):
         filter_dict = VAPr.filtering.get_sample_id_filter(sample_name)
         return self.get_custom_filtered_variants(filter_dict)
 
-    def get_variants_for_samples(self, sample_names_list):
-        filter_dict = VAPr.filtering.get_any_of_sample_ids_filter(sample_names_list)
+    def get_variants_for_samples(self, specific_sample_names):
+        filter_dict = VAPr.filtering.get_any_of_sample_ids_filter(specific_sample_names)
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_variants_as_dataframe(self, filtered_variants=None):
@@ -96,17 +98,6 @@ class VaprDataset(object):
 
         self._warn_if_no_output("write_unfiltered_annotated_csvs_per_sample", sample_ids_list)
 
-    def _construct_sample_ids_list(self, sample_names):
-        result = sample_names
-        if not sample_names:
-            result = self.get_distinct_sample_ids()
-        elif not isinstance(sample_names, list):
-            result = [sample_names]
-
-        if len(result) == 0:
-            warnings.warn("No sample ids found.")
-        return result
-
     def _write_annotated_csv(self, func_name, filtered_variants, output_fp):
         no_output = self._warn_if_no_output(func_name, filtered_variants)
         if not no_output:
@@ -114,8 +105,9 @@ class VaprDataset(object):
             dataframe.to_csv(output_fp)
 
     def _get_filtered_variants_by_sample(self, filter_builder_func, sample_names=None):
-        sample_ids_list = self._construct_sample_ids_list(sample_names)
-        filter_dict = filter_builder_func(sample_ids_list)
+        if sample_names is not None and not isinstance(sample_names, list):
+            sample_names = [sample_names]
+        filter_dict = filter_builder_func(sample_names)
         return self.get_custom_filtered_variants(filter_dict)
 
     # TODO: I'd like to do a bit more work on this one; not sure it is in the right place
@@ -287,7 +279,7 @@ class VaprAnnotator(object):
         return result
 
     def _make_dataset_for_results(self, func_name, allow_adds):
-        result = VaprDataset(self._mongo_db_name, self._mongo_collection_name)
+        result = VaprDataset(self._mongo_db_name, self._mongo_collection_name, self._single_vcf_path)
 
         distinct_ids_list = result.get_distinct_sample_ids()
         if len(distinct_ids_list) > 0:
