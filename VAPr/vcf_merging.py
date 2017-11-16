@@ -1,23 +1,50 @@
 import os
 import shlex
 import subprocess
-import pandas
 import shutil
 
 __author__ = 'Adam Mark<a1mark@ucsd.edu>'
 
+VCF_EXTENSION = ".vcf"
+BGZIP_EXTENSION = ".gz"
+BGZIPPED_VCF_EXTENSION = VCF_EXTENSION + BGZIP_EXTENSION
 
-def merge_vcfs(input_dir, output_dir, design_file, project_name, vcfs_gzipped=False):
+def bgzip_and_index_vcf(vcf_path):
+    """bgzip and index each vcf so it can be merged with bcftools."""
+
+    if vcf_path.endswith(BGZIPPED_VCF_EXTENSION):
+        # TODO: someday: check that the input is *really* bgzipped, rather than just gzipped
+        # TODO: someday: check to for an index file for this compressed file, rather than assuming is there
+        # something like if not os.path.isfile(vcf_path + ".gz.tbi")): raise ValueError
+        bgzipped_vcf_path = vcf_path
+    else:
+        bgzipped_vcf_path = vcf_path + BGZIP_EXTENSION
+        bgzip_cmd_string = _build_bgzip_vcf_command_str(vcf_path)
+        bgzip_args = shlex.split(bgzip_cmd_string)
+        with open(bgzipped_vcf_path, "w") as outfile:
+            p = subprocess.Popen(bgzip_args, stdout=outfile, stderr=subprocess.PIPE)
+            p.communicate()
+
+        index_cmd_string = _build_index_vcf_command_str(bgzipped_vcf_path)
+        index_args = shlex.split(index_cmd_string)
+        subprocess.call(index_args)
+
+    return bgzipped_vcf_path
+
+
+def merge_vcfs(input_dir, output_dir, project_name, raw_vcf_path_list=None, vcfs_gzipped=False):
     """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
 
-    vcf_file_extension = ".vcf.gz" if vcfs_gzipped else ".vcf"
-    raw_vcf_path_list = _get_vcf_file_paths_list(input_dir, design_file, vcf_file_extension)
+    vcf_file_extension = BGZIPPED_VCF_EXTENSION if vcfs_gzipped else VCF_EXTENSION
+
+    if raw_vcf_path_list is None:
+        raw_vcf_path_list = _get_vcf_file_paths_list_in_directory(input_dir, vcf_file_extension)
+
     if len(raw_vcf_path_list) == 0:
         raise ValueError("No VCFs found with extension '{0}'.".format(vcf_file_extension))
     elif len(raw_vcf_path_list) > 1:
-        bgzipped_vcf_path_list = set([_bgzip_and_index_vcf(vcf_fp) for vcf_fp in raw_vcf_path_list])
-        # TODO: Should this use the input vcf extension for its output?
-        single_vcf_path = os.path.join(output_dir, project_name + ".vcf")
+        bgzipped_vcf_path_list = set([bgzip_and_index_vcf(vcf_fp) for vcf_fp in raw_vcf_path_list])
+        single_vcf_path = os.path.join(output_dir, project_name + VCF_EXTENSION)
         _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, single_vcf_path)
     else:
         single_vcf_path = os.path.join(output_dir, project_name + vcf_file_extension)
@@ -31,17 +58,6 @@ def merge_vcfs(input_dir, output_dir, design_file, project_name, vcfs_gzipped=Fa
     return single_vcf_path
 
 
-def _get_vcf_file_paths_list(input_dir, design_file_fp, vcf_file_extension):
-    if design_file_fp is not None:
-        design_df = pandas.read_csv(design_file_fp)
-        # TODO: put this string key in a symbolic constant
-        vcf_file_paths_list = design_df['Sample_Names'].tolist()
-    else:
-        vcf_file_paths_list = _get_vcf_file_paths_list_in_directory(input_dir, vcf_file_extension)
-
-    return sorted(vcf_file_paths_list)
-
-
 def _get_vcf_file_paths_list_in_directory(base_dir, vcf_file_extension):
     vcf_file_paths_list = []
     walker = os.walk(base_dir)
@@ -51,7 +67,7 @@ def _get_vcf_file_paths_list_in_directory(base_dir, vcf_file_extension):
                 full_path_single_file = os.path.join(os.path.abspath(folder), curr_file)
                 vcf_file_paths_list.append(full_path_single_file)
 
-    return vcf_file_paths_list
+    return sorted(vcf_file_paths_list)
 
 
 def _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, output_vcf_fp):
@@ -60,33 +76,6 @@ def _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, output_vcf_fp):
     with open(output_vcf_fp, 'w') as outfile:
         p = subprocess.Popen(merge_args, stdout=outfile, stderr=subprocess.PIPE)
         p.communicate()
-
-
-def _bgzip_and_index_vcf(vcf_path):
-    """bgzip and index each vcf so it can be merged with bcftools."""
-
-    bgzip_extension = ".gz"
-
-    # TODO: Should this check for the vcf extension the user input, rather than a hardcoded one?
-    if vcf_path.endswith(".vcf{0}".format(bgzip_extension)):
-        # TODO: Check to make sure that there really is an index file for this compressed file, rather than assuming;
-        # something like if not os.path.isfile(vcf_path + ".gz.tbi")): raise ValueError
-
-        # TODO: someday: check that the input is *really* bgzipped, rather than just gzipped?
-        bgzipped_vcf_path = vcf_path
-    else:
-        bgzipped_vcf_path = vcf_path + bgzip_extension
-        bgzip_cmd_string = _build_bgzip_vcf_command_str(vcf_path)
-        bgzip_args = shlex.split(bgzip_cmd_string)
-        with open(bgzipped_vcf_path, "w") as outfile:
-            p = subprocess.Popen(bgzip_args, stdout=outfile, stderr=subprocess.PIPE)
-            p.communicate()
-
-        index_cmd_string = _build_index_vcf_command_str(bgzipped_vcf_path)
-        index_args = shlex.split(index_cmd_string)
-        subprocess.call(index_args)
-
-    return bgzipped_vcf_path
 
 
 def _build_merge_vcf_command_str(raw_vcf_path_list):
