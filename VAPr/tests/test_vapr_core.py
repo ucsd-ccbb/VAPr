@@ -1,9 +1,7 @@
 # standard libraries
 import tempfile
 import unittest
-
-# third-party libraries
-import pymongo
+import warnings
 
 # project-specific libraries
 import VAPr.vapr_core as ns_test
@@ -149,6 +147,12 @@ class TestVaprDataset(unittest.TestCase):
         self.fail("test not implemented")
 
     def test_write_filtered_annotated_vcf(self):
+        self.fail("test not implemented")
+
+    def test__warn_if_no_output_true(self):
+        self.fail("test not implemented")
+
+    def test__warn_if_no_output_false(self):
         self.fail("test not implemented")
 
 

@@ -6,12 +6,6 @@ import warnings
 # project libraries
 import VAPr.validation
 
-# TODO: Understand, vet this logging set-up
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-__author__ = 'Birmingham'
-
 
 def _warn_of_unparseable_format_field(field_desc, field_tag, field_value, failure_desc):
     """Raise a warning for the input field's issue using a standard wording and format.

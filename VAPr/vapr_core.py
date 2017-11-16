@@ -20,14 +20,19 @@ import VAPr.chunk_processing
 
 
 class VaprDataset(object):
-    def __init__(self, mongo_db_name, mongo_collection_name):
+    def __init__(self, mongo_db_name, mongo_collection_name, merged_vcf_path=None):
         self._mongo_db_name = mongo_db_name
         self._mongo_collection_name = mongo_collection_name
+        self._merged_vcf_path = merged_vcf_path
+
         self._mongo_client = pymongo.MongoClient(maxPoolSize=None, waitQueueTimeoutMS=200)
         self._mongo_db = getattr(self._mongo_client, self._mongo_db_name)
         self._mongo_db_collection = getattr(self._mongo_db, self._mongo_collection_name)
 
-    # TODO: Should this take sample_names_list or not?
+    @property
+    def full_name(self):
+        return self._mongo_db_collection.full_name
+
     def get_rare_deleterious_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
                                                      sample_names_list)
@@ -49,8 +54,6 @@ class VaprDataset(object):
 
     def get_distinct_sample_ids(self):
         result = self._mongo_db_collection.distinct(VAPr.filtering.SAMPLE_ID_SELECTOR)
-        if len(result) == 0:
-            warnings.warn("No sample ids found in dataset '{0}'".format(self._mongo_db_collection.full_name))
         return result
 
     def get_all_variants(self):
@@ -76,12 +79,12 @@ class VaprDataset(object):
     def write_filtered_annotated_csv(self, filtered_variants, output_fp):
         self._write_annotated_csv("write_filtered_annotated_csv", filtered_variants, output_fp)
 
-    def write_unfiltered_annotated_vcf(self, vcf_input_path, vcf_output_path, info_out=True):
+    def write_unfiltered_annotated_vcf(self, vcf_output_path, info_out=True):
         filtered_variants = self.get_all_variants()
-        self._write_annotated_vcf(filtered_variants, vcf_input_path, vcf_output_path, info_out=info_out)
+        self._write_annotated_vcf(filtered_variants, vcf_output_path, info_out=info_out)
 
-    def write_filtered_annotated_vcf(self, filtered_variants, vcf_input_path, vcf_output_path, info_out=True):
-        self._write_annotated_vcf(filtered_variants, vcf_input_path, vcf_output_path, info_out=info_out)
+    def write_filtered_annotated_vcf(self, filtered_variants, vcf_output_path, info_out=True):
+        self._write_annotated_vcf(filtered_variants, vcf_output_path, info_out=info_out)
 
     def write_unfiltered_annotated_csvs_per_sample(self, output_dir):
         sample_ids_list = self.get_distinct_sample_ids()
@@ -116,14 +119,17 @@ class VaprDataset(object):
         return self.get_custom_filtered_variants(filter_dict)
 
     # TODO: I'd like to do a bit more work on this one; not sure it is in the right place
-    # TODO: Should the vcf_input_path be specified by the user, or should it be the single_vcf_path?
-    def _write_annotated_vcf(self, filtered_variants_dicts_list, vcf_input_path, vcf_output_path, info_out=True):
+    def _write_annotated_vcf(self, filtered_variants_dicts_list, vcf_output_path, info_out=True):
         """
         :param vcf_input_path: template vcf file (initial vcf from which a new one will be created)
         :param vcf_output_path: name and filepath to where new vcf file will be written
         :param filtered_variants_dicts_list: list of dictionaries (one per variant) containing annotations
         :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
         """
+
+        # TODO: check if merged vcf path is None; if so, throw error
+        # TODO: Must bgzip and index merged vcf path  before writing; use method from vcf_merging
+
         chr_vars = []
         location_vars_ant = []
         location_vars_pos = []
@@ -136,7 +142,7 @@ class VaprDataset(object):
             location_vars_ant.append(filtered_variants_dicts_list[i]['start'] + 1)
             location_vars_pos.append(filtered_variants_dicts_list[i]['start'] - 1)
 
-        vcf_reader = vcf.Reader(filename=vcf_input_path)
+        vcf_reader = vcf.Reader(filename=self._merged_vcf_path)
         vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
 
         for i in range(0, len(chr_vars)):
@@ -160,6 +166,7 @@ class VaprDataset(object):
 
 
 class VaprAnnotator(object):
+    SAMPLE_NAMES_KEY = "Sample_Names"
     HG19_VERSION = "hg19"
     HG38_VERSION = "hg38"
     DEFAULT_GENOME_VERSION = HG19_VERSION
@@ -215,24 +222,21 @@ class VaprAnnotator(object):
         return result
 
     # TODO: Decide on what tests to write for top-level functions
-    # TODO: Discuss w/Adam whether to refactor interface
-    # For example, what happens if user runs get_basic_annotation and then also get_detailed_annotation?
-    # TODO: Should we warn the user if they are about to *add* records to an existing collection?
-    def __init__(self, input_dir, output_dir, vcf_file_extension, mongo_db_name,
-                 mongo_collection_name, design_file=None, build_ver=None, path_to_annovar_install=None):
+    def __init__(self, input_dir, output_dir, mongo_db_name, mongo_collection_name, annovar_install_path=None,
+                 design_file=None, build_ver=None, vcfs_gzipped=False):
 
         self._input_dir = input_dir
         self._output_dir = output_dir
-        self._analysis_name = mongo_db_name
-        self._design_file = design_file
-        self._path_to_annovar_install = path_to_annovar_install
-        self._vcf_file_extension = vcf_file_extension
-        self._genome_build_version = self._get_validated_genome_version(build_ver)
         self._mongo_db_name = mongo_db_name
         self._mongo_collection_name = mongo_collection_name
+        self._analysis_name = mongo_db_name + "_" + mongo_collection_name
+        self._path_to_annovar_install = annovar_install_path
+        self._design_file = design_file
+        self._vcfs_gzipped = vcfs_gzipped
 
-        self._single_vcf_path = VAPr.vcf_merging.merge_vcfs(self._input_dir, self._output_dir, self._design_file,
-                                                            self._analysis_name, self._vcf_file_extension)
+        self._genome_build_version = self._get_validated_genome_version(build_ver)
+
+        self._single_vcf_path = self._make_merged_vcf_fp()
         self._output_basename = os.path.splitext(os.path.basename(self._single_vcf_path))[0]
         self._sample_names_list = vcf.Reader(open(self._single_vcf_path, 'r')).samples
 
@@ -255,22 +259,52 @@ class VaprAnnotator(object):
 
         self._annovar_wrapper.download_databases()
 
-    def gather_basic_annotations(self, num_processes=8, chunk_size=2000, verbose_level=1):
+    def annotate_lite(self, num_processes=8, chunk_size=2000, verbose_level=1, allow_adds=False):
+        result = self._make_dataset_for_results("annotate_lite", allow_adds)
         self._collect_annotations_and_store(self._single_vcf_path, chunk_size, num_processes, sample_names_list=None,
                                             verbose_level=verbose_level)
-        return VaprDataset(self._mongo_db_name, self._mongo_collection_name)
+        return result
 
-    def gather_detailed_annotations(self, num_processes=4, chunk_size=2000, verbose_level=1):
+    def annotate(self, num_processes=4, chunk_size=2000, verbose_level=1, allow_adds=False):
         if self._path_to_annovar_install is None:
             raise ValueError("No ANNOVAR install path provided.")
 
+        result = self._make_dataset_for_results("annotate", allow_adds)
         annovar_output_fp = self._annovar_wrapper.run_annotation(self._single_vcf_path, self._output_basename,
                                                                  self._output_dir)
         self._collect_annotations_and_store(annovar_output_fp, chunk_size, num_processes,
                                             sample_names_list=self._sample_names_list, verbose_level=verbose_level)
-        return VaprDataset(self._mongo_db_name, self._mongo_collection_name)
+        return result
 
-    # TODO: someday: extra_data from design file needs to come back in here ...
+    def _make_merged_vcf_fp(self):
+        vcf_file_paths_list = None
+        if self._design_file is not None:
+            design_df = pandas.read_csv(self._design_file)
+            vcf_file_paths_list = design_df[self.SAMPLE_NAMES_KEY].tolist()
+
+        result = VAPr.vcf_merging.merge_vcfs(self._input_dir, self._output_dir, self._analysis_name,
+                                             vcf_file_paths_list, self._vcfs_gzipped)
+        return result
+
+    def _make_dataset_for_results(self, func_name, allow_adds):
+        result = VaprDataset(self._mongo_db_name, self._mongo_collection_name)
+
+        distinct_ids_list = result.get_distinct_sample_ids()
+        if len(distinct_ids_list) > 0:
+            msg_prefix = "Dataset '{0}' already contains {1} records".format(result.full_name, len(distinct_ids_list))
+            if allow_adds:
+                logging.info("{0}; adding to this dataset.".format(msg_prefix))
+            else:
+                error_msg = "{0}, which is disallowed by default.  Either create a VaprAnnotator with a new " \
+                            "collection name, clear your existing collection manually, or (if you definitely wish to " \
+                            "add to an existing dataset), rerun {1} with the 'allow_adds' parameter set to " \
+                            "True".format(msg_prefix, func_name)
+                raise ValueError(error_msg)
+
+        return result
+
+
+    # TODO: someday: extra_data from design file needs to come back in here
     def _collect_annotations_and_store(self, file_path, chunk_size, num_processes, sample_names_list=None,
                                        verbose_level=1):
         num_file_lines = self._get_num_lines_in_file(file_path)

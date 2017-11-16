@@ -193,7 +193,7 @@ The first four arguments are required to run the full annotation pipeline. These
 Once the `VaprAnnotator` instance has been initiated, you can call a variety of methods from it. In particular, 
 the API lets you call any core method for the annotation part. These include:
  - Annovar methods: `download_annovar_databases` and `_run_annovar_annotation` and `update_dbs`
- - Annotation and storing methods: `gather_detailed_annotations` and `gather_basic_annotations`
+ - Annotation and storing methods: `annotate` and `annotate_lite`
 
 The differences and nuances of each will be discussed next.
 
@@ -233,9 +233,9 @@ _Optional_:
 <a id='parallel'></a>
 ### Parallel Annotation
 
-#### `gather_detailed_annotations`
+#### `annotate`
 
-`gather_detailed_annotations()`: this requires running Annovar beforehand, and will kick-start the main functionality
+`annotate()`: this requires running Annovar beforehand, and will kick-start the main functionality
 of this package. Namely, it will collect all the variant data from Annovar annotations, combine it with data coming
 from MyVariant.info, and parse it to MongoDB, in the database and collection specified in `project_data`.
 
@@ -254,9 +254,9 @@ _Optional_:
   MyVariant.info and will result in much faster annotation. It takes a Boolean True of False. Default: False
 
 
-#### `gather_basic_annotations` (not recommended)
+#### `annotate_lite` (not recommended)
 
-`gather_basic_annotations()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
+`annotate_lite()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
 vcf files and query the variant data from MyVariant.info. It is subject to the issue of potentially having completely
 empty data for some of the variants, and inability to run native VAPr queries on the data. 
 
