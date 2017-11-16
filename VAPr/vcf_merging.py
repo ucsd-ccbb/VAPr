@@ -32,27 +32,30 @@ def bgzip_and_index_vcf(vcf_path):
     return bgzipped_vcf_path
 
 
+# TODO: someday: refactor since raw_vcf_path_list and vcfs_gzipped are really mutually exclusive
 def merge_vcfs(input_dir, output_dir, project_name, raw_vcf_path_list=None, vcfs_gzipped=False):
     """Merge vcf files into single multisample vcf, bgzip and index merged vcf file."""
 
-    vcf_file_extension = BGZIPPED_VCF_EXTENSION if vcfs_gzipped else VCF_EXTENSION
-
     if raw_vcf_path_list is None:
+        vcf_file_extension = BGZIPPED_VCF_EXTENSION if vcfs_gzipped else VCF_EXTENSION
         raw_vcf_path_list = _get_vcf_file_paths_list_in_directory(input_dir, vcf_file_extension)
+        if len(raw_vcf_path_list) == 0:
+            raise ValueError("No VCFs found with extension '{0}'.".format(vcf_file_extension))
+    elif len(raw_vcf_path_list) == 0:
+            raise ValueError("Input list of VCF files is empty.")
 
-    if len(raw_vcf_path_list) == 0:
-        raise ValueError("No VCFs found with extension '{0}'.".format(vcf_file_extension))
-    elif len(raw_vcf_path_list) > 1:
+    if len(raw_vcf_path_list) > 1:
         bgzipped_vcf_path_list = set([bgzip_and_index_vcf(vcf_fp) for vcf_fp in raw_vcf_path_list])
         single_vcf_path = os.path.join(output_dir, project_name + VCF_EXTENSION)
         _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, single_vcf_path)
     else:
-        single_vcf_path = os.path.join(output_dir, project_name + vcf_file_extension)
+        single_vcf_path = os.path.join(output_dir, project_name + VCF_EXTENSION)
         try:
             shutil.copyfile(raw_vcf_path_list[0], single_vcf_path)
         except shutil.SameFileError:
-            # if there is just one input file and we can't copy it to the output dir because it is already there--
-            # i.e., if the input and output dir are the SAME--that's fine; do nothing
+            # I ran into a case where there was a single input file, AND it was already named after the project, AND
+            # the input and output dirs were the same so it was already where it needed to be.  In this case, an
+            # error is thrown because you can't copy a file to itself, but that's cool, so just ignore it.
             pass
 
     return single_vcf_path

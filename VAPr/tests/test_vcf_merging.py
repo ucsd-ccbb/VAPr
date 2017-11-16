@@ -548,49 +548,12 @@ class TestFunctions(unittest.TestCase):
 
     _VCF_EXTENSION = ".vcf"
 
-    # region _get_vcf_file_paths_list tests
-    def test__get_vcf_file_paths_list_w_design_file(self):
-        temp_dir = tempfile.TemporaryDirectory()
-
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
-        temp_HG00096_vcf_file.close()  # but DON'T delete yet
-
-        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
-        temp_HG00097_vcf_file.close()  # but DON'T delete yet
-
-        design_file_contents = """Sample_Names
-{0}
-{1}
-        """.format(temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name)
-
-        temp_design_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, delete=False)
-        temp_design_file.write(design_file_contents.encode('ascii'))
-        temp_design_file.close()  # but DON'T delete yet
-
-        expected_output = sorted([temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name])
-
-        real_output = ns_test._get_vcf_file_paths_list(temp_dir.name, temp_design_file.name, self._VCF_EXTENSION,)
-        self.assertListEqual(expected_output, real_output)
-
-    def test__get_vcf_file_paths_list_wo_design_file(self):
-        temp_dir = tempfile.TemporaryDirectory()
-
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
-        temp_HG00096_vcf_file.close()  # but DON'T delete yet
-
-        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
-        temp_HG00097_vcf_file.close()  # but DON'T delete yet
-
-        expected_output = sorted([temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name])
-
-        real_output = ns_test._get_vcf_file_paths_list(temp_dir.name, None, self._VCF_EXTENSION)
-        self.assertListEqual(expected_output, real_output)
-
-    # endregion
+    @classmethod
+    def setUpClass(cls):
+        base_dir = os.getcwd()
+        cls.test_file_dir = os.path.join(base_dir, 'test_files/test_input_dir/G1000')
+        cls.test_bgzipped_fps = [os.path.join(cls.test_file_dir, "HG00096.vcf.gz"),
+                                 os.path.join(cls.test_file_dir, "HG00097.vcf.gz")]
 
     # region _get_vcf_file_paths_list_in_directory tests
     def test__get_vcf_file_paths_list_in_directory(self):
@@ -611,12 +574,12 @@ class TestFunctions(unittest.TestCase):
 
         expected_output = sorted([temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name])
 
-        real_output = ns_test._get_vcf_file_paths_list(temp_dir.name, None, self._VCF_EXTENSION)
+        real_output = ns_test._get_vcf_file_paths_list_in_directory(temp_dir.name, self._VCF_EXTENSION)
         self.assertListEqual(expected_output, real_output)
 
     def test__get_vcf_file_paths_list_in_directory_none(self):
         temp_dir = tempfile.TemporaryDirectory()
-        real_output = ns_test._get_vcf_file_paths_list(temp_dir.name, None, self._VCF_EXTENSION)
+        real_output = ns_test._get_vcf_file_paths_list_in_directory(temp_dir.name, self._VCF_EXTENSION)
         self.assertListEqual([], real_output)
 
     # endregion
@@ -636,12 +599,12 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual('tabix -p vcf my/vcf_folder/vcf_file1.vcf.gz', real_output)
 
     # region _bgzip_and_index_vcf tests
-    def test__bgzip_and_index_vcf_is_vcf_gz(self):
+    def test_bgzip_and_index_vcf_is_vcf_gz(self):
         input_fp = expected_output = "my/vcf_folder/vcf_file1.vcf.gz"
-        real_output = ns_test._bgzip_and_index_vcf(input_fp)
+        real_output = ns_test.bgzip_and_index_vcf(input_fp)
         self.assertEqual(expected_output, real_output)
 
-    def test__bgzip_and_index_vcf_not_vcf_gz(self):
+    def test_bgzip_and_index_vcf_not_vcf_gz(self):
         # NB: output .vcf.gz file and .vcf.gz.tbi files are placed in the same directory as the input file.
         # To ensure they are cleaned up after the test is over, place everything in a temporary directory
         temp_dir = tempfile.TemporaryDirectory()
@@ -651,7 +614,7 @@ class TestFunctions(unittest.TestCase):
         temp_HG00097_vcf_file.close()  # but DON'T delete yet
         expected_output = temp_HG00097_vcf_file.name + ".gz"
 
-        real_output = ns_test._bgzip_and_index_vcf(temp_HG00097_vcf_file.name)
+        real_output = ns_test.bgzip_and_index_vcf(temp_HG00097_vcf_file.name)
         # NB: I am not checking the *contents* of these files; they are created by subprocess calls to outside programs
         # and I am going to trust that those outside programs do their jobs as advertised.
         self.assertTrue(os.path.isfile(temp_HG00097_vcf_file.name + ".gz"))
@@ -663,21 +626,20 @@ class TestFunctions(unittest.TestCase):
     def test__merge_bgzipped_indexed_vcfs(self):
         # NB: This method works on *already-bgzipped-and-indexed* vcf files, which is why I'm depending on
         # pre-provided test files rather than making my own temporary test files.
-        self.base_dir = os.getcwd()
-        self.input_dir = os.path.join(self.base_dir, 'test_files/test_input_dir/G1000')
-        input_path_list = ["HG00096.vcf.gz", "HG00097.vcf.gz"]
 
         # put the output file in a temporary directory so it will be automatically cleaned up when test finishes
         temp_dir = tempfile.TemporaryDirectory()
         output_vcf_fp = temp_dir.name + "temp.vcf.gz"
 
-        ns_test._merge_bgzipped_indexed_vcfs(input_path_list, output_vcf_fp)
+        ns_test._merge_bgzipped_indexed_vcfs(self.test_bgzipped_fps, output_vcf_fp)
+
         # NB: Again, I am not checking the *contents* of this files; it is created by a subprocess call to an outside
         # programs and I am going to trust that outside program does its job as advertised.
         self.assertTrue(os.path.isfile(output_vcf_fp))
+        self.assertTrue(os.stat(output_vcf_fp).st_size > 0)  # file size > 0
 
     # region merge_vcfs tests
-    def test_merge_vcfs_multiple_by_dir(self):
+    def test_merge_vcfs_multiple_by_dir_not_bgzipped(self):
         temp_dir = tempfile.TemporaryDirectory()
 
         temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
@@ -690,12 +652,29 @@ class TestFunctions(unittest.TestCase):
 
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
 
-        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, None, "tempy", self._VCF_EXTENSION)
+        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy")
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
 
-    def test_merge_vcfs_multiple_by_design_file(self):
+    def test_merge_vcfs_multiple_by_dir_bgzipped(self):
+        # NB: This method works on *already-bgzipped-and-indexed* vcf files, which is why I'm depending on
+        # pre-provided test files rather than making my own temporary test files.
+
+        # put the output file in a temporary directory so it will be automatically cleaned up when test finishes
+        temp_dir = tempfile.TemporaryDirectory()
+        expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
+
+        real_output_vcf_fp = ns_test.merge_vcfs(self.test_file_dir, temp_dir.name, "tempy", vcfs_gzipped=True)
+
+        self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
+
+        # NB: Again, I am not checking the *contents* of this files; it is created by a subprocess call to an outside
+        # programs and I am going to trust that outside program does its job as advertised.
+        self.assertTrue(os.path.isfile(real_output_vcf_fp))
+        self.assertTrue(os.stat(real_output_vcf_fp).st_size > 0)  # file size > 0
+
+    def test_merge_vcfs_multiple_by_list(self):
         temp_dir = tempfile.TemporaryDirectory()
 
         temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
@@ -706,19 +685,12 @@ class TestFunctions(unittest.TestCase):
         temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
         temp_HG00097_vcf_file.close()  # but DON'T delete yet
 
-        design_file_contents = """Sample_Names
-{0}
-{1}
-""".format(temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name)
-
-        temp_design_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, delete=False)
-        temp_design_file.write(design_file_contents.encode('ascii'))
-        temp_design_file.close()  # but DON'T delete yet
-
+        # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
 
-        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, temp_design_file.name, "tempy",
-                                                self._VCF_EXTENSION)
+        # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
+        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy",
+                                                [temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name])
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
@@ -732,7 +704,8 @@ class TestFunctions(unittest.TestCase):
 
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
 
-        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, None, "tempy", self._VCF_EXTENSION)
+        # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when there is just one file
+        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy")
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
@@ -740,25 +713,17 @@ class TestFunctions(unittest.TestCase):
             real_output_contents = file_handle.read()
         self.assertEqual(self._HG00096_VCF_CONTENTS, real_output_contents)
 
-    def test_merge_vcfs_single_by_design_file(self):
+    def test_merge_vcfs_single_by_list(self):
         temp_dir = tempfile.TemporaryDirectory()
 
         temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
         temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
-        design_file_contents = """Sample_Names
-{0}
-""".format(temp_HG00096_vcf_file.name)
-
-        temp_design_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, delete=False)
-        temp_design_file.write(design_file_contents.encode('ascii'))
-        temp_design_file.close()  # but DON'T delete yet
-
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
 
-        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, temp_design_file.name, "tempy",
-                                                self._VCF_EXTENSION)
+        # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
+        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy", [temp_HG00096_vcf_file.name])
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
@@ -766,10 +731,49 @@ class TestFunctions(unittest.TestCase):
             real_output_contents = file_handle.read()
         self.assertEqual(self._HG00096_VCF_CONTENTS, real_output_contents)
 
-    def test_merge_vcfs_error_no_files_found(self):
+    def test_merge_vcfs_single_no_copy_needed(self):
+        temp_dir = tempfile.TemporaryDirectory()
+
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file.close()  # but DON'T delete yet
+
+        temp_HG00096_vcf_base = os.path.splitext(os.path.basename(temp_HG00096_vcf_file.name))[0]
+        expected_output_vcf_fp = os.path.join(temp_dir.name, temp_HG00096_vcf_base + self._VCF_EXTENSION)
+
+        # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
+        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, temp_HG00096_vcf_base,
+                                                [temp_HG00096_vcf_file.name])
+
+        self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
+        self.assertTrue(os.path.isfile(real_output_vcf_fp))
+
+
+    def test_merge_vcfs_by_dir_error_no_files_found_not_bgzipped(self):
+        temp_dir = tempfile.TemporaryDirectory()
+        # NB: This file is NOT REALLY BGZIPPED--but for this test all I need is a file with the bgzipped *extension* :)
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.BGZIPPED_VCF_EXTENSION,
+                                                            delete=False)
+        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file.close()  # but DON'T delete yet
+
+        # there is a file in the directory, but it doesn't have the desired extension
+        with self.assertRaises(ValueError):
+            ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy")
+
+    def test_merge_vcfs_by_dir_error_no_files_found_bgzipped(self):
+        temp_dir = tempfile.TemporaryDirectory()
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file.close()  # but DON'T delete yet
+
+        # there is a file in the directory, but it doesn't have the desired extension
+        with self.assertRaises(ValueError):
+            ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy", vcfs_gzipped=True)
+
+    def test_merge_vcfs_by_list_error_no_files_found(self):
         # create a new, empty directory with no vcfs in it
         temp_dir = tempfile.TemporaryDirectory()
         with self.assertRaises(ValueError):
-            ns_test.merge_vcfs(temp_dir.name, temp_dir.name, None, "tempy", self._VCF_EXTENSION)
-
+            ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy", [])
     # endregion
