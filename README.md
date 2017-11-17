@@ -5,11 +5,11 @@ This package is aimed at providing a way of retrieving variant information using
 
 ## Authors
 
-* **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
-* **Adam Mark, M.S.** (a1mark@ucsd.edu)
 * **Amanda Birmingham** (abirmingham@ucsd.edu) 
-* **Guorong Xu, Ph.D** 
-* **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
+* **Adam Mark, M.S.** (a1mark@ucsd.edu)
+* **Carlo Mazzaferro** 
+* **Guorong Xu, Ph.D.** 
+* **Kathleen Fisch, Ph.D.** (kfisch@ucsd.edu)
 
 ## License
 
@@ -190,8 +190,7 @@ Tabix and bgzip binaries are available through the HTSlib project:
 Refer [here](https://github.com/samtools/htslib/blob/develop/INSTALL) for installation debugging.
 
 ### ANNOVAR
-(It is possible to proceed without installing ANNOVAR. In that case, the variants that will be annotated and sent to 
-Mongo are the ones found in MyVariant.info. In that case, users can skip the next steps and go straight to the section 
+(It is possible to proceed without installing ANNOVAR.  Variants will only be annotated with MyVariant.info. In that case, users can skip the next steps and go straight to the section 
 **Known Variant Annotation and Storage**)
 
 Users who wish to annotate novel variants will also need to have a local installation of the popular command-line software 
