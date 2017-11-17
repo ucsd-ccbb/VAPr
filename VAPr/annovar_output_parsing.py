@@ -32,7 +32,9 @@ class AnnovarTxtParser(object):
     EXONICFUNC_KNOWNGENE_HEADER = 'exonicfunc_knowngene'
     SCORE_KEY = "Score"
     RAW_CHR_MT_VAL = "chrM"
+    RAW_CHR_MT_SUFFIX_VAL = RAW_CHR_MT_VAL.replace(CHR_HEADER, "")
     STANDARDIZED_CHR_MT_VAL = "chrMT"
+    STANDARDIZED_CHR_MT_SUFFIX_VAL = STANDARDIZED_CHR_MT_VAL.replace(CHR_HEADER, "")
 
     _ANNOVAR_OUTPUT_COLS = [CHR_HEADER,
                            START_HEADER,

@@ -78,11 +78,11 @@ def _get_hgvs_ids_from_vcf(vcf_file_obj, chunk_index, chunk_size):
         hgvs_id = myvariant.format_hgvs(record.CHROM, record.POS, record.REF, str(record.ALT[0]))
 
         # ensure syntax consistency for chromosome M variants
-        if 'M' in hgvs_id:
+        if AnnovarTxtParser.RAW_CHR_MT_SUFFIX_VAL in hgvs_id:
             one = hgvs_id.split(':')[0]
             two = hgvs_id.split(':')[1]
-            if 'MT' not in one:
-                one = 'chrMT'
+            if AnnovarTxtParser.STANDARDIZED_CHR_MT_SUFFIX_VAL not in one:
+                one = AnnovarTxtParser.STANDARDIZED_CHR_MT_VAL
                 hgvs_id = "".join([one, ':', two])
 
         hgvs_ids.append(hgvs_id)
