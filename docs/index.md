@@ -1,25 +1,23 @@
 # Welcome to VAPr's Documentation
 
 
-VAPr (Variant Annotation and PRioritization package) package is aimed at providing a way of retrieving variant information 
+VAPr (Variant Analysis and PRioritization) is aimed at providing a way of retrieving variant information 
  using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). 
- In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL 
+ It is suited for bioinformaticians interested in aggregating variant information into a single NoSQL 
  database (MongoDB at the moment).  
  
-The package provides a high-level python API to perform batch annotation jobs [efficiently](link to parallelism), alongside 
- a powerful set of [querying and filtering protocols](FILTERS). 
+The package provides a high-level Python API to perform batch annotation jobs efficiently, alongside 
+ a powerful set of [querying and filtering protocols](#filt). 
  
-This documentation is aimed at exposing the main methods available, and how they work from a user perspective. To better understand
-what happens under the hood, we advise the user reading the source code and the docstrings provided. There 
-is quite a bit of information there.
+This documentation exposes the main methods available, and how they work from a user perspective. To better understand
+what happens under the hood, we advise the user to read the source code and the docstrings provided. 
 
 ## Authors
-
-* **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
-* **Adam Mark, M.S.** (a1mark@ucsd.edu)
 * **Amanda Birmingham** (abirmingham@ucsd.edu) 
-* **Guorong Xu, Ph.D** 
-* **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
+* **Adam Mark, M.S.** (a1mark@ucsd.edu)
+* **Carlo Mazzaferro** 
+* **Guorong Xu, Ph.D.** 
+* **Kathleen Fisch, Ph.D.** (kfisch@ucsd.edu)
 
 ## License
 
@@ -47,7 +45,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <a id='getting_started'></a>
 ## Getting started
 
-These instructions will get you a copy of the package up and running on your local machine, and will enable you to run annotation jobs 
+These instructions will get a copy of the package up and running on your local machine, and will enable you to run annotation jobs 
  on any number of vcf files while storing the data in MongoDB. See the [workflow](#workflow) 
 
 <a id='setup'></a>
@@ -61,7 +59,7 @@ These instructions will get you a copy of the package up and running on your loc
 
 #### Python 3 and MongoDB
 
-VAPr is written in Python and stores variant annotations in NoSQL database, using a locally-installed instance of MongoDB.
+VAPr is written in Python and stores variant annotations in a NoSQL database, using a locally-installed instance of MongoDB.
   If you wish to run the Jupyter notebooks provided with VAPr locally, it is also necessary to have a local Jupyter 
   notebook server installed. To set up these requirements in your machine's default environment using `conda`, run the 
   following command:
@@ -118,13 +116,12 @@ Tabix and bgzip binaries are available through the HTSlib project:
 Refer [here](https://github.com/samtools/htslib/blob/develop/INSTALL) for installation debugging.
 
 ### ANNOVAR
-(It is possible to proceed without installing ANNOVAR. In that case, the variants that will be annotated and sent to 
-Mongo are the ones found in MyVariant.info. In that case, users can skip the next steps and go straight to the section 
+(It is possible to proceed without installing ANNOVAR. Variants will only be annotated with MyVariant.info. In that case, users can skip the next steps and go straight to the section 
 **Known Variant Annotation and Storage**)
 
 Users who wish to annotate novel variants will also need to have a local installation of the popular command-line software 
 ANNOVAR([1](#Citations)), which VAPr wraps with a Python interface.  If you use ANNOVAR's functionality through VAPr, 
-please remember to cite the ANNOVAR publication (see #1 in [Citations](#Citations))!
+please remember to cite the ANNOVAR publication (see #1 in [Citations](#Citations)).
 
 The base ANNOVAR program must be installed by each user individually, since its license agreement does not permit 
 redistribution.  Please visit the ANNOVAR download form [here](http://www.openbioinformatics.org/annovar/annovar_download_form.php), 
@@ -254,7 +251,7 @@ _Optional_:
 
 #### `annotate`
 
-`annotate()`: this requires running Annovar beforehand, and will kick-start the main functionality
+`annotate()`: this requires running Annovar, and will kick-start the main functionality
 of this package. Namely, it will collect all the variant data from Annovar annotations, combine it with data coming
 from MyVariant.info, and parse it to MongoDB, in the database and collection specified in `project_data`.
 
