@@ -49,37 +49,28 @@ class TestVaprDataset(unittest.TestCase):
         cls._db_name = "queries_test"
         cls._collection_name = "collect"
 
-    def test__construct_sample_ids_list(self):
-        self.fail("test not implemented")
-
     def test__write_annotated_vcf(self):
         self.fail("test not implemented")
 
-    def test_rare_deleterious_variants(self):
-        test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
-        test_dataset._mongo_db_collection.delete_many({})
-
-        test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        rdv = test_dataset.get_rare_deleterious_variants()
-        self.assertEqual(rdv[0]['samples']['sample_id'], self.var1['samples']['sample_id'])
-
-    def test_known_disease_variants_all_samples(self):
-        test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
-        test_dataset._mongo_db_collection.delete_many({})
-
-        test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        kdv = test_dataset.get_known_disease_variants()
-        self.assertListEqual([var['hgvs_id'] for var in kdv], [self.var1['hgvs_id'], self.var2['hgvs_id']])
-
-    def test_known_disease_variants_specific_samples(self):
+    def test__get_filtered_variants_by_sample(self):
         self.fail("test not implemented")
 
+    def test__write_annotated_csv(self):
+        self.fail("test not implemented")
+
+    def test__warn_if_no_output_true(self):
+        self.fail("test not implemented")
+
+    def test__warn_if_no_output_false(self):
+        self.fail("test not implemented")
+
+    def test_de_novo_variants(self):
         test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
         test_dataset._mongo_db_collection.delete_many({})
 
         test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        kdv = test_dataset.get_known_disease_variants()
-        self.assertListEqual([var['hgvs_id'] for var in kdv], [self.var1['hgvs_id'], self.var2['hgvs_id']])
+        dnv = test_dataset.get_de_novo_variants("sample1", "sample2", "sample3")
+        self.assertListEqual([var['hgvs_id'] for var in dnv], [self.var1['hgvs_id']])
 
     def test_deleterious_compound_heterozygote_variants_all_samples(self):
         test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
@@ -99,13 +90,41 @@ class TestVaprDataset(unittest.TestCase):
         dch = test_dataset.get_deleterious_compound_heterozygote_variants()
         self.assertListEqual([var['hgvs_id'] for var in dch], [self.var3['hgvs_id']])
 
-    def test_de_novo_variants(self):
+    def test_known_disease_variants_all_samples(self):
         test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
         test_dataset._mongo_db_collection.delete_many({})
 
         test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        dnv = test_dataset.get_de_novo_variants("sample1", "sample2", "sample3")
-        self.assertListEqual([var['hgvs_id'] for var in dnv], [self.var1['hgvs_id']])
+        kdv = test_dataset.get_known_disease_variants()
+        self.assertListEqual([var['hgvs_id'] for var in kdv], [self.var1['hgvs_id'], self.var2['hgvs_id']])
+
+    def test_known_disease_variants_specific_samples(self):
+        self.fail("test not implemented")
+
+        test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
+        test_dataset._mongo_db_collection.delete_many({})
+
+        test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
+        kdv = test_dataset.get_known_disease_variants()
+        self.assertListEqual([var['hgvs_id'] for var in kdv], [self.var1['hgvs_id'], self.var2['hgvs_id']])
+
+    def test_rare_deleterious_variants_all_samples(self):
+        test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
+        test_dataset._mongo_db_collection.delete_many({})
+
+        test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
+        rdv = test_dataset.get_rare_deleterious_variants()
+        self.assertEqual(rdv[0]['samples']['sample_id'], self.var1['samples']['sample_id'])
+
+    def test_rare_deleterious_variants_specific_samples(self):
+        self.fail("test not implemented")
+
+        test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
+        test_dataset._mongo_db_collection.delete_many({})
+
+        test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
+        rdv = test_dataset.get_rare_deleterious_variants()
+        self.assertEqual(rdv[0]['samples']['sample_id'], self.var1['samples']['sample_id'])
 
     def test_get_custom_filtered_variants(self):
         self.fail("test not implemented")
@@ -149,11 +168,9 @@ class TestVaprDataset(unittest.TestCase):
     def test_write_filtered_annotated_vcf(self):
         self.fail("test not implemented")
 
-    def test__warn_if_no_output_true(self):
+    def test_write_unfiltered_annotated_csvs_per_sample(self):
         self.fail("test not implemented")
 
-    def test__warn_if_no_output_false(self):
-        self.fail("test not implemented")
 
 
 class TestVaprAnnotator(unittest.TestCase):
@@ -248,3 +265,24 @@ class TestVaprAnnotator(unittest.TestCase):
         self.assertEqual(ns_test.VaprAnnotator.HG38_VERSION, real_output)
 
     # endregion
+
+    def test__make_merged_vcf_fp(self):
+        self.fail("test not implemented")
+
+    def test__make_dataset_for_results(self):
+        self.fail("test not implemented")
+
+    def test__collect_annotations_and_store(self):
+        self.fail("test not implemented")
+
+    def test_annotate(self):
+        self.fail("test not implemented")
+
+    def test_annotate_lite(self):
+        self.fail("test not implemented")
+
+    def test_download_annovar_databases(self):
+        self.fail("test not implemented")
+
+    def test___init__(self):
+        self.fail("test not implemented")
