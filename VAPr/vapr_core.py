@@ -35,6 +35,14 @@ class VaprDataset(object):
     def full_name(self):
         return self._mongo_db_collection.full_name
 
+    @property
+    def is_empty(self):
+        return self._mongo_db_collection.count() == 0
+
+    @property
+    def num_records(self):
+        return self._mongo_db_collection.count()
+
     def get_rare_deleterious_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
                                                      sample_names_list)
@@ -52,7 +60,7 @@ class VaprDataset(object):
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_custom_filtered_variants(self, filter_dictionary):
-        if self._mongo_db_collection.count() == 0:
+        if self.is_empty:
             warnings.warn("Dataset '{0}' is empty, so all filters return an empty list.".format(self.full_name))
         return list(self._mongo_db_collection.find(filter_dictionary))
 
@@ -296,9 +304,8 @@ class VaprAnnotator(object):
     def _make_dataset_for_results(self, func_name, allow_adds):
         result = VaprDataset(self._mongo_db_name, self._mongo_collection_name, self._single_vcf_path)
 
-        distinct_ids_list = result.get_distinct_sample_ids()
-        if len(distinct_ids_list) > 0:
-            msg_prefix = "Dataset '{0}' already contains {1} records".format(result.full_name, len(distinct_ids_list))
+        if not result.is_empty:
+            msg_prefix = "Dataset '{0}' already contains {1} records".format(result.full_name, result.num_records)
             if allow_adds:
                 logging.info("{0}; adding to this dataset.".format(msg_prefix))
             else:
