@@ -25,7 +25,7 @@ class AnnovarWrapper(object):
 
     @classmethod
     def _get_annovar_dbs_to_use_for_build_version(cls, genome_build_version):
-        # TODO: I'm not happy about having these strings here; they should be symbolic constants
+        # TODO: someday: refactor these strings--they should be the symbolic constants curr defined in VaprAnnotator
         if genome_build_version == 'hg19':
             databases = cls.hg_19_databases
         elif genome_build_version == 'hg38':
@@ -39,7 +39,7 @@ class AnnovarWrapper(object):
         self._HUMANDB_FOLDER_NAME = "/humandb/"
         self._DOWN_DD = '-webfrom annovar'
 
-        # TODO: Pull out string keys into symbolic constants
+        # TODO: someday: pull out string keys into symbolic constants
         self._ANNOVAR_DB_IS_HOSTED_BY_ANNOVAR = OrderedDict({'knownGene': True,
                                                              # 'tfbsConsSites': False,
                                                              # 'cytoBand': False,
@@ -115,7 +115,7 @@ class AnnovarWrapper(object):
         """Concatenate command string arguments for Annovar download database jobs"""
 
         command_list = []
-        # TODO: someday: refactor to remove duplicated command components :(
+        # TODO: someday: refactor to remove duplicated command components
         for annovar_db_name in self._annovar_dbs_to_use:
             if self._ANNOVAR_DB_IS_HOSTED_BY_ANNOVAR[annovar_db_name]:
                 command_list.append(" ".join(
