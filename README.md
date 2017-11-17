@@ -42,8 +42,12 @@ VAPr was developed to simplify the steps required to get mutation data from a VC
 The package can also be installed and used without having to download ANNOVAR. In that case, variant data can be 
 retrieved solely by MyVariant.info and rapidly parsed to the MongoDB instance. 
 
+
 <a id='datamodels'></a>
 ### Data Models
+The annotation process identifies every unique variant in the union of variants found for the input samples; it then submits batches (of a user-specifiable size) of variant ids to MyVariant.info and stores the resulting annotation information to the local MongoDB.  Subsequent filtering and output of the resulting annotations is done against the MongoDB rather than via additional calls to MyVariant.info, allowing the user to investigate multiple different filtering strategies on a given annotation run without additional overhead.  Note that, by design, each run of annotate() performs new annotation calls to MyVariant.info rather than attempting to find potentially relevant past annotations in the MongoDB; this is because MyVariant.info is continually updated live, and we anticipate that users will want to receive the latest annotations each time they choose to annotate, rather than potentially “stale” annotations from past runs.
+
+
 Intuitively, variant data could be stored in SQL-like databases, since annotation files are usually produced in VCF or
 CSV formats. However, a different approach may be more fruitful. As explained on our paper (currently under review), 
 the abundance and diversity of genomic variant data causes SQL schemas to perform poorly for variant storage and querying. 
