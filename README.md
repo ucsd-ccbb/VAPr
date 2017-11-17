@@ -27,8 +27,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   3.3. [Core Methods](#core)  
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Annovar](#anno)   
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Annotation](#annotation)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Available Filters](#filts)  
+    &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)   
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Output Files](#write)  
 
 <a id='background'></a>
