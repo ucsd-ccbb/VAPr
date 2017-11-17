@@ -7,6 +7,14 @@ import unittest
 import VAPr.vcf_merging as ns_test
 
 
+def help_get_test_file_info():
+    base_dir = os.getcwd()
+    test_file_dir = os.path.join(base_dir, 'test_files/test_input_dir/G1000')
+    test_bgzipped_fps = [os.path.join(test_file_dir, "HG00096.vcf.gz"),
+                             os.path.join(test_file_dir, "HG00097.vcf.gz")]
+    return test_file_dir, test_bgzipped_fps
+
+
 class TestFunctions(unittest.TestCase):
     _HG00096_VCF_CONTENTS = """##fileformat=VCFv4.1
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -550,10 +558,7 @@ class TestFunctions(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        base_dir = os.getcwd()
-        cls.test_file_dir = os.path.join(base_dir, 'test_files/test_input_dir/G1000')
-        cls.test_bgzipped_fps = [os.path.join(cls.test_file_dir, "HG00096.vcf.gz"),
-                                 os.path.join(cls.test_file_dir, "HG00097.vcf.gz")]
+        cls.test_file_dir, cls.test_bgzipped_fps = help_get_test_file_info()
 
     # region _get_vcf_file_paths_list_in_directory tests
     def test__get_vcf_file_paths_list_in_directory(self):
