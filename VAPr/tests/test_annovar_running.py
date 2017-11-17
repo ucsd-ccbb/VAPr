@@ -5,17 +5,6 @@ import unittest
 # project-specific libraries
 import VAPr.annovar_running as ns_test
 
-# TODO: Figure out how/whether to use this
-# class TestableAnnovarWrapper(ns_test.AnnovarWrapper):
-#     _test_file_num = 0
-#
-#     def _build_table_annovar_command_str(self, vcf_path, csv_path, vcf_is_multisample=False):
-#         self._test_file_num += 1
-#         temp_filename = "testable_annovar_wrapper_file_{0}.txt".format(self._test_file_num)
-#         temp_filepath = os.path.join(csv_path, temp_filename)
-#         cmd_string = "echo hello > {0}".format(temp_filepath)
-#         return cmd_string
-
 
 class TestAnnovarWrapper(unittest.TestCase):
     @classmethod
@@ -39,12 +28,6 @@ class TestAnnovarWrapper(unittest.TestCase):
 
     # endregion
 
-    def test_download_databases(self):
-        self.fail("test not implemented")
-
-    def test_run_annovar(self):
-        self.fail("test not implemented")
-
     def test__build_table_annovar_command_str(self):
         expected_output = ('perl {0}/table_annovar.pl /my/vcf/dir/X45.raw.22.vcf {0}/humandb/ --buildver hg19 '
                            '-out /my/output/dir -remove -protocol knownGene,1000g2015aug_all -operation g,f '
@@ -60,9 +43,3 @@ class TestAnnovarWrapper(unittest.TestCase):
         wrapper = ns_test.AnnovarWrapper(self._annovar_install_path, self._genome_build_version, ['knownGene'])
         real_output = wrapper._build_annovar_database_download_command_str()
         self.assertListEqual(expected_output, real_output)
-
-    # TODO: Figure out with Adam what the correct behavior here *is*
-    def test__build_annovar_database_download_command_str_empty(self):
-        wrapper = ns_test.AnnovarWrapper(self._annovar_install_path, self._genome_build_version, [])
-        real_output = wrapper._build_annovar_database_download_command_str()
-        self.assertListEqual([], real_output)

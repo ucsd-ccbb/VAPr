@@ -438,9 +438,3 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
             ns_test._merge_annovar_and_myvariant_dicts(myvariantinfo_input_dict, annovar_input_dict)
 
     # endregion
-
-    def test__store_annotations_to_db(self):
-        self.fail("test not implemented")
-
-    def test_collect_chunk_annotations_and_store(self):
-        self.fail("test not implemented")
