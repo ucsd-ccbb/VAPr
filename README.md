@@ -375,6 +375,12 @@ This will return a list of dictionaries, where each dictionary is contains varia
 
 #### Filter #1: Rare Deleterious Variants
 
+ - criteria 1: 1000 Genomes (ALL) allele frequency (Annovar) < 0.05 or info not available
+ - criteria 2: ESP6500 allele frequency (MyVariant.info - CADD) < 0.05 or info not available
+ - criteria 3: cosmic70 (MyVariant.info) information is present
+ - criteria 4: Func_knownGene (Annovar) is exonic, splicing, or both
+ - criteria 5: ExonicFunc_knownGene (Annovar) is not "synonymous SNV"
+
 `get_rare_deleterious_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
@@ -390,6 +396,8 @@ _Optional_:
  
 #### Filter #2: Known Disease Variants
 
+- criteria: cosmic70 (MyVariant.info) information is present or ClinVar data is present and clinical significance is not Benign or Likely Benign
+
 `get_known_disease_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
@@ -404,6 +412,9 @@ _Optional_:
 
 #### Filter #3: Deleterious Compound Heterozygous Variants
 
+- criteria 1: genotype_subclass_by_class (VAPr) is compound heterozygous
+- criteria 2: CADD phred score (MyVariant.info - CADD) > 10
+
 `get_deleterious_compound_heterozygous_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
@@ -417,6 +428,9 @@ _Optional_:
   not used, all variants are queried (that is, variants from all sample sin your collection). Default: `None`
 
 #### Filter #4: De novo Variants
+
+- criteria 1: Variant present in proband
+- criteria 2: Variant not present in either ancestor-1 or ancestor-2
 
 `get_de_novo_variants()`: this will retrieve all the variants in your collection matching the thresholds 
 specified in the README.md file. 
