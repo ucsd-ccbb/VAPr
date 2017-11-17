@@ -215,6 +215,17 @@ class VaprAnnotator(object):
 
         return result
 
+    @classmethod
+    def _make_merged_vcf(cls, input_dir, output_dir, analysis_name, design_file, vcfs_gzipped):
+        vcf_file_paths_list = None
+        if design_file is not None:
+            design_df = pandas.read_csv(design_file)
+            vcf_file_paths_list = design_df[cls.SAMPLE_NAMES_KEY].tolist()
+
+        result = VAPr.vcf_merging.merge_vcfs(input_dir, output_dir, analysis_name,
+                                             vcf_file_paths_list, vcfs_gzipped)
+        return result
+
     def __init__(self, input_dir, output_dir, mongo_db_name, mongo_collection_name, annovar_install_path=None,
                  design_file=None, build_ver=None, vcfs_gzipped=False):
 
@@ -229,7 +240,8 @@ class VaprAnnotator(object):
 
         self._genome_build_version = self._get_validated_genome_version(build_ver)
 
-        self._single_vcf_path = self._make_merged_vcf_fp()
+        self._single_vcf_path = self._make_merged_vcf(self._input_dir, self._output_dir, self._analysis_name,
+                                                      self._design_file, self._vcfs_gzipped)
         self._output_basename = os.path.splitext(os.path.basename(self._single_vcf_path))[0]
         self._sample_names_list = vcf.Reader(open(self._single_vcf_path, 'r')).samples
 
@@ -269,16 +281,6 @@ class VaprAnnotator(object):
                                             sample_names_list=self._sample_names_list, verbose_level=verbose_level)
         return result
 
-    def _make_merged_vcf_fp(self):
-        vcf_file_paths_list = None
-        if self._design_file is not None:
-            design_df = pandas.read_csv(self._design_file)
-            vcf_file_paths_list = design_df[self.SAMPLE_NAMES_KEY].tolist()
-
-        result = VAPr.vcf_merging.merge_vcfs(self._input_dir, self._output_dir, self._analysis_name,
-                                             vcf_file_paths_list, self._vcfs_gzipped)
-        return result
-
     def _make_dataset_for_results(self, func_name, allow_adds):
         result = VaprDataset(self._mongo_db_name, self._mongo_collection_name, self._single_vcf_path)
 
@@ -288,10 +290,10 @@ class VaprAnnotator(object):
             if allow_adds:
                 logging.info("{0}; adding to this dataset.".format(msg_prefix))
             else:
-                error_msg = "{0}, which is disallowed by default.  Either create a VaprAnnotator with a new " \
-                            "collection name, clear your existing collection manually, or (if you definitely wish to " \
-                            "add to an existing dataset), rerun {1} with the 'allow_adds' parameter set to " \
-                            "True".format(msg_prefix, func_name)
+                error_msg = "{0}, but writing into an already-filled dataset is disallowed by default.  " \
+                            "Either create a VaprAnnotator with a new collection name, clear your existing collection " \
+                            "manually, or (if you definitely wish to add to an existing dataset), rerun {1} with the " \
+                            "'allow_adds' parameter set to True.".format(msg_prefix, func_name)
                 raise ValueError(error_msg)
 
         return result
