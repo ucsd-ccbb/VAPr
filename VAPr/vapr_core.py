@@ -110,7 +110,6 @@ class VaprDataset(object):
         filter_dict = filter_builder_func(sample_names)
         return self.get_custom_filtered_variants(filter_dict)
 
-    # TODO: I'd like to do a bit more work on this one; not sure it is in the right place
     def _write_annotated_vcf(self, filtered_variants_dicts_list, vcf_output_path, info_out=True):
         """
         :param vcf_input_path: template vcf file (initial vcf from which a new one will be created)
@@ -119,8 +118,10 @@ class VaprDataset(object):
         :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
         """
 
-        # TODO: check if merged vcf path is None; if so, throw error
-        # TODO: Must bgzip and index merged vcf path  before writing; use method from vcf_merging
+        if self._merged_vcf_path is None:
+            raise ValueError("Original vcf file (to be used as template for output vcf) is not set.")
+
+        vcf_template_path = VAPr.vcf_merging.bgzip_and_index_vcf(self._merged_vcf_path)
 
         chr_vars = []
         location_vars_ant = []
@@ -134,7 +135,7 @@ class VaprDataset(object):
             location_vars_ant.append(filtered_variants_dicts_list[i]['start'] + 1)
             location_vars_pos.append(filtered_variants_dicts_list[i]['start'] - 1)
 
-        vcf_reader = vcf.Reader(filename=self._merged_vcf_path)
+        vcf_reader = vcf.Reader(filename=vcf_template_path)
         vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
 
         for i in range(0, len(chr_vars)):
@@ -213,7 +214,6 @@ class VaprAnnotator(object):
 
         return result
 
-    # TODO: Decide on what tests to write for top-level functions
     def __init__(self, input_dir, output_dir, mongo_db_name, mongo_collection_name, annovar_install_path=None,
                  design_file=None, build_ver=None, vcfs_gzipped=False):
 
@@ -294,7 +294,6 @@ class VaprAnnotator(object):
                 raise ValueError(error_msg)
 
         return result
-
 
     # TODO: someday: extra_data from design file needs to come back in here
     def _collect_annotations_and_store(self, file_path, chunk_size, num_processes, sample_names_list=None,
