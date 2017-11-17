@@ -49,13 +49,15 @@ def merge_vcfs(input_dir, output_dir, project_name, raw_vcf_path_list=None, vcfs
         single_vcf_path = os.path.join(output_dir, project_name + VCF_EXTENSION)
         _merge_bgzipped_indexed_vcfs(bgzipped_vcf_path_list, single_vcf_path)
     else:
-        single_vcf_path = os.path.join(output_dir, project_name + VCF_EXTENSION)
+        file_name = os.path.basename(raw_vcf_path_list[0])  # w/o path
+        single_vcf_path = os.path.join(output_dir, file_name)
         try:
+            # move to output dir with same file name
             shutil.copyfile(raw_vcf_path_list[0], single_vcf_path)
         except shutil.SameFileError:
-            # I ran into a case where there was a single input file, AND it was already named after the project, AND
-            # the input and output dirs were the same so it was already where it needed to be.  In this case, an
-            # error is thrown because you can't copy a file to itself, but that's cool, so just ignore it.
+            # I ran into a case where there was a single input file, AND the input and output dirs were the same so it
+            # was already where it needed to be.  In this case, an error is thrown because you can't copy a file to
+            # itself, but that's cool, so just ignore it.
             pass
 
     return single_vcf_path

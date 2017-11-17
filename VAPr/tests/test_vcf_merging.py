@@ -3,6 +3,9 @@ import os
 import tempfile
 import unittest
 
+# third-party libraries
+import vcf
+
 # project-specific libraries
 import VAPr.vcf_merging as ns_test
 
@@ -659,6 +662,9 @@ class TestFunctions(unittest.TestCase):
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
+        with open(real_output_vcf_fp, 'r') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096', 'HG00097'], sorted(sample_names_list))
 
     def test_merge_vcfs_multiple_by_dir_bgzipped(self):
         # NB: This method works on *already-bgzipped-and-indexed* vcf files, which is why I'm depending on
@@ -676,6 +682,9 @@ class TestFunctions(unittest.TestCase):
         # programs and I am going to trust that outside program does its job as advertised.
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
         self.assertTrue(os.stat(real_output_vcf_fp).st_size > 0)  # file size > 0
+        with open(real_output_vcf_fp, 'r') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096', 'HG00097'], sorted(sample_names_list))
 
     def test_merge_vcfs_multiple_by_list(self):
         temp_dir = tempfile.TemporaryDirectory()
@@ -697,6 +706,9 @@ class TestFunctions(unittest.TestCase):
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
+        with open(real_output_vcf_fp, 'r') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096', 'HG00097'], sorted(sample_names_list))
 
     def test_merge_vcfs_single_by_dir(self):
         temp_dir = tempfile.TemporaryDirectory()
@@ -705,7 +717,7 @@ class TestFunctions(unittest.TestCase):
         temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
-        expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
+        expected_output_vcf_fp = os.path.join(temp_dir.name, os.path.basename(temp_HG00096_vcf_file.name))
 
         # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when there is just one file
         real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy")
@@ -715,6 +727,9 @@ class TestFunctions(unittest.TestCase):
         with open(real_output_vcf_fp, 'r') as file_handle:
             real_output_contents = file_handle.read()
         self.assertEqual(self.HG00096_VCF_CONTENTS, real_output_contents)
+        with open(real_output_vcf_fp, 'r') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096'], sorted(sample_names_list))
 
     def test_merge_vcfs_single_by_list(self):
         temp_dir = tempfile.TemporaryDirectory()
@@ -723,7 +738,7 @@ class TestFunctions(unittest.TestCase):
         temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
-        expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
+        expected_output_vcf_fp = os.path.join(temp_dir.name, os.path.basename(temp_HG00096_vcf_file.name))
 
         # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
         real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy", [temp_HG00096_vcf_file.name])
@@ -733,6 +748,27 @@ class TestFunctions(unittest.TestCase):
         with open(real_output_vcf_fp, 'r') as file_handle:
             real_output_contents = file_handle.read()
         self.assertEqual(self.HG00096_VCF_CONTENTS, real_output_contents)
+        with open(real_output_vcf_fp, 'r') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096'], sorted(sample_names_list))
+
+    def test_merge_vcfs_single_already_bgzipped(self):
+        # NB: This method works on *already-bgzipped-and-indexed* vcf files, which is why I'm depending on
+        # pre-provided test files rather than making my own temporary test files.
+
+        # put the output file in a temporary directory so it will be automatically cleaned up when test finishes
+        temp_dir = tempfile.TemporaryDirectory()
+        expected_output_vcf_fp = os.path.join(temp_dir.name, os.path.basename(self.test_bgzipped_fps[0]))
+
+        # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
+        real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, "tempy", [self.test_bgzipped_fps[0]])
+
+        self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
+        self.assertTrue(os.path.isfile(real_output_vcf_fp))
+        # NB: open with rb, not r, as this is a binary file
+        with open(real_output_vcf_fp, 'rb') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096'], sorted(sample_names_list))
 
     def test_merge_vcfs_single_no_copy_needed(self):
         temp_dir = tempfile.TemporaryDirectory()
@@ -750,6 +786,9 @@ class TestFunctions(unittest.TestCase):
 
         self.assertEqual(expected_output_vcf_fp, real_output_vcf_fp)
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
+        with open(real_output_vcf_fp, 'r') as f:
+            sample_names_list = vcf.Reader(f).samples
+        self.assertListEqual(['HG00096'], sorted(sample_names_list))
 
 
     def test_merge_vcfs_by_dir_error_no_files_found_not_bgzipped(self):
