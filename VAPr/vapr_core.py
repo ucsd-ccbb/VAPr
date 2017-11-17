@@ -5,6 +5,7 @@ import logging
 import multiprocessing
 import os
 import pymongo
+import re
 import tqdm
 import warnings
 
@@ -17,6 +18,7 @@ import VAPr.vcf_merging
 import VAPr.annovar_running
 import VAPr.filtering
 import VAPr.chunk_processing
+from VAPr.annovar_output_parsing import AnnovarTxtParser
 
 
 class VaprDataset(object):
@@ -72,7 +74,10 @@ class VaprDataset(object):
     def get_variants_as_dataframe(self, filtered_variants=None):
         if filtered_variants is None:
             filtered_variants = self.get_all_variants()
-        return pandas.DataFrame(filtered_variants)
+        result = pandas.DataFrame(filtered_variants)
+        # remove the object id as it is different every time and internal to database
+        result.drop('_id', axis=1, inplace=True)
+        return result
 
     def write_unfiltered_annotated_csv(self, output_fp):
         all_variants = self.get_all_variants()
@@ -112,40 +117,36 @@ class VaprDataset(object):
 
     def _write_annotated_vcf(self, filtered_variants_dicts_list, vcf_output_path, info_out=True):
         """
-        :param vcf_input_path: template vcf file (initial vcf from which a new one will be created)
-        :param vcf_output_path: name and filepath to where new vcf file will be written
         :param filtered_variants_dicts_list: list of dictionaries (one per variant) containing annotations
+        :param vcf_output_path: name and filepath to where new vcf file will be written
         :param info_out: if set to true (Default), will write all annotation data to INFO column, else, it won't.
         """
 
         if self._merged_vcf_path is None:
             raise ValueError("Original vcf file (to be used as template for output vcf) is not set.")
 
+        # match at least one character of anything but a : followed by :g. followed by at least one digit followed
+        # by at least one NOT digit followed by the end of the line
+        hgvs_regex = r"^([^:]+):g\.(\d+)[^\d].*$"
+
         vcf_template_path = VAPr.vcf_merging.bgzip_and_index_vcf(self._merged_vcf_path)
-
-        chr_vars = []
-        location_vars_ant = []
-        location_vars_pos = []
-
-        for i in range(0, len(filtered_variants_dicts_list)):
-            if filtered_variants_dicts_list[i]['chr'] == 'chrMT':
-                chr_vars.append('chrM')
-            else:
-                chr_vars.append(filtered_variants_dicts_list[i]['chr'])
-            location_vars_ant.append(filtered_variants_dicts_list[i]['start'] + 1)
-            location_vars_pos.append(filtered_variants_dicts_list[i]['start'] - 1)
-
         vcf_reader = vcf.Reader(filename=vcf_template_path)
         vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
 
-        for i in range(0, len(chr_vars)):
-            for record in vcf_reader.fetch(chr_vars[i], location_vars_pos[i], location_vars_ant[i]):
-                if info_out is True:
-                    record.INFO.update(filtered_variants_dicts_list[i])
-                    vcf_writer.write_record(record)
-                else:
-                    vcf_writer.write_record(record)
+        for curr_record_dict in filtered_variants_dicts_list:
+            curr_hgvs_id = curr_record_dict["hgvs_id"]
+            match_obj = re.match(hgvs_regex, curr_hgvs_id)
+            curr_chrom = match_obj.group(1).replace(AnnovarTxtParser.CHR_HEADER, "")
+            if curr_chrom == AnnovarTxtParser.STANDARDIZED_CHR_MT_VAL:
+                curr_chrom = AnnovarTxtParser.RAW_CHR_MT_VAL
+            curr_start = int(match_obj.group(2))
 
+            for record in vcf_reader.fetch(curr_chrom, curr_start - 1, curr_start + 1):
+                if info_out is True:
+                    record.INFO.update(curr_record_dict)
+                vcf_writer.write_record(record)
+
+        vcf_writer.close()
         self._warn_if_no_output("write_unfiltered_annotated_csvs_per_sample", filtered_variants_dicts_list)
 
     def _warn_if_no_output(self, output_func_name, items_list):
