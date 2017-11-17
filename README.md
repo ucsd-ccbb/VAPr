@@ -128,7 +128,7 @@ These instructions will get you a copy of the package up and running on your loc
 <a id='setup'></a>
 ### Prerequisites
 
-- MongoDB Community Edition. [Instsallation instructions](https://goo.gl/TpBkcb)
+- MongoDB Community Edition. [Installation instructions](https://goo.gl/TpBkcb)
 - Python (2.7 and 3.5 currently supported and tested)
 - [BCFtools](http://www.htslib.org/download/)
 - [Tabix](http://www.htslib.org/download/)
