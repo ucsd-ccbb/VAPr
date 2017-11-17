@@ -7,7 +7,7 @@ import VAPr.chunk_processing as ns_test
 import VAPr.tests.test_annovar_output_parsing as ns_test_help
 
 
-# TODO: Discuss with Adam: all tests involving myvariant.info are inherently fragile given myvariant.info's live updates
+# TODO: someday: determine how to harden tests against myvariant.info's live updates that change its output
 
 class TestAnnotationJobParamsIndices(unittest.TestCase):
     def test_get_num_possible_indices(self):
@@ -298,12 +298,14 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
                 {'sample_id': 'test_sample1', 'genotype': '1/1', 'genotype_subclass_by_class': {'homozygous': 'alt'},
                  'filter_passing_reads_count': 2, 'genotype_likelihoods': [90.0, 6.0, 0.0], 'AD': [0, 2]}],
              'dbsnp': {'_license': 'https://goo.gl/Ztr5rl', 'rsid': 'rs370482130'},
-             'wellderly': {'_license': 'https://goo.gl/e8OO17', 'alleles': [{'freq': 0.0625}, {'freq': 0.9375}]}},
+             'wellderly': {'_license': 'https://goo.gl/e8OO17', 'alleles': [
+                 {'allele': 'C', 'freq': 0.0625}, {'allele': 'T', 'freq': 0.9375}]}},
             {'chr': 'chrMT', 'start': 150, 'end': 150, 'ref': 'T', 'alt': 'C', 'func_knowngene': 'upstream;downstream',
              'gene_knowngene': 'JB137816;DQ582201', 'hgvs_id': 'chrMT:g.150T>C', 'samples': [
                 {'sample_id': 'test_sample2', 'genotype': '1/1', 'genotype_subclass_by_class': {'homozygous': 'alt'},
                  'filter_passing_reads_count': 2, 'genotype_likelihoods': [90.0, 6.0, 0.0], 'AD': [0, 2]}],
-             'wellderly': {'_license': 'https://goo.gl/e8OO17', 'alleles': [{'freq': 0.83}, {'freq': 0.17}]}},
+             'wellderly': {'_license': 'https://goo.gl/e8OO17', 'alleles': [
+                 {'allele': 'C', 'freq': 0.83}, {'allele': 'T', 'freq': 0.17}]}},
             {'chr': 'chr1', 'start': 195, 'end': 195, 'ref': 'C', 'alt': 'T', 'func_knowngene': 'upstream;downstream',
              'gene_knowngene': 'JB137816;DQ582201', 'hgvs_id': 'chr1:g.195C>T', 'samples': [
                 {'sample_id': 'test_sample1', 'genotype': '1/1', 'genotype_subclass_by_class': {'homozygous': 'alt'},
@@ -313,7 +315,8 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
              'notfound': True},
             {'chr': 'chrMT', 'start': 410, 'end': 410, 'ref': 'A', 'alt': 'T', 'func_knowngene': 'upstream',
              'gene_knowngene': 'DQ582201,JB137816', 'hgvs_id': 'chrMT:g.410A>T', 'samples': [],
-             'wellderly': {'_license': 'https://goo.gl/e8OO17', 'alleles': [{'freq': 0.0}, {'freq': 1.0}]}}]
+             'wellderly': {'_license': 'https://goo.gl/e8OO17', 'alleles': [
+                 {'allele': 'A', 'freq': 0.0}, {'allele': 'T', 'freq': 1.0}]}}]
         real_output = ns_test._collect_chunk_annotations(input_params_tuple)
         self.assertListEqual(expected_output, real_output)
 
@@ -329,7 +332,8 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
                                      'phred': 0.603},
                             'dbsnp': {'_license': 'https://goo.gl/Ztr5rl', 'rsid': 'rs546169444'},
                             'wellderly': {'_license': 'https://goo.gl/e8OO17',
-                                          'alleles': [{'freq': 0.87}, {'freq': 0.13}]},
+                                          'alleles': [{'allele': 'A', 'freq': 0.87},
+                                                      {'allele': 'T', 'freq': 0.13}]},
                             'hgvs_id': 'chr1:g.14464A>T'}]
         real_output = ns_test._collect_chunk_annotations(input_params_tuple)
         self.assertListEqual(expected_output, real_output)
@@ -349,27 +353,23 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
 
     # region _get_myvariantinfo_annotations_dict tests
     def test__get_myvariantinfo_annotations_dict(self):
-        # TODO: Test for effect of verbose_level, genome build version?
+        # TODO: someday: test for effect of verbose_level, genome build version?  What effects are expected?
         input_hgvs_ids = ["chrMT:g.146T>C", "chr1:g.195C>T"]
         expected_output = [{'dbsnp': {'_license': 'https://goo.gl/Ztr5rl', 'rsid': 'rs370482130'},
                             'wellderly': {'_license': 'https://goo.gl/e8OO17',
-                                          'alleles': [{'freq': 0.0625}, {'freq': 0.9375}]},
+                                          'alleles': [{'allele': 'C', 'freq': 0.0625},
+                                                      {'allele': 'T', 'freq': 0.9375}]},
                             'hgvs_id': 'chrMT:g.146T>C'},
                            {'notfound': True, 'hgvs_id': 'chr1:g.195C>T'}]
         real_output = ns_test._get_myvariantinfo_annotations_dict(
             input_hgvs_ids, ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, verbose_level=0)
         self.assertListEqual(expected_output, real_output)
 
-    def test__get_myvariantinfo_annotations_dict_fatal_error_after_attempts(self):
-        # sending in a None value for the list of ids causes a ValueError that can't be recovered from
-        # TODO: Expand test to verify logging of the attempts
-        with self.assertRaises(ValueError):
-            ns_test._get_myvariantinfo_annotations_dict(
-                None, ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, verbose_level=0)
+    # NB: I have no good way to test the error-after-retry case as it is triggered by errors I can't easily fudge
+    # (like lack of internet connection).  I do not think testing it is worth the considerable mocking effort needed.
 
     def test__get_myvariantinfo_annotations_dict_fatal_error_immediately(self):
         # sending in a None value for the list of ids causes a ValueError that can't be recovered from
-        # TODO: Expand test to verify NO logging of multiple attempts?
         with self.assertRaises(ValueError):
             ns_test._get_myvariantinfo_annotations_dict(
                 None, ns_ann_project.VaprAnnotator.DEFAULT_GENOME_VERSION, verbose_level=0, num_failed_attempts=4)
@@ -438,3 +438,9 @@ M	15211	rs78601809	T	G	100	PASS	AC=1;AF=0.609026;AN=2;NS=2504;DP=32245;EAS_AF=0.
             ns_test._merge_annovar_and_myvariant_dicts(myvariantinfo_input_dict, annovar_input_dict)
 
     # endregion
+
+    def test__store_annotations_to_db(self):
+        self.fail("test not implemented")
+
+    def test_collect_chunk_annotations_and_store(self):
+        self.fail("test not implemented")

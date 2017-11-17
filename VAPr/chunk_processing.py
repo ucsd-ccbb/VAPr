@@ -90,6 +90,7 @@ def _get_hgvs_ids_from_vcf(vcf_file_obj, chunk_index, chunk_size):
     return hgvs_ids
 
 
+# TODO: someday: refactor myvariant fields into external file so easy to modify which are pulled
 def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, verbose_level, num_failed_attempts=0):
     """ Retrieve variants from MyVariant.info"""
 
@@ -119,8 +120,12 @@ def _get_myvariantinfo_annotations_dict(hgvs_ids_list, genome_build_version, ver
     try:
         myvariantinfo_dicts_list = mv.getvariants(hgvs_ids_list, verbose=int(be_verbose), as_dataframe=False,
                                                   fields=myvariant_fields, assembly=genome_build_version)
+    except ValueError as unrecoverable_error:
+        # If myvariant.info returned a value error, recalling with the same values won't help so error out now
+        raise unrecoverable_error
     except Exception as error:
-        # TODO:Try to get error code; errors in 500 family should probably retry, others not
+        # If we got something other than a value error, problem may be with internet connection or myvariant.info
+        # availability, so try again a couple of times just in case we can recover
         logging.info('Error: ' + str(error) + 'while fetching from MyVariant')
         num_failed_attempts += 1
         if num_failed_attempts < max_failed_attempts:
@@ -157,7 +162,7 @@ def _merge_annovar_and_myvariant_dicts(myvariantinfo_annotations_dict, annovar_a
     annovar_annotations_dict.update(myvariantinfo_annotations_dict)
     return annovar_annotations_dict
 
-# TODO: Decide what tests to write for this
+
 def _store_annotations_to_db(annotation_dicts_list, db_name, collection_name, client=None, num_failed_attempts=0):
     max_failed_attempts = 5
 
