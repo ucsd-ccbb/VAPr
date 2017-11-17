@@ -72,22 +72,22 @@ class TestVaprDataset(unittest.TestCase):
         dnv = test_dataset.get_de_novo_variants("sample1", "sample2", "sample3")
         self.assertListEqual([var['hgvs_id'] for var in dnv], [self.var1['hgvs_id']])
 
-    def test_deleterious_compound_heterozygote_variants_all_samples(self):
+    def test_deleterious_compound_heterozygous_variants_all_samples(self):
         test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
         test_dataset._mongo_db_collection.delete_many({})
 
         test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        dch = test_dataset.get_deleterious_compound_heterozygote_variants()
+        dch = test_dataset.get_deleterious_compound_heterozygous_variants()
         self.assertListEqual([var['hgvs_id'] for var in dch], [self.var3['hgvs_id']])
 
-    def test_deleterious_compound_heterozygote_variants_specific_samples(self):
+    def test_deleterious_compound_heterozygous_variants_specific_samples(self):
         self.fail("test not implemented")
 
         test_dataset = ns_test.VaprDataset(self._db_name, self._collection_name)
         test_dataset._mongo_db_collection.delete_many({})
 
         test_dataset._mongo_db_collection.insert_many([self.var1, self.var2, self.var3])
-        dch = test_dataset.get_deleterious_compound_heterozygote_variants()
+        dch = test_dataset.get_deleterious_compound_heterozygous_variants()
         self.assertListEqual([var['hgvs_id'] for var in dch], [self.var3['hgvs_id']])
 
     def test_known_disease_variants_all_samples(self):

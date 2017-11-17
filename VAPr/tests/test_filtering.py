@@ -127,7 +127,7 @@ class TestFunctions(unittest.TestCase):
                     {"cadd.phred": {"$gte": 10}}
                 ]
         }
-        real_output = ns_test.make_deleterious_compound_heterozygote_variants_filter()
+        real_output = ns_test.make_deleterious_compound_heterozygous_variants_filter()
         self.assertEqual(expected_output, real_output)
 
     def test_make_de_novo_variants_filter(self):

@@ -17,9 +17,9 @@ is quite a bit of information there.
 
 * **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
 * **Adam Mark, M.S.** (a1mark@ucsd.edu)
-* **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
-* **Amanda Birmingham, Ph.D** 
+* **Amanda Birmingham, B.A.** (abirmingham@ucsd.edu) 
 * **Guorong Xu, Ph.D** 
+* **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
 
 ## License
 
@@ -335,7 +335,7 @@ _Optional_:
 
 #### Filter #3: Deleterious Compound Heterozygous Variants
 
-`get_deleterious_compound_heterzygous_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
+`get_deleterious_compound_heterozygous_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
 **Args**: 
