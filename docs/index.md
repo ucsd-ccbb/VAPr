@@ -17,7 +17,7 @@ is quite a bit of information there.
 
 * **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
 * **Adam Mark, M.S.** (a1mark@ucsd.edu)
-* **Amanda Birmingham, B.A.** (abirmingham@ucsd.edu) 
+* **Amanda Birmingham** (abirmingham@ucsd.edu) 
 * **Guorong Xu, Ph.D** 
 * **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
 
