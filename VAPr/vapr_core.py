@@ -130,6 +130,11 @@ class VaprDataset(object):
         hgvs_regex = r"^([^:]+):g\.(\d+)[^\d].*$"
 
         vcf_template_path = VAPr.vcf_merging.bgzip_and_index_vcf(self._merged_vcf_path)
+        # This open is done using the filename rather than passing a file handle directly (as is done elsewhere)
+        # because compressed files must be opened with 'rb' while regular files must be opened with 'r';
+        # vcf.Reader will work this out for itself if you pass the file name and let it do the opening.
+        # The slight drawback here is that vcf.Reader doesn't clean up after itself well: it leaves its file
+        # handle open after use, causing a niggling ResourceWarning: unclosed file warning.
         vcf_reader = vcf.Reader(filename=vcf_template_path)
         vcf_writer = vcf.Writer(open(vcf_output_path, 'w'), vcf_reader)
 
@@ -243,7 +248,14 @@ class VaprAnnotator(object):
         self._single_vcf_path = self._make_merged_vcf(self._input_dir, self._output_dir, self._analysis_name,
                                                       self._design_file, self._vcfs_gzipped)
         self._output_basename = os.path.splitext(os.path.basename(self._single_vcf_path))[0]
-        self._sample_names_list = vcf.Reader(open(self._single_vcf_path, 'r')).samples
+
+        # This open is done using the filename rather than passing a file handle directly (as is done elsewhere)
+        # because compressed files must be opened with 'rb' while regular files must be opened with 'r';
+        # vcf.Reader will work this out for itself if you pass the file name and let it do the opening.
+        # The slight drawback here is that vcf.Reader doesn't clean up after itself well: it leaves its file
+        # handle open after use, causing a niggling ResourceWarning: unclosed file warning.
+        vcf_reader = vcf.Reader(filename=self._single_vcf_path)
+        self._sample_names_list = vcf_reader.samples
 
         # TODO: someday: put back the functionality for custom annovar dbs?
         self._annovar_wrapper = None

@@ -694,3 +694,17 @@ class TestVaprAnnotator(unittest.TestCase):
 
     # endregion
 
+    def test___init__single_bzipped_file(self):
+        test_file_dir, test_bgzipped_fps = ns_merge_test.help_get_test_file_info()
+        temp_dir = tempfile.TemporaryDirectory()
+
+        design_file_contents = """Sample_Names
+{0}
+        """.format(test_bgzipped_fps[0])
+        temp_design_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, delete=False)
+        temp_design_file.write(design_file_contents.encode('ascii'))
+        temp_design_file.close()  # but DON'T delete yet
+
+        test_annotator = ns_test.VaprAnnotator(test_file_dir, temp_dir.name, "test_db", "test_col",
+                                               design_file=temp_design_file.name)
+        self.assertListEqual(['HG00096'], test_annotator._sample_names_list)
