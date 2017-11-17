@@ -33,13 +33,13 @@ class VaprDataset(object):
     def full_name(self):
         return self._mongo_db_collection.full_name
 
-    def get_rare_deleterious_variants(self, specific_sample_names=None):
+    def get_rare_deleterious_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
-                                                     specific_sample_names)
+                                                     sample_names_list)
 
-    def get_known_disease_variants(self, specific_sample_names=None):
+    def get_known_disease_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_known_disease_variants_filter,
-                                                     specific_sample_names)
+                                                     sample_names_list)
 
     def get_deleterious_compound_heterozygous_variants(self, sample_names_list=None):
         return self._get_filtered_variants_by_sample(
