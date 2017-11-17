@@ -116,7 +116,7 @@ class TestFunctions(unittest.TestCase):
                     {'samples.sample_id': {"$in": ["testname1", "testname2"]}}
                 ]
         }
-        real_output = ns_test.make_deleterious_compound_heterozygote_variants_filter(["testname1", "testname2"])
+        real_output = ns_test.make_deleterious_compound_heterozygous_variants_filter(["testname1", "testname2"])
         self.assertEqual(expected_output, real_output)
 
     def test_make_deleterious_compound_heterozygote_variants_filter_wo_samples(self):

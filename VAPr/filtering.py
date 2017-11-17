@@ -10,6 +10,62 @@ def get_sample_id_filter(sample_name):
 def get_any_of_sample_ids_filter(sample_names_list):
     return {SAMPLE_ID_SELECTOR: {'$in': sample_names_list}}
 
+# TODO: refactor so that if sample ids list is all sample ids, don't even put in sample ids condition
+
+def make_rare_deleterious_variants_filter(sample_ids_list):
+    """ Function for retrieving rare, deleterious variants """
+
+    return {
+            "$and":
+                [
+                    {
+                        "$or":
+                            [
+                                {"cadd.esp.af": {"$lt": 0.051}},
+                                {"cadd.esp.af": {"$exists": False}}
+                            ]
+                    },
+                    {
+                        "$or":
+                            [
+                                {"func_knowngene": "exonic"},
+                                {"func_knowngene": "splicing"}
+                            ]
+                    },
+                    {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
+                    {"1000g2015aug_all": {"$lt": 0.051}},
+                    get_any_of_sample_ids_filter(sample_ids_list)
+                ]
+        }
+
+def make_known_disease_variants_filter(sample_ids_list):
+    """ Function for retrieving known disease variants by presence in Clinvar and Cosmic."""
+
+    return {
+            "$or":
+                    [
+                        {
+                            "$and":
+                                [
+                                    {"clinvar.rcv.accession": {"$exists": True}},
+                                    {"clinvar.rcv.clinical_significance": {"$nin": ["Benign", "Likely benign"]}}
+                                ]
+                        },
+                        {"cosmic.cosmic_id": {"$exists": True}}
+                    ]
+        }
+
+
+def make_deleterious_compound_heterozygous_variants_filter(sample_ids_list):
+    return {
+            "$and":
+                [
+                    {"genotype_subclass_by_class.heterozygous": "compound"},
+                    {"cadd.phred": {"$gte": 10}},
+                    get_any_of_sample_ids_filter(sample_ids_list)
+                ]
+        }
+
 
 def make_de_novo_variants_filter(proband, ancestor1, ancestor2):
     """
@@ -163,7 +219,7 @@ def _append_sample_id_constraint_if_needed(and_list, sample_ids_list):
 #     return filtered
 #
 #
-# def get_deleterious_compound_heterozygote_variants(collection, sample_names=None):
+# def get_deleterious_compound_heterozygous_variants(collection, sample_names=None):
 #     """ Function for retrieving deleterious compound heterozygote variants  """
 #
 #     sample_ids_list = _construct_sample_ids_list(collection, sample_names)

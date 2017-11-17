@@ -16,7 +16,7 @@ is quite a bit of information there.
 ## Authors
 
 * **Carlo Mazzaferro** (cmazzafe@ucsd.edu)
-* **Adam Mark** (a1mark@ucsd.edu)
+* **Adam Mark, M.S.** (a1mark@ucsd.edu)
 * **Kathleen Fisch, Ph.D** (kfisch@ucsd.edu)
 * **Amanda Birmingham, Ph.D** 
 * **Guorong Xu, Ph.D** 
@@ -32,20 +32,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 2. [Quick-start](#examples)
 3. [Supplemental Information](#SI)  
   3.1. [Workflow Overview](#workflow)    
-  3.2. [Tips on usage](#usage_tips)    
-    &nbsp;&nbsp;&nbsp;&nbsp;3.2.1 [Required Arguments](#required)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.2.2 [Optional Arguments](#optional)  
+  3.2. [VaprAnnotator - Tips on usage](#usage_tips)    
+    &nbsp;&nbsp;&nbsp;&nbsp;3.2.1 [Arguments](#required)  
   3.3. [Core Methods](#core)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Annovar Methods](#anno)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Parallel Annotation](#parallel)  
+    &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Annovar Databases](#anno)   
+    &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Annotation](#annotation)  
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)  
   3.3. [Filtering](#filt)   
     &nbsp;&nbsp;&nbsp;&nbsp;3.3.1 [Available Filters](#filts)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.2 [Parallel Annotation](#parallel)  
-    &nbsp;&nbsp;&nbsp;&nbsp;3.3.3 [Filtering](#filt)  
-  3.4. [File Creation](#fwrite)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.1 [Available Writers](#required)   
-    &nbsp;&nbsp;&nbsp;&nbsp;3.4.2 [Extra](#node_specific)   
+  3.4. [File Creation](#write)   
 
 
 [Table of contents](#toc)
@@ -60,7 +55,8 @@ These instructions will get you a copy of the package up and running on your loc
 
 - MongoDB Community Edition. [Instsallation instructions](https://goo.gl/TpBkcb)
 - Python (2.7 and 3.5 currently supported and tested)
-- [BCFtools](https://samtools.github.io/bcftools/)
+- [BCFtools](http://www.htslib.org/download/)
+- [Tabix](http://www.htslib.org/download/)
 - [Annovar scripts](http://annovar.openbioinformatics.org/en/latest/user-guide/download/) (optional)
 
 #### Python 3 and MongoDB
@@ -98,6 +94,7 @@ which should return
 ### BCFtools
 
 BCFtools will be used for VCF file merging between samples. To download and install:
+    
     wget https://github.com/samtools/bcftools/releases/download/1.6/bcftools-1.6.tar.bz2
     tar -vxjf bcftools-1.6.tar.bz2
     cd bcftools-1.6
@@ -105,9 +102,20 @@ BCFtools will be used for VCF file merging between samples. To download and inst
     make install
     export PATH=/where/to/install/bin:$PATH
 
+Refer [here](https://github.com/samtools/bcftools/blob/develop/INSTALL) for installation debugging.
+
 ### Tabix
 
-Tabix and bgzip binaries are available through the HTSlib project: INSTALL instructions are available [here](https://github.com/samtools/htslib/blob/develop/INSTALL)	    
+Tabix and bgzip binaries are available through the HTSlib project: 
+
+    wget https://github.com/samtools/htslib/releases/download/1.6/htslib-1.6.tar.bz2
+    tar -vxjf htslib-1.6.tar.bz2
+    cd bcftools-1.6
+    make
+    make install
+    export PATH=/where/to/install/bin:$PATH
+
+Refer [here](https://github.com/samtools/htslib/blob/develop/INSTALL) for installation debugging.
 
 ### ANNOVAR
 (It is possible to proceed without installing ANNOVAR. In that case, the variants that will be annotated and sent to 
@@ -152,26 +160,26 @@ An annotation project can be started by providing the API with a small set of in
  ```python
  
 # Import core module
-from VAPr.base import VaprAnnotator
+from VAPr import vapr_core
 
 # Start by specifying the project information
-input_dir = '/path/to/vcf/dir'
-output_dir = '/path/to/desired/output'
-annovar_path = '/path/to/annovar'  
-project_data = {'db_name': 'VariantDatabase',
-                'collection_name': 'VarCollection'}  # Database and Collection names (optional)
+input_directory = "/path/to/my/vcf"
+output_director = "/path/tp/desired/output"
+annovar_directory = '/path/to/annovar'
+mongodb = 'VariantDatabase'
+collection = 'Cancer'
 
-
-Project = VaprAnnotator(input_dir,
-                            output_dir,
-                            annovar_path,
-                            project_data)
+annotator = vapr_core.VaprAnnotator(input_directory,
+                                    output_director,
+                                    mongodb,
+                                    collection,
+                                    annovar_install_path=annovar_directory,
+                                    build_ver='hg19')
  ```
  
-This will allow you to use any of [core methods](#core) in the package. They are accessible as methods using dot notation.
-That is, if you'd like to use the method `_run_annovar_annotation()`, you'll do so by simply running:
+This will allow you to use any of [core methods](#core) in the package. 
 
-`Project._run_annovar_annotation()`
+`dataset = annotator.annotate(num_processes=8)`
 
 
 <a id='required'></a>
@@ -183,21 +191,37 @@ The first four arguments are required to run the full annotation pipeline. These
 - `output_dir`: the path to the **directory** where the annotated csv files will be written to. It will be used in two 
  different instances: writing the file outputs from Annovar, and writing the file outputs from VAPr, in case these are 
  needed
-- `annovar_path`: path to the Annovar download folder. Once the directory is downloaded from the Annovar website, unzip and place 
- it somewhere that has a good amount of free disk memory. The Annovar databases can take up to ~30GB. 
-- `project_data`: a dictionary with keys `db_name` and `collection_name` and values strings of a name of your choosing.
+
+- `build_ver `: Human genome build. VAPr currently supports the two human genome builds, `hg19`, `hg38`.
+
+- `mongo_db_name`: Database used for variant storage as well as the output of annovar i.e. 'VariantDatabase'.
+
+- `mongo_collection_name`: Collection name for this analysis i.e. 'cancer_analysis_01012018'.
 
 <a id='optional'></a>
 ### Optional Arguments
 
-- `design_file`: if you are running a job on multiple samples, and you'd like to include extra data about those samples
- in the annotation job, you can add those to the design file. The format for a typical design file can be found 
- [here](design_file). In particular, each line in the design file must refer to either a single vcf file (most common), 
- or a directory containing vcf files from that sample (less common: this would happen if, for instance, your vcf files
- are split by chromosome and are contained in a directory). The design file's requirement is simply having a column
- named 'Sample_Names', and all the other columns are optional. 
+- `annovar_install_path`: Path location of annovar installtion. **NOTE**: we can't provide the ANNOVAR package as it requires registration to be downloaded. It is, however, freely available [here](http://annovar.openbioinformatics.org/en/latest/user-guide/download/). Download, unzip and place it in whatever directory you'd like. Make sure you have enough space on disk (~15 GB for the datasets used for annotation). It is required that you specify the location to which you downloaded annovar. The folder where annovar lives looks like this:
 
-- `build_ver`: one of `hg19`, `hg18` or `hg38`. It specifies the genomic build version to be used for annotation
+    ... /annovar/
+             annotate_variation.pl
+             coding_change.pl
+             convert2annovar.pl
+             example/    
+             humandb/
+             retrieve_seq_from_fasta.pl
+             table_annovar.pl
+             variants_reduction.pl 
+
+- `vcfs_gzipped`: Boolean. Only files with one vcf extension will be processed. If you are only analyzing one vcf, the file will not be bgzipped. If you are providing a directory or design file with multiple vcf files, they will be bgzipped and merged. If they are already bgzipped, please specify `vcfs_gzipped=True` and the bgzip step will be skipped.
+
+- `design_file`: Path to design file. The purpose of an optional design file is to accommodate VCF files scattered throughout a file system. The design file must be set up as a CSV file with the first field name as "Sample_Names", where the column should be populated with full file paths to each VCF you wish to include in the analysis. We anticipate in the future to be able to accommodate meta-data as successive columns which would be included as sample information in each variant document. A sample design file:
+
+            Sample_Names
+            /path/to/file1.vcf
+            /path/to/file2.vcf
+            /path/to/file3.vcf
+
  
 [Table of contents](#toc)
 <a id='core'></a>
@@ -210,12 +234,12 @@ the API lets you call any core method for the annotation part. These include:
 The differences and nuances of each will be discussed next.
 
 <a id='anno'></a>
-### Annovar Methods
+### Annovar
 
 #### `download_annovar_databases`
 `download_annovar_databases()`: this function downloads the databases required to run Annovar to the `.../annovar/humandb/` directory. 
 It will download the databases according to the genome version specified. If your databases are out-of-date, re-running
-this command will download the latest version of them.
+this command will download the latest version of them. If you currently have the required databases, you may get an error.
 
 **Args**: 
 
@@ -225,25 +249,8 @@ _Required_:
 _Optional_: 
   - None
 
-#### `_run_annovar_annotation`
-
-`_run_annovar_annotation()`: will spawn Annovar jobs for the files found in the specified directory. This will run Annovar's command
-line script on every file and generate output files in the specified `output_dir`. 
-
-**Args**: 
-
-_Required_: 
-  - None
-
-_Optional_: 
-  - `batch_jobs`: An integer value that specifies the number of subprocesses to be spawned. When you are working on many,
-  many vcf files, running Annovar processes in parallel may improve compute time significantly. Each annotation job 
-  occurs as a separate subprocess, so spawning multiple subprocesses makes the annotation parallel in a truly GIL-free 
-  fashion. Use always a reasonable number (`number of CPU cores - 1` is usually a good number). Default: 10
-
-
-<a id='parallel'></a>
-### Parallel Annotation
+<a id='annotation'></a>
+### Annotation
 
 #### `annotate`
 
@@ -262,13 +269,10 @@ _Optional_:
   As a rule of thumb, use at most `number of CPU cores - 1`, and for smaller vcf files (less than 50 thousand variants)
   4-5 cores at most. Default: 4.
   - `verbose`: An integer value from 0 to 3 that specifies the verbosity level. Default: 0.
-  - `csv_only`: Determines if only csv data from Annovar will be parsed to MongoDB. This will skip annotation with
-  MyVariant.info and will result in much faster annotation. It takes a Boolean True of False. Default: False
-
 
 #### `annotate_lite` (not recommended)
 
-`annotate_lite()`: this can run without having ran Annovar beforehand. It will grab the variant names from the
+`annotate_lite()`: Execution will skip annotating with Annovar. It will grab the HGVS ids from the
 vcf files and query the variant data from MyVariant.info. It is subject to the issue of potentially having completely
 empty data for some of the variants, and inability to run native VAPr queries on the data. 
 
@@ -285,33 +289,24 @@ _Optional_:
 <a id='filt'></a>
 ## Filtering  Methods
 
-Five different pre-made filters that allow for the retrieval of specific variants have been implemented. Refer to the
+Four different pre-made filters that allow for the retrieval of specific variants have been implemented. Refer to the
 [README.md](link to readme/filters) file for more more information about the fields and thresholds used.
 
 ### Usage
  In order to use the filters, proceed as follows:
  
  ```python
-from VAPr.queries import Filters
-
-db_name = 'VariantDatabase'
-collection_name = 'CollectionName'
-filter_collection = Filters(db_name, collection_name)
+rare_deleterious_variants = dataset.get_rare_deleterious_variants()
 ```
 
-This will allow you to use any of the pre-made filters in the package. They are accessible as methods using dot notation.
-That is, if you'd like to use the `rare_cancer_variant` filter, you simply need to call:
-
-`rare_vars = filter_collcetion.rare_cancer_variant()`
-
-This will return a list of dictionaries, where each dictionary is contains data about a variant. 
+This will return a list of dictionaries, where each dictionary is contains variant containing annotations. 
 
 <a id='filts'></a>
 ### Available filters
 
-#### Filter #1: `rare_cancer_variant`
+#### Filter #1: Rare Deleterious Variants
 
-`rare_cancer_variant()`: this will retrieve all the variants in your collection matching the thresholds specified in the
+`get_rare_deleterious_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
 **Args**: 
@@ -320,13 +315,13 @@ _Required_:
   - None
 
 _Optional_: 
-  - `samples`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
+  - `sample_names_list`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
   not used, all variants are queried (that is, variants from all sample sin your collection). Default: `None`
   
  
-#### Filter #2: `rare_disease_variants`
+#### Filter #2: Known Disease Variants
 
-`rare_disease_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
+`get_known_disease_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
 **Args**: 
@@ -335,12 +330,12 @@ _Required_:
   - None
 
 _Optional_: 
-  - `samples`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
+  - `sample_names_list`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
   not used, all variants are queried (that is, variants from all sample sin your collection). Default: `None`
 
-#### Filter #3: `rare_high_impact_variants`
+#### Filter #3: Deleterious Compound Heterozygous Variants
 
-`rare_high_impact_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
+`get_deleterious_compound_heterzygous_variants()`: this will retrieve all the variants in your collection matching the thresholds specified in the
 README.md file. 
 
 **Args**: 
@@ -349,41 +344,22 @@ _Required_:
   - None
 
 _Optional_: 
-  - `samples`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
+  - `sample_names_list`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
   not used, all variants are queried (that is, variants from all sample sin your collection). Default: `None`
 
-#### Filter #4: `deleterious_compound_heterozygote_variants`
+#### Filter #4: De novo Variants
 
-`deleterious_compound_heterozygote_variants()`: this will retrieve all the variants in your collection matching the thresholds 
-specified in the README.md file. 
-
-**Args**: 
-
-_Required_: 
-  - None
-
-_Optional_: 
-  - `samples`: A list of strings specifying the sample names from which you'd like to extract your variants. If this is
-  not used, all variants are queried (that is, variants from all sample sin your collection). Default: `None`
-
-
-#### Filter #5: `de_novo_variants`
-
-`de_novo_variants()`: this will retrieve all the variants in your collection matching the thresholds 
+`get_de_novo_variants()`: this will retrieve all the variants in your collection matching the thresholds 
 specified in the README.md file. 
 
 **Args**: 
 
 _Required_:
-  - `sample1`: first sample name as string. 
-  - `sample2`: second sample name as string. 
-  - `sample3`: third sample name as string. De novo variants will be looked for in the third sample, i.e. variants that
-  occur in the third sample but not in the other two.
+  - `proband`: first sample name as string. 
+  - `ancestor1`: second sample name as string. 
+  - `ancestor2`: third sample name as string. De novo variants will be looked for in the proband sample, i.e. variants that
+  occur in the first sample but not in either ancestor1 or ancestor2.
   
-_Optional_: 
-  - `multisample`. Takes a Boolean `True` or `False` value. Set to true if the query is to be performed on
-   samples coming from multi-sample vcf files. Default: `False`
-
 
 #### Create your own filter
 
@@ -398,92 +374,73 @@ fields available and can be used for filtering.
 from pymongo import MongoClient
 
 client = MongoClient()
-db = client.My_Variant_Database
-collection = db.ANNOVAR_MyVariant_chunks
+db = getattr(client, mongodb_name)
+collection = getattr(db, mongo_collection_name)
 
-filter2 = collection.find({ "$and": [
-                                 {"$or": [{"ThousandGenomeAll": {"$lt": 0.05}}, {"ThousandGenomeAll": {"$exists": False}}]},
-                                 {"$or": [{"ESP6500siv2_all": { "$lt": 0.05}}, {"ESP6500siv2_all": { "$exists": False}}]},
-                                 {"$or": [{"Func_knownGene": "exonic"}, {"Func_knownGene": "splicing"}]},
-                                 {"ExonicFunc_knownGene": {"$ne": "synonymous SNV"}},
-                                 {"Genotype_Call.DP": {"$gte": 10}},
-                                 {"cosmic70": { "$exists": True}}
+filtered = collection.find({"$and": [
+                                   {"$or": [{"func_knowngene": "exonic"},
+                                            {"func_knowngene": "splicing"}]},
+                                   {"cosmic70": {"$exists": True}},
+                                   {"1000g2015aug_all": {"$lt": 0.05}}
                          ]})
+filtered = list(filtered)
 ```
 
-<a id='fwrite'></a>
-### File Creation
-
-```python
-
-from VAPr.queries import Filters
-from VAPr.writes import Writer
-
-db_name = 'VariantDatabase'
-collection_name = 'VariantCollection'
-filepath = '.../data/files'
-
-# Create output files (if needed): specify name of files and path 
-rare_cancer_variants_csv = filepath + "/tumor_rna_rare_cancer_vars_csv.csv"
-
-# Apply filter
-filter_collection = Filters(db_name, collection_name)
-rare_cancer_variants = filter_collection.rare_cancer_variants()
-
-# Create writer object for filtered lists
-my_writer = Writer(db_name, collection_name)
-
-#cancer variants filtered files
-my_writer.generate_annotated_csv(rare_cancer_variants, rare_cancer_variants_csv)
-```
-
-
+<a id='write'></a>
 ## Output Files
 
-### Create unfiltered annotated vcf and csv files 
-This output file will contains all annotation data. This may be useful for researchers interested in obtaining a full description of their files.
+#### Write Options #1: Unfiltered Variants CSV
+
+`write_unfiltered_annotated_csv()`: All variants will be written to a CSV file.
+
+**Args**: 
+
+_Required_:
+  - `output_fp`: Name of output file path
+
+#### Write Options #2: Filtered Variants CSV
+
+`write_filtered_annotated_csv()`: List of filtered variants will be written to a CSV file.
+
+**Args**: 
+
+_Required_:
+  - `filtered_variants`: List of filtered variants retrieved by VAPr filters or custom filters.
+
+  - `output_fp`: Name of output file path.
+
+#### Write Options #3: Unfiltered Variants VCF
+
+`write_unfiltered_annotated_vcf()`: All variants will be written to a VCF file.
+
+**Args**: 
+
+_Required_:
+  - `vcf_out_path`: Name of output file path
+
+_Optional_:
+  - `info_out`: if set to true (Default), will write all annotation data to INFO column, else, it won't.
+
+#### Write Options #4: Filtered Variants VCF
+
+`write_filtered_annotated_csv()`: List of filtered variants will be written to a VCF file.
+
+**Args**: 
+
+_Required_:
+  - `filtered_variants`: List of filtered variants retrieved by VAPr filters or custom filters.
+  
+  - `vcf_out_path`: Name of output file path.
 
 ```python
-# Create output files (if needed): specify name of files and path 
-out_unfiltered_vcf_file = filepath + "/out_unfiltered_rnaseq_vcf.vcf"
-out_unfiltered_csv_file = filepath + "/out_unfiltered_rnaseq_csv.csv"
-input_vcf_compressed = filepath + '/test_vcf/Tumor_RNAseq_variants.vcf.gz'
 
-# Create writer object
-# db and collection name must be specified since no list is given. The entire collection will be queried.
-my_writer = create_output_files.FileWriter(db_name, collection_name)
+# List of rare deleterious variants
+filtered_variants = dataset.get_rare_deleterious_variants()
+# Write variants to csv file
+dataset.write_filtered_annotated_csv(filtered_variants, output_dir + “/myfile.csv”)
 
-# Write collection to csv and vcf
-# The in_vcf_file must be the .vcf.gz file and it needs to have an associated .tbi file.
-
-my_writer.generate_unfiltered_annotated_csv(out_unfiltered_csv_file)
-my_writer.generate_unfiltered_annotated_vcf(input_vcf_compressed, out_unfiltered_vcf_file)
 ```
 
-### Create filtered annotated vcf and csv files
-
-Further, the package allows the user to parse these variants into an annotated csv or vcf file. 
-If needed, annotated, unfiltered vcf and csv files can also be created. They will have the same length 
-(number of variants) as the original files, but will contain much more complete annotation data coming from MyVariant.info
- and ANNOVAR databases. 
-
-To create a csv file, just the filtered output is needed. To create an annotated vcf file, a tab indexed file (.tbi) 
-file is needed (see comments in  section Create unfiltered annotated vcf and csv files at the end of this page). This 
-can be created using tabix.  
-
-First, the file needs to be compressed:
-
-From the command line, running:
-
-`bgzip -c input_file.vcf > input_file.vcf.gz`
-
-returns `input_vcf_file.vcf.gz`
-
-and running 
-
-`tabix input_vcf_file.vcf.gz`
-
-will return: `input_vcf_file.vcf.gz.tbi`
 
 **Citations**
 
