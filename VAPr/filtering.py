@@ -86,6 +86,7 @@ def make_rare_deleterious_variants_filter(sample_ids_list=None):
                                 {"func_knowngene": "splicing"}
                             ]
                     },
+                    {"cadd.phred": {"$gte": 10}},
                     {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                     {"1000g2015aug_all": {"$lt": 0.051}}
                 ]

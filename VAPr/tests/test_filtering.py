@@ -34,6 +34,7 @@ class TestFunctions(unittest.TestCase):
                                 {"func_knowngene": "splicing"}
                             ]
                     },
+                    {"cadd.phred": {"$gte": 10}},
                     {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                     {"1000g2015aug_all": {"$lt": 0.051}},
                     {'samples.sample_id': {"$in":["testname1", "testname2"]}}
@@ -61,6 +62,7 @@ class TestFunctions(unittest.TestCase):
                                 {"func_knowngene": "splicing"}
                             ]
                     },
+                    {"cadd.phred": {"$gte": 10}},
                     {"exonicfunc_knowngene": {"$ne": "synonymous SNV"}},
                     {"1000g2015aug_all": {"$lt": 0.051}}
 
