@@ -16,7 +16,7 @@ def help_get_test_file_info():
 
 
 class TestFunctions(unittest.TestCase):
-    _HG00096_VCF_CONTENTS = """##fileformat=VCFv4.1
+    HG00096_VCF_CONTENTS = """##fileformat=VCFv4.1
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##fileDate=20150218
 ##reference=ftp://ftp.1000genomes.ebi.ac.uk//vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
@@ -283,7 +283,7 @@ class TestFunctions(unittest.TestCase):
 1	18849	rs533090414	C	G	100	PASS	AC=2;AF=0.951877;AN=2;NS=2504;DP=4700;EAS_AF=1;AMR_AF=0.9769;AFR_AF=0.8411;EUR_AF=0.9911;SAS_AF=0.9939;AA=g|||;VT=SNP	GT	1|1
 """
 
-    _HG00097_VCF_CONTENTS = """##fileformat=VCFv4.1
+    HG00097_VCF_CONTENTS = """##fileformat=VCFv4.1
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##fileDate=20150218
 ##reference=ftp://ftp.1000genomes.ebi.ac.uk//vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
@@ -554,8 +554,6 @@ class TestFunctions(unittest.TestCase):
 1	18849	rs533090414	C	G	100	PASS	AC=2;AF=0.951877;AN=2;NS=2504;DP=4700;EAS_AF=1;AMR_AF=0.9769;AFR_AF=0.8411;EUR_AF=0.9911;SAS_AF=0.9939;AA=g|||;VT=SNP	GT	1|1
 """
 
-    _VCF_EXTENSION = ".vcf"
-
     @classmethod
     def setUpClass(cls):
         cls.test_file_dir, cls.test_bgzipped_fps = help_get_test_file_info()
@@ -564,12 +562,12 @@ class TestFunctions(unittest.TestCase):
     def test__get_vcf_file_paths_list_in_directory(self):
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
-        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
+        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00097_vcf_file.write(self.HG00097_VCF_CONTENTS.encode('ascii'))
         temp_HG00097_vcf_file.close()  # but DON'T delete yet
 
         # also write a NON-vcf file into this dir and ensure it ISN'T included in returned list
@@ -579,12 +577,12 @@ class TestFunctions(unittest.TestCase):
 
         expected_output = sorted([temp_HG00096_vcf_file.name, temp_HG00097_vcf_file.name])
 
-        real_output = ns_test._get_vcf_file_paths_list_in_directory(temp_dir.name, self._VCF_EXTENSION)
+        real_output = ns_test._get_vcf_file_paths_list_in_directory(temp_dir.name, ns_test.VCF_EXTENSION)
         self.assertListEqual(expected_output, real_output)
 
     def test__get_vcf_file_paths_list_in_directory_none(self):
         temp_dir = tempfile.TemporaryDirectory()
-        real_output = ns_test._get_vcf_file_paths_list_in_directory(temp_dir.name, self._VCF_EXTENSION)
+        real_output = ns_test._get_vcf_file_paths_list_in_directory(temp_dir.name, ns_test.VCF_EXTENSION)
         self.assertListEqual([], real_output)
 
     # endregion
@@ -614,8 +612,8 @@ class TestFunctions(unittest.TestCase):
         # To ensure they are cleaned up after the test is over, place everything in a temporary directory
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
+        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00097_vcf_file.write(self.HG00097_VCF_CONTENTS.encode('ascii'))
         temp_HG00097_vcf_file.close()  # but DON'T delete yet
         expected_output = temp_HG00097_vcf_file.name + ".gz"
 
@@ -647,12 +645,12 @@ class TestFunctions(unittest.TestCase):
     def test_merge_vcfs_multiple_by_dir_not_bgzipped(self):
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
-        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
+        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00097_vcf_file.write(self.HG00097_VCF_CONTENTS.encode('ascii'))
         temp_HG00097_vcf_file.close()  # but DON'T delete yet
 
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
@@ -682,12 +680,12 @@ class TestFunctions(unittest.TestCase):
     def test_merge_vcfs_multiple_by_list(self):
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
-        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00097_vcf_file.write(self._HG00097_VCF_CONTENTS.encode('ascii'))
+        temp_HG00097_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00097_vcf_file.write(self.HG00097_VCF_CONTENTS.encode('ascii'))
         temp_HG00097_vcf_file.close()  # but DON'T delete yet
 
         # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
@@ -703,8 +701,8 @@ class TestFunctions(unittest.TestCase):
     def test_merge_vcfs_single_by_dir(self):
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
@@ -716,13 +714,13 @@ class TestFunctions(unittest.TestCase):
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
         with open(real_output_vcf_fp, 'r') as file_handle:
             real_output_contents = file_handle.read()
-        self.assertEqual(self._HG00096_VCF_CONTENTS, real_output_contents)
+        self.assertEqual(self.HG00096_VCF_CONTENTS, real_output_contents)
 
     def test_merge_vcfs_single_by_list(self):
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
         expected_output_vcf_fp = os.path.join(temp_dir.name, "tempy.vcf")
@@ -734,17 +732,17 @@ class TestFunctions(unittest.TestCase):
         self.assertTrue(os.path.isfile(real_output_vcf_fp))
         with open(real_output_vcf_fp, 'r') as file_handle:
             real_output_contents = file_handle.read()
-        self.assertEqual(self._HG00096_VCF_CONTENTS, real_output_contents)
+        self.assertEqual(self.HG00096_VCF_CONTENTS, real_output_contents)
 
     def test_merge_vcfs_single_no_copy_needed(self):
         temp_dir = tempfile.TemporaryDirectory()
 
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
         temp_HG00096_vcf_base = os.path.splitext(os.path.basename(temp_HG00096_vcf_file.name))[0]
-        expected_output_vcf_fp = os.path.join(temp_dir.name, temp_HG00096_vcf_base + self._VCF_EXTENSION)
+        expected_output_vcf_fp = os.path.join(temp_dir.name, temp_HG00096_vcf_base + ns_test.VCF_EXTENSION)
 
         # NB: doesn't matter what value is passed for vcfs_gzipped, as it isn't used when list is passed
         real_output_vcf_fp = ns_test.merge_vcfs(temp_dir.name, temp_dir.name, temp_HG00096_vcf_base,
@@ -759,7 +757,7 @@ class TestFunctions(unittest.TestCase):
         # NB: This file is NOT REALLY BGZIPPED--but for this test all I need is a file with the bgzipped *extension* :)
         temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.BGZIPPED_VCF_EXTENSION,
                                                             delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
         # there is a file in the directory, but it doesn't have the desired extension
@@ -768,8 +766,8 @@ class TestFunctions(unittest.TestCase):
 
     def test_merge_vcfs_by_dir_error_no_files_found_bgzipped(self):
         temp_dir = tempfile.TemporaryDirectory()
-        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=self._VCF_EXTENSION, delete=False)
-        temp_HG00096_vcf_file.write(self._HG00096_VCF_CONTENTS.encode('ascii'))
+        temp_HG00096_vcf_file = tempfile.NamedTemporaryFile(dir=temp_dir.name, suffix=ns_test.VCF_EXTENSION, delete=False)
+        temp_HG00096_vcf_file.write(self.HG00096_VCF_CONTENTS.encode('ascii'))
         temp_HG00096_vcf_file.close()  # but DON'T delete yet
 
         # there is a file in the directory, but it doesn't have the desired extension
