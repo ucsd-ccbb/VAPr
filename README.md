@@ -261,7 +261,7 @@ This will allow you to use any of [core methods](#core) in the package.
 The first four arguments are required to run the full annotation pipeline. These are:
 
 - `input_dir`: the path to the **directory** where all vcf files live. They may also be inside subdirectories, and VAPr will
- find them.
+ find them.  VCF files may contain information for single or multiple samples.
 - `output_dir`: the path to the **directory** where the annotated csv files will be written to. It will be used in two 
  different instances: writing the file outputs from Annovar, and writing the file outputs from VAPr, in case these are 
  needed
