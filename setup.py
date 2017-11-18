@@ -1,10 +1,10 @@
 from setuptools import setup
 
 setup(name='VAPr',
-      version='2.0.5',
+      version='3.0',
       description='Package for NoSQL variant data storage, annotation and prioritization.',
       url='https://github.com/ucsd-ccbb/VAPr',
-      author='Carlo Mazzaferro',
+      author='Carlo Mazzaferro, Amanda Birmingham, Adam Mark',
       author_email='cmazzafe@ucsd.edu',
       install_requires=['pymongo', 'myvariant', 'pyvcf', 'pandas', 'tqdm'],
       license='MIT',
