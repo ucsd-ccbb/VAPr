@@ -235,20 +235,22 @@ An annotation project can be started by providing the API with a small set of in
  
 # Import core module
 from VAPr import vapr_core
+import os
 
 # Start by specifying the project information
-input_directory = "/path/to/my/vcf"
-output_director = "/path/tp/desired/output"
-annovar_directory = '/path/to/annovar'
-mongodb = 'VariantDatabase'
-collection = 'Cancer'
+IN_PATH = "/path/to/vcf"
+OUT_PATH = "/path/to/out"
+ANNOVAR_PATH = "/path/to/annovar"
+MONGODB = 'VariantDatabase'
+COLLECTION = 'Cancer'
 
-annotator = vapr_core.VaprAnnotator(input_directory,
-                                    output_director,
-                                    mongodb,
-                                    collection,
-                                    annovar_install_path=annovar_directory,
-                                    build_ver='hg19')
+annotator = vapr_core.VaprAnnotator(input_dir=IN_PATH,
+                                    output_dir=OUT_PATH,
+                                    mongo_db_name=MONGODB,
+                                    mongo_collection_name=COLLECTION,
+                                    build_ver='hg19',
+                                    vcfs_gzipped=False,
+                                    annovar_install_path=ANNOVAR_PATH)
  ```
  
 This will allow you to use any of [core methods](#core) in the package. 
