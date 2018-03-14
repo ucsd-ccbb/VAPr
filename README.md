@@ -19,8 +19,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Table of contents
 1. [Background](#background)  
   1.1. [Data Models](#datamodels)
-2. [Getting Started](#gettingstarted)
-3. [Quick-start](#examples)    
+2. [Getting Started](#getstarted)
+3. [Tutorial](#tutorial)    
   3.1. [Workflow Overview](#workflow)    
   3.2. [VaprAnnotator - Tips on usage](#usage_tips)    
     &nbsp;&nbsp;&nbsp;&nbsp;3.2.1 [Arguments](#required)  
@@ -214,7 +214,8 @@ VAPr is available from PyPi.  Once the above requirements have been installed, V
 
     pip install VAPr
 
-## Quick-Start
+<a id='tutorial'></a>
+## Tutorial
 See this [jupyter notebook](https://github.com/ucsd-ccbb/VAPr/blob/master/VAPr%20Quick-Start%20Guide.ipynb) to create your first annotation job
 
 [Table of contents](#toc)
