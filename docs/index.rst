@@ -7,7 +7,7 @@ Welcome to VAPr's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    Introduction.rst
