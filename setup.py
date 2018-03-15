@@ -9,4 +9,11 @@ setup(name='VAPr',
       install_requires=['pymongo', 'myvariant', 'pyvcf', 'pandas', 'tqdm'],
       license='MIT',
       packages=['VAPr'],
-      zip_safe=False)
+      zip_safe=False,
+      extras_require={
+            'tests': [
+                  'nose',
+                  'pycodestyle >= 2.1.0'],
+            'docs': [
+                  'sphinx >= 1.4',
+                  'sphinx_rtd_theme']})
