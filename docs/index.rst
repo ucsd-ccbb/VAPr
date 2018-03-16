@@ -11,9 +11,10 @@ Welcome to VAPr's documentation!
    :caption: Contents:
 
    Introduction.rst
+   Downstream Analysis<Downstream.rst>
    VAPr core<core.rst>
+   Tutorial<Tutorial.rst>
    API Reference<VAPr.rst>
-   Modules<modules.rst>
 
 
 

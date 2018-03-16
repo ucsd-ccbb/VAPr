@@ -1,51 +1,53 @@
+.. _api-reference:
+
 VAPr package
 ============
 
-Submodules
-----------
 
-VAPr.annovar\_output\_parsing module
-------------------------------------
+VAPr.annovar\_output\_parsing
+-----------------------------
 
 .. automodule:: VAPr.annovar_output_parsing
     :members:
     :undoc-members:
     :show-inheritance:
 
-VAPr.annovar\_running module
-----------------------------
+VAPr.annovar\_running
+---------------------
 
 .. automodule:: VAPr.annovar_running
     :members:
     :undoc-members:
     :show-inheritance:
 
-VAPr.chunk\_processing module
------------------------------
+VAPr.chunk\_processing
+----------------------
 
 .. automodule:: VAPr.chunk_processing
     :members:
     :undoc-members:
     :show-inheritance:
 
-VAPr.filtering module
----------------------
+VAPr.filtering
+--------------
 
 .. automodule:: VAPr.filtering
     :members:
     :undoc-members:
     :show-inheritance:
 
-VAPr.validation module
-----------------------
+VAPr.validation
+---------------
 
 .. automodule:: VAPr.validation
     :members:
     :undoc-members:
     :show-inheritance:
 
-VAPr.vapr\_core module
-----------------------
+.. _vapr-core:
+
+VAPr.vapr\_core
+---------------
 
 .. automodule:: VAPr.vapr_core
     :members:
@@ -64,15 +66,6 @@ VAPr.vcf\_merging module
 ------------------------
 
 .. automodule:: VAPr.vcf_merging
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: VAPr
     :members:
     :undoc-members:
     :show-inheritance:
