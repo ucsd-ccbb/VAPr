@@ -135,7 +135,7 @@ def _fill_unfiltered_reads_counts(field_value, genotype_info_to_fill):
     From https://gatkforums.broadinstitute.org/gatk/discussion/1268/what-is-a-vcf-and-how-should-i-interpret-it  :
     " AD ... : Allele depth ....
       AD is the unfiltered allele depth, i.e. the number of reads that support each of the reported alleles. All reads
-      at the position (including reads that did not pass the variant caller’s filters) are included in this number,
+      at the position (including reads that did not pass the variant caller's filters) are included in this number,
       except reads that were considered uninformative. Reads are considered uninformative when they do not provide
       enough statistical evidence to support one allele over another."
     """
