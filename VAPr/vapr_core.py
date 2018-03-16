@@ -71,8 +71,7 @@ class VaprDataset(object):
         """
         Number of records in MongoDB collection
 
-        Returns
-            (int) Number of records in MongoDB collection
+        :return: Number of records in MongoDB collection
         :rtype: int
 
         """
@@ -83,11 +82,11 @@ class VaprDataset(object):
         """
         See :ref:`rare-del-variants` for more information on how this is implemented
 
-        Args:
-            sample_names_list (list): list of samples to draw variants from
+        :param sample_names_list: list of samples to draw variants from
+        :type sample_names_list: list
 
-        Returns
-            list of variants (list)
+        :return: list of variants
+        :rtype: list
         """
 
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
