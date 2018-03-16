@@ -278,13 +278,34 @@ class VaprAnnotator(object):
             logging.info('Output directory %s for analysis already exists; using existing directory' % output_dir)
 
     def download_annovar_databases(self):
-        """Run ANNOVAR to download its databases."""
+        """
+        Run ANNOVAR to download its databases
+
+        :return: None
+        """
         if self._path_to_annovar_install is None:
             raise ValueError("No ANNOVAR install path provided.")
 
         self._annovar_wrapper.download_databases()
 
     def annotate_lite(self, num_processes=8, chunk_size=2000, verbose_level=1, allow_adds=False):
+        """
+        'Lite' Annotation: it will query `myvariant.info <myvariant.info>`_ only, without
+        generating annotations from Annovar. It requires solely VAPr to be installed.
+        The execution will grab the HGVS ids from the vcf files and query the variant data from MyVariant.info.
+
+        .. warnings:: It is subject to the issue of potentially having completely empty data for some of the variants,
+        and inability to run native VAPr queries on the data.
+
+        It will return the class :class:`~VAPr.vapr_core.VaprDataset`, which can then be used for downstream
+        filtering and analysis.
+
+        :param num_processes: int number of parallel processes. Defaults to 8
+        :param chunk_size: int number of variants to be processed at once. Defaults to 2000
+        :param verbose_level: int higher verbosity will give more feedback, raise to 2 or 3 when debugging. Defaults to 1
+        :param allow_adds: bool Allow adding new variants to a pre-existing Mongo collection, or overwrite it
+        :return: :class:`~VAPr.vapr_core.VaprDataset`
+        """
         result = self._make_dataset_for_results("annotate_lite", allow_adds)
         self._collect_annotations_and_store(self._single_vcf_path, chunk_size, num_processes, sample_names_list=None,
                                             verbose_level=verbose_level)
