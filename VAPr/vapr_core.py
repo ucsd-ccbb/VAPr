@@ -23,17 +23,14 @@ from VAPr.annovar_output_parsing import AnnovarTxtParser
 
 class VaprDataset(object):
     def __init__(self, mongo_db_name, mongo_collection_name, merged_vcf_path=None):
-        """
-        Class that contains methods to interact with a parsed database of variants
 
-        :param mongo_db_name: database name
-        :type mongo_db_name: str
+        """Class that contains methods to interact with a parsed database of variants
 
-        :param mongo_collection_name: collection name
-        :type mongo_collection_name: str
+        Args:
+          mongo_db_name(str): database name
+          mongo_collection_name(str): collection name
+          merged_vcf_path(str): path to merged vcf
 
-        :param merged_vcf_path: path to merged vcf
-        :type merged_vcf_path: str
         """
 
         self._mongo_db_name = mongo_db_name
@@ -46,108 +43,110 @@ class VaprDataset(object):
 
     @property
     def full_name(self):
-        """
-        Full name of database and collection
+        """Full name of database and collection
 
-        :return: Full name of database and collection
-        :rtype: str
+        Args:
+
+        Returns:
+          str: Full name of database and collection
+
         """
 
         return self._mongo_db_collection.full_name
 
     @property
     def is_empty(self):
-        """
-        If there are no records in the collection, returns True
+        """If there are no records in the collection, returns True
 
-        :return: if there are no records in the collection, returns True
-        :rtype: bool
+        Args:
+
+        Returns:
+          bool: if there are no records in the collection, returns True
+
         """
 
         return self._mongo_db_collection.count() == 0
 
     @property
     def num_records(self):
-        """
-        Number of records in MongoDB collection
+        """Number of records in MongoDB collection
 
-        :return: Number of records in MongoDB collection
-        :rtype: int
+        Args:
+
+        Returns:
+          int: Number of records in MongoDB collection
 
         """
 
         return self._mongo_db_collection.count()
 
     def get_rare_deleterious_variants(self, sample_names_list=None):
-        """
-        See :ref:`rare-del-variants` for more information on how this is implemented
+        """See :ref:`rare-del-variants` for more information on how this is implemented
 
-        :param sample_names_list: list of samples to draw variants from
-        :type sample_names_list: list
+        Args:
+          sample_names_list(list: list, optional): list of samples to draw variants from (Default value = None)
 
-        :return: list of variants
-        :rtype: list
+        Returns:
+          list: list of variants
+
         """
 
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_rare_deleterious_variants_filter,
                                                      sample_names_list)
 
     def get_known_disease_variants(self, sample_names_list=None):
-        """
-        See :ref:`known-disease` for more information on how this is implemented
+        """See :ref:`known-disease` for more information on how this is implemented
 
-        :param sample_names_list: list of samples to draw variants from
-        :type sample_names_list: list
+        Args:
+          sample_names_list(list: list, optional): list of samples to draw variants from (Default value = None)
 
-        :return: list of variants
-        :rtype: list
+        Returns:
+          list: list of variants
+
         """
 
         return self._get_filtered_variants_by_sample(VAPr.filtering.make_known_disease_variants_filter,
                                                      sample_names_list)
 
     def get_deleterious_compound_heterozygous_variants(self, sample_names_list=None):
-        """
-        See :ref:`del-compound` for more information on how this is implemented
-        :param sample_names_list: list of samples to draw variants from
-        :type sample_names_list: list
+        """See :ref:`del-compound` for more information on how this is implemented
 
-        :return: list of variants
-        :rtype: list
+        Args:
+          sample_names_list(list: list, optional): list of samples to draw variants from (Default value = None)
+
+        Returns:
+          list: list of variants
+
         """
 
         return self._get_filtered_variants_by_sample(
             VAPr.filtering.make_deleterious_compound_heterozygous_variants_filter, sample_names_list)
 
     def get_de_novo_variants(self, proband, ancestor1, ancestor2):
-        """
-        See :ref:`de-novo` for more information on how this is implemented
+        """See :ref:`de-novo` for more information on how this is implemented
 
-        :param proband: proband variant
-        :type proband: str
+        Args:
+          proband(str): proband variant
+          ancestor1(str): ancestor #1 variant
+          ancestor2(str): ancestor #2 variant
 
-        :param ancestor1: ancestor #1 variant
-        :type ancestor1: str
+        Returns:
+          list: list of variants
 
-        :param ancestor2: ancestor #2 variant
-        :type ancestor2: str
-
-        :return: list of variants
-        :rtype: list
         """
 
         filter_dict = VAPr.filtering.make_de_novo_variants_filter(proband, ancestor1, ancestor2)
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_custom_filtered_variants(self, filter_dictionary):
-        """
-        See :ref:`custom-filter` for more information on how to implement
+        """See :ref:`custom-filter` for more information on how to implement
 
-        :param filter_dictionary: mongodb custom filter
-        :type filter_dictionary: dict
+        Args:
+          filter_dictionary(dictionary: dict): mongodb custom filter
 
-        :return: list of variants
-        :rtype: list
+        Returns:
+          list: list of variants
+
         """
 
         if self.is_empty:
@@ -155,58 +154,67 @@ class VaprDataset(object):
         return list(self._mongo_db_collection.find(filter_dictionary))
 
     def get_distinct_sample_ids(self):
-        """
-        Self-explanatory
+        """Self-explanatory
 
-        :return: list of sample ids
-        :rtype: list
+        Args:
+
+        Returns:
+          list: list of sample ids
+
         """
 
         result = self._mongo_db_collection.distinct(VAPr.filtering.SAMPLE_ID_SELECTOR)
         return result
 
     def get_all_variants(self):
-        """
-        Self-explanatory
+        """Self-explanatory
 
-        :return: list of variants
-        :rtype: list
+        Args:
+
+        Returns:
+          list: list of variants
+
         """
 
         return self.get_custom_filtered_variants({})
 
     def get_variants_for_sample(self, sample_name):
-        """
-        Return variants for a specific sample
-        :param sample_name: name of sample
-        :type sample_name: str
+        """Return variants for a specific sample
 
-        :return: list of variants
-        :rtype: list
+        Args:
+          sample_name(str): name of sample
+
+        Returns:
+          list: list of variants
+
         """
 
         filter_dict = VAPr.filtering.get_sample_id_filter(sample_name)
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_variants_for_samples(self, specific_sample_names):
-        """
-        Return variants from multiple samples
-        :param specific_sample_names: name of samples
-        :type specific_sample_names: list
+        """Return variants from multiple samples
 
-        :return: list of variants
-        :rtype: list
+        Args:
+          specific_sample_names(list): name of samples
+
+        Returns:
+          list: list of variants
+
         """
 
         filter_dict = VAPr.filtering.get_any_of_sample_ids_filter(specific_sample_names)
         return self.get_custom_filtered_variants(filter_dict)
 
     def get_variants_as_dataframe(self, filtered_variants=None):
-        """
-        Utility to get a dataframe from variants, either all of them or a filtered subset
+        """Utility to get a dataframe from variants, either all of them or a filtered subset
 
-        :param filtered_variants: a list of variants
-        :return: pandas.DataFrame
+        Args:
+          filtered_variants: a list of variants (Default value = None)
+
+        Returns:
+          pandas.DataFrame
+
         """
 
         if filtered_variants is None:
@@ -217,44 +225,44 @@ class VaprDataset(object):
         return result
 
     def write_unfiltered_annotated_csv(self, output_fp):
-        """
-        Full csv file containing annotations from both annovar and myvariant.info
+        """Full csv file containing annotations from both annovar and myvariant.info
 
-        :param output_fp: Output file path
-        :type output_fp: str
+        Args:
+          output_fp(str): Output file path
 
-        :return: None
+        Returns:
+          None
+
         """
 
         all_variants = self.get_all_variants()
         self._write_annotated_csv("write_unfiltered_annotated_csv", all_variants, output_fp)
 
     def write_filtered_annotated_csv(self, filtered_variants, output_fp):
-        """
-        Filtered csv file containing annotations from a list passed to it, coming from MongoDB
+        """Filtered csv file containing annotations from a list passed to it, coming from MongoDB
 
-        :param filtered_variants: variants coming from MongoDB
-        :type filtered_variants: list
+        Args:
+          filtered_variants(list): variants coming from MongoDB
+          output_fp(str): Output file path
 
-        :param output_fp: Output file path
-        :type output_fp: str
+        Returns:
+          None
 
-        :return: None
         """
 
         self._write_annotated_csv("write_filtered_annotated_csv", filtered_variants, output_fp)
 
     def write_unfiltered_annotated_vcf(self, vcf_output_path, info_out=True):
-        """
-        Filtered vcf file containing annotations from a list passed to it, coming from MongoDB
+        """Filtered vcf file containing annotations from a list passed to it, coming from MongoDB
 
-        :param vcf_output_path: Output file path
-        :type vcf_output_path: str
+        Args:
+          vcf_output_path(str): Output file path
+          info_out: if True, extra annotation information will be written to the vcf file (Default value = True)
+          info_out: bool (Default value = True)
 
-        :param info_out: if True, extra annotation information will be written to the vcf file
-        :param info_out: bool
+        Returns:
+          None
 
-        :return: None
         """
 
         filtered_variants = self.get_all_variants()
@@ -263,26 +271,28 @@ class VaprDataset(object):
     def write_filtered_annotated_vcf(self, filtered_variants, vcf_output_path, info_out=True):
         """
 
-        :param filtered_variants: variants coming from MongoDB
-        :type filtered_variants: list
+        Args:
+          filtered_variants(list): variants coming from MongoDB
+          vcf_output_path(str): Output file path
+          info_out: if True, extra annotation information will be written to the vcf file (Default value = True)
+          info_out: bool (Default value = True)
 
-        :param vcf_output_path: Output file path
-        :type vcf_output_path: str
+        Returns:
+          None
 
-        :param info_out: if True, extra annotation information will be written to the vcf file
-        :param info_out: bool
-
-        :return: None
         """
 
         self._write_annotated_vcf(filtered_variants, vcf_output_path, info_out=info_out)
 
     def write_unfiltered_annotated_csvs_per_sample(self, output_dir):
         """
-        :type output_dir: Output diretory to which csv files per sample will be written to
-        :param output_dir:
 
-        :return: None
+        Args:
+          output_dir: return: None
+
+        Returns:
+          None
+
         """
 
         sample_ids_list = self.get_distinct_sample_ids()
@@ -295,12 +305,14 @@ class VaprDataset(object):
         self._warn_if_no_output("write_unfiltered_annotated_csvs_per_sample", sample_ids_list)
 
     def _write_annotated_csv(self, func_name, filtered_variants, output_fp):
+
         no_output = self._warn_if_no_output(func_name, filtered_variants)
         if not no_output:
             dataframe = self.get_variants_as_dataframe(filtered_variants)
             dataframe.to_csv(output_fp)
 
     def _get_filtered_variants_by_sample(self, filter_builder_func, sample_names=None):
+
         if sample_names is not None and not isinstance(sample_names, list):
             sample_names = [sample_names]
         filter_dict = filter_builder_func(sample_names)
@@ -341,6 +353,7 @@ class VaprDataset(object):
         self._warn_if_no_output("write_unfiltered_annotated_csvs_per_sample", filtered_variants_dicts_list)
 
     def _warn_if_no_output(self, output_func_name, items_list):
+
         no_output = False
         if len(items_list) == 0:
             no_output = True
@@ -352,33 +365,21 @@ class VaprDataset(object):
 
 class VaprAnnotator(object):
 
-    """
-    Class in charge of gathering requirements, finding files, downloading databases required
+    """Class in charge of gathering requirements, finding files, downloading databases required
     to run the annotation
 
-    :param input_dir: Input directory to vcf files
-    :type input_dir: str
+    Args:
+      input_dir(str): Input directory to vcf files
+      output_dir(str): Output directory to annotated vcf files
+      mongo_db_name(str): Name of the database to which you'll store the collection of variants
+      mongo_collection_name(str): Name of the collection to which you'd store the annotated variants
+      annovar_install_path(str): Path to locally installed annovar scripts
+      design_file(str): path to csv design file
+      build_ver(str): genome build version to which annotation will be done against. Either `hg19` or `hg38`
+      vcfs_gzipped(bool): if the vcf files are gzipped, set to True
 
-    :param output_dir: Output directory to annotated vcf files
-    :type output_dir: str
+    Returns:
 
-    :param mongo_db_name: Name of the database to which you'll store the collection of variants
-    :type mongo_db_name: str
-
-    :param mongo_collection_name: Name of the collection to which you'd store the annotated variants
-    :type mongo_collection_name: str
-
-    :param annovar_install_path: Path to locally installed annovar scripts
-    :type annovar_install_path: str
-
-    :param design_file: path to csv design file
-    :type design_file: str
-
-    :param build_ver: genome build version to which annotation will be done against. Either `hg19` or `hg38`
-    :type build_ver: str
-
-    :param vcfs_gzipped: if the vcf files are gzipped, set to True
-    :type vcfs_gzipped: bool
     """
 
     SAMPLE_NAMES_KEY = "Sample_Names"
@@ -389,6 +390,7 @@ class VaprAnnotator(object):
 
     @staticmethod
     def _get_num_lines_in_file(file_path):
+
         with open(file_path) as file_obj:
             result = sum(1 for _ in file_obj)
         return result
@@ -423,7 +425,6 @@ class VaprAnnotator(object):
 
     @classmethod
     def _get_validated_genome_version(cls, input_genome_build_version):
-        """ Make sure genome version is acceptable """
 
         if input_genome_build_version is None:
             result = cls.DEFAULT_GENOME_VERSION
@@ -438,6 +439,7 @@ class VaprAnnotator(object):
 
     @classmethod
     def _make_merged_vcf(cls, input_dir, output_dir, analysis_name, design_file, vcfs_gzipped):
+
         vcf_file_paths_list = None
         if design_file is not None:
             design_df = pandas.read_csv(design_file)
@@ -486,9 +488,11 @@ class VaprAnnotator(object):
             logging.info('Output directory %s for analysis already exists; using existing directory' % output_dir)
 
     def download_annovar_databases(self):
-        """
-        Needed for ANNOVAR to run, it will download the required databases
-        :return: None
+        """ Needed for ANNOVAR to run, it will download the required databases
+
+        Args:
+
+        Returns:
 
         """
         if self._path_to_annovar_install is None:
@@ -497,26 +501,25 @@ class VaprAnnotator(object):
         self._annovar_wrapper.download_databases()
 
     def annotate_lite(self, num_processes=8, chunk_size=2000, verbose_level=1, allow_adds=False):
-        """
-        'Lite' Annotation: it will query `myvariant.info <myvariant.info>`_ only, without
+        """'Lite' Annotation: it will query `myvariant.info <myvariant.info>`_ only, without
         generating annotations from Annovar. It requires solely VAPr to be installed.
         The execution will grab the HGVS ids from the vcf files and query the variant data from MyVariant.info.
-
+        
         .. warnings:: It is subject to the issue of potentially having completely empty data for some of the variants,
         and inability to run native VAPr queries on the data.
-
+        
         It will return the class :class:`~VAPr.vapr_core.VaprDataset`, which can then be used for downstream
         filtering and analysis.
 
-        :param num_processes: number of parallel processes.  Defaults to 8
-        :type num_processes: int
-        :param chunk_size: int number of variants to be processed at once. Defaults to 2000
-        :type chunk_size: int
-        :param verbose_level: int higher verbosity will give more feedback, raise to 2 or 3 when debugging. Defaults to 1
-        :type verbose_level: int
-        :param allow_adds: bool Allow adding new variants to a pre-existing Mongo collection, or overwrite it
-        :type allow_adds: bool
-        :return: :class:`~VAPr.vapr_core.VaprDataset`
+        Args:
+          num_processes(int, optional): number of parallel processes.  Defaults to 8
+          chunk_size(int, optional): int number of variants to be processed at once. Defaults to 2000
+          verbose_level(int, optional): int higher verbosity will give more feedback, raise to 2 or 3 when debugging. Defaults to 1
+          allow_adds(bool, optional): bool Allow adding new variants to a pre-existing Mongo collection, or overwrite it (Default value = False)
+
+        Returns:
+          class:`~VAPr.vapr_core.VaprDataset`
+
         """
         result = self._make_dataset_for_results("annotate_lite", allow_adds)
         self._collect_annotations_and_store(self._single_vcf_path, chunk_size, num_processes, sample_names_list=None,
@@ -524,29 +527,23 @@ class VaprAnnotator(object):
         return result
 
     def annotate(self, num_processes=4, chunk_size=2000, verbose_level=1, allow_adds=False):
-        """
-        This is the main function of the package. It will run Annovar beforehand, and will kick-start the full
+        """This is the main function of the package. It will run Annovar beforehand, and will kick-start the full
         annotation functionality. Namely, it will collect all the variant data from Annovar annotations, combine
         it with data coming from MyVariant.info, and parse it to MongoDB, in the database and collection specified in
         project_data.
-
+        
         It will return the class :class:`~VAPr.vapr_core.VaprDataset`, which can then be used for downstream
         filtering and analysis.
 
-        :param num_processes: number of parallel processes.  Defaults to 8
-        :type num_processes: int
+        Args:
+          num_processes(int, optional): number of parallel processes.  Defaults to 8
+          chunk_size(int, optional): int number of variants to be processed at once. Defaults to 2000
+          verbose_level(int, optional): int higher verbosity will give more feedback, raise to 2 or 3 when debugging. Defaults to 1
+          allow_adds(bool, optional): bool Allow adding new variants to a pre-existing Mongo collection, or overwrite it (Default value = False)
 
-        :param chunk_size: int number of variants to be processed at once. Defaults to 2000
-        :type chunk_size: int
+        Returns:
+          class: class:`~VAPr.vapr_core.VaprDataset`
 
-        :param verbose_level: int higher verbosity will give more feedback, raise to 2 or 3 when debugging. Defaults to 1
-        :type verbose_level: int
-
-        :param allow_adds: bool Allow adding new variants to a pre-existing Mongo collection, or overwrite it
-        :type allow_adds: bool
-
-        :return: :class:`~VAPr.vapr_core.VaprDataset`
-        :rtype: class
         """
 
         if self._path_to_annovar_install is None:
@@ -560,6 +557,7 @@ class VaprAnnotator(object):
         return result
 
     def _make_dataset_for_results(self, func_name, allow_adds):
+
         result = VaprDataset(self._mongo_db_name, self._mongo_collection_name, self._single_vcf_path)
 
         if not result.is_empty:
@@ -578,6 +576,7 @@ class VaprAnnotator(object):
     # TODO: someday: extra_data from design file needs to come back in here
     def _collect_annotations_and_store(self, file_path, chunk_size, num_processes, sample_names_list=None,
                                        verbose_level=1):
+
         num_file_lines = self._get_num_lines_in_file(file_path)
         jobs_params_tuples_list = self._make_jobs_params_tuples_list(
             file_path, num_file_lines, chunk_size, self._mongo_db_name, self._mongo_collection_name,
