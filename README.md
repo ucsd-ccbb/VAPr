@@ -4,6 +4,7 @@
 This package is aimed at providing a way of retrieving variant information using [ANNOVAR](http://annovar.openbioinformatics.org/en/latest/) and [myvariant.info](http://myvariant.info/). In particular, it is suited for bioinformaticians interested in aggregating variant information into a single NoSQL database (MongoDB solely at the moment). 
 
 Documentation now live at: http://vapr.readthedocs.io/en/latest/
+DOI: [Efficient population-scale variant analysis and prioritization with VAPr](https://doi.org/10.1093/bioinformatics/bty192)
 
 ## Authors
 
