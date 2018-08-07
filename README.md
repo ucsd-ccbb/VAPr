@@ -530,8 +530,8 @@ _Required_:
 
 # List of rare deleterious variants
 filtered_variants = dataset.get_rare_deleterious_variants()
-# Write variants to csv file
-dataset.write_filtered_annotated_csv(filtered_variants, output_dir + “/myfile.csv”)
+# Write variants to vcf file
+dataset.write_filtered_annotated_vcf(filtered_variants, output_dir + “/myfile.csv”)
 
 ```
 
