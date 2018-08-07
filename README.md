@@ -184,7 +184,7 @@ providing a link to the latest ANNOVAR release file. Download this file (which w
 its data to be installed--the entire disk size of the databases will be around 25 GB, so make sure you have such space 
 available!  
 
-#### VAPr
+### VAPr
 
 VAPr is available from PyPi.  Once the above requirements have been installed, VAPr itself can be installed by just running:
 
