@@ -517,7 +517,7 @@ _Optional_:
 
 #### Write Options #4: Filtered Variants VCF
 
-`write_filtered_annotated_csv()`: List of filtered variants will be written to a VCF file.
+`write_filtered_annotated_vcf()`: List of filtered variants will be written to a VCF file.
 
 **Args**: 
 
