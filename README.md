@@ -138,7 +138,7 @@ These instructions will get you a copy of the package up and running on your loc
 - [Tabix](http://www.htslib.org/download/)
 - [Annovar scripts](http://annovar.openbioinformatics.org/en/latest/user-guide/download/) (optional)
 
-#### Python 3 and MongoDB
+### Python 3 and MongoDB
 
 VAPr is written in Python and stores variant annotations in NoSQL database, using a locally-installed instance of MongoDB. [Installation instructions](https://docs.mongodb.com/manual/administration/install-community/)
 
