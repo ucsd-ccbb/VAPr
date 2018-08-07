@@ -132,7 +132,7 @@ These instructions will get you a copy of the package up and running on your loc
 <a id='setup'></a>
 ### Prerequisites
 
-- MongoDB Community Edition. [Installation instructions](https://goo.gl/TpBkcb)
+- MongoDB Community Edition. [Installation instructions](https://docs.mongodb.com/manual/administration/install-community/)
 - Python (2.7 and 3.5 currently supported and tested)
 - [BCFtools](http://www.htslib.org/download/)
 - [Tabix](http://www.htslib.org/download/)
@@ -140,35 +140,7 @@ These instructions will get you a copy of the package up and running on your loc
 
 #### Python 3 and MongoDB
 
-VAPr is written in Python and stores variant annotations in NoSQL database, using a locally-installed instance of MongoDB.
-  If you wish to run the Jupyter notebooks provided with VAPr locally, it is also necessary to have a local Jupyter 
-  notebook server installed. To set up these requirements in your machine's default environment using `conda`, run the 
-  following command:
-
-    conda install python=3 pandas mongodb pymongo jupyter notebook
-
-MongoDB also needs a location to store its data, so create a directory for this in the location of your choice, e.g.:
-
-    mkdir -p /Temp/MongoDbData
-    
-(or, on Windows systems, `md /Temp/MongoDbData`). 
-
-Then start the MongoDb with the command
-
-    mongod --dbpath /Temp/MongoDbData
-
-    
-To check if mongodb is currently running, run:
-
-    service mongod status
-    
-which should return    
-    
-    mongod (pid 591) is running...
-    
-519 is the process number so it may differ every time it is run. In case it is not running, the command will return:
-
-    mongod dead but subsys locked
+VAPr is written in Python and stores variant annotations in NoSQL database, using a locally-installed instance of MongoDB. [Installation instructions](https://docs.mongodb.com/manual/administration/install-community/)
 
 ### BCFtools
 
