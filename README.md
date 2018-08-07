@@ -260,6 +260,11 @@ annotator = vapr_core.VaprAnnotator(input_dir=IN_PATH,
  
 This will allow you to use any of [core methods](#core) in the package. 
 
+####Downloading ANNOVAR Databases
+If you plan to use Annovar, please make sure to download the necessary Annovar databases. When Annovar is first installed, it does not install Annovar databases by default. 
+The vapr_core has a method download_annovar_databases() that will download the necessary annovar databases. Note: this command only needs to be run the first time you use VAPr.  
+`annotator.download_annovar_databases()`
+
 `dataset = annotator.annotate(num_processes=8)`
 
 
