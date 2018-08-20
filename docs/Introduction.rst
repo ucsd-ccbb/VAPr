@@ -35,8 +35,8 @@ VAPr is written in Python and stores variant annotations in NoSQL database, usin
 .. _pip: https://docs.python.org/3/installing/
 
 
-Tabix, BCFtools
-~~~~~~~~~~~~~~~~~~~~~~~~
+BCFtools
+~~~~~~~~
 
 **BCFtools** will be used for VCF file merging between samples. To download and install:
 
@@ -44,9 +44,17 @@ Tabix, BCFtools
 
     $ wget https://github.com/samtools/bcftools/releases/download/1.6/bcftools-1.6.tar.bz2
     $ tar -vxjf bcftools-1.6.tar.bz2
-    $ cd bcftools-1.6 && make && make install
+    $ cd bcftools-1.6
+    $ make
+    $ make install
     $ export PATH=/where/to/install/bin:$PATH
 
+
+Refer `here <https://github.com/samtools/bcftools/blob/develop/INSTALL>`_ for installation debugging.
+
+
+Tabix
+~~~~~
 
 **Tabix** and **bgzip** binaries are available through the HTSlib project:
 
@@ -54,7 +62,9 @@ Tabix, BCFtools
 
     $ wget https://github.com/samtools/htslib/releases/download/1.6/htslib-1.6.tar.bz2
     $ tar -vxjf htslib-1.6.tar.bz2
-    $ cd htslib-1.6 && make && make install
+    $ cd htslib-1.6
+    $ make
+    $ make install
     $ export PATH=/where/to/install/bin:$PATH
 
 
