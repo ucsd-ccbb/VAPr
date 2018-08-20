@@ -33,17 +33,8 @@ The simplest way to install VAPr is from PyPI_ with pip_, Python's preferred pac
 MongoDB
 ~~~~~~~
 
-Further, MongoDB needs to installed and running. See the `official instructions <https://docs.mongodb.com/manual/installation>`_
-for details on how to install it on your platform. Alternatively, using Docker (possibly the easiest way):
+VAPr is written in Python and stores variant annotations in NoSQL database, using a locally-installed instance of MongoDB. `Installation instructions <https://docs.mongodb.com/manual/administration/install-community/>`_
 
-
-.. code-block:: bash
-
-    $ docker run --name vapr -it -p 27017:27017 mongo
-
-This may take a few seconds since the mongodb image needs to be downloaded from a repository. The process
-should produce logs that tells you that mongodb is running inside the container. Feel free to leave this
-terminal window open and proceed with the rest of the installation.
 
 .. _PyPI: https://pypi.python.org/pypi/yellowbrick
 .. _pip: https://docs.python.org/3/installing/

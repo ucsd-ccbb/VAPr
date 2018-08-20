@@ -55,7 +55,7 @@ As long as you have a MongoDB instance running and an annotation job ran success
 through `pymongo <https://api.mongodb.com/python/current/>`_ as shown by the code below.
 Running the query will return a :code:`cursor` object, which can be iterated upon.
 
-If instead a list is intended to be created from it, simply add: `filter2 = list(filter2)`
+If instead a list is intended to be created from it, simply add: `filter2 = list(filter2)`. 
 
 .. WARNING:: If the number of variants in the database is large and the filtering is not set up correctly,
 returning a list will be probably crash your computer since lists are kept in memory. Iterating over the cursor
