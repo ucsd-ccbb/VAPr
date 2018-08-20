@@ -120,5 +120,6 @@ methods provided to spawn annotation jobs. This is done in the following manner:
     annotator.download_databases()
     dataset = annotator.annotate(num_processes=8)
 
+
 This will download the required databases from ANNOVAR for annotation and will kickstart the annotation
 process, storing the variants in MongoDB.
