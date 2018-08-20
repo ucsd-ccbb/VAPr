@@ -117,7 +117,7 @@ methods provided to spawn annotation jobs. This is done in the following manner:
 
 Downloading the ANNOVAR databases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-If you plan to use Annovar, the command below will download the necessary Annovar databases. The code above includes this step. When Annovar is first installed, it does not install Annovar databases by default. The vapr_core has a method download_annovar_databases() that will download the necessary annovar databases. If you do not plan on using Annovar, you should not run this command. Note: this command only needs to be run the first time you use VAPr.
+If you plan to use Annovar, the command below will download the necessary Annovar databases. The code above includes this step. When Annovar is first installed, it does not install Annovar databases by default. The vapr_core has a method download_annovar_databases() that will download the necessary annovar databases. If you do not plan on using Annovar, you should not run this command. Note: this command only needs to be run once, the first time you use VAPr.
 
 .. code-block:: python
 
