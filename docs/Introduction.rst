@@ -118,7 +118,7 @@ methods provided to spawn annotation jobs. This is done in the following manner:
                                        annovar_install_path=ANNOVAR_PATH)
 
     annotator.download_databases()
-    annotator.annotatee()
+    dataset = annotator.annotate(num_processes=8)
 
 This will download the required databases from ANNOVAR for annotation and will kickstart the annotation
 process, storing the variants in MongoDB.

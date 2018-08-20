@@ -90,7 +90,7 @@ Output Files
 Although iterating over variants can be interesting for cursory analyses, we provide functionality to retrieve as well
 csv files for downstream analysis. A few options are available:
 
-Unfiltered Variants
+Unfiltered Variants CSV
 ~~~~~~~~~~~~~~~~~~~
 
 :code:`write_unfiltered_annotated_csv(out_file_path)`
@@ -98,7 +98,7 @@ Unfiltered Variants
 * All variants will be written to a CSV file.
 
 
-Filtered Variants
+Filtered Variants CSV
 ~~~~~~~~~~~~~~~~~
 
 :code:`write_filtered_annotated_csv(variant_list, out_file_path)`
@@ -114,8 +114,9 @@ Unfiltered Variants VCF
 * All variants will be written to a VCF file.
 
 
-Write Options #4: Filtered Variants VCF
+Filtered Variants VCF
+~~~~~~~~~~~~~~~~~~~~~
 
-:code:`write_filtered_annotated_csv(variant_list, vcf_out_path)`
+:code:`write_filtered_annotated_vcf(variant_list, vcf_out_path)`
 
 * A List of filtered variants will be written to a VCF file.
