@@ -35,12 +35,13 @@ VAPr is written in Python and stores variant annotations in NoSQL database, usin
 .. _pip: https://docs.python.org/3/installing/
 
 
-Tabix, ANNOVAR, BCFtools
+Tabix, BCFtools
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 **BCFtools** will be used for VCF file merging between samples. To download and install:
 
 .. code-block:: bash
+
     $ wget https://github.com/samtools/bcftools/releases/download/1.6/bcftools-1.6.tar.bz2
     $ tar -vxjf bcftools-1.6.tar.bz2
     $ cd bcftools-1.6 && make && make install
@@ -50,6 +51,7 @@ Tabix, ANNOVAR, BCFtools
 **Tabix** and **bgzip** binaries are available through the HTSlib project:
 
 .. code-block:: bash
+
     $ wget https://github.com/samtools/htslib/releases/download/1.6/htslib-1.6.tar.bz2
     $ tar -vxjf htslib-1.6.tar.bz2
     $ cd htslib-1.6 && make && make install
@@ -59,7 +61,8 @@ Tabix, ANNOVAR, BCFtools
 Refer `here <https://github.com/samtools/htslib/blob/develop/INSTALL>`_ for installation debugging.
 
 
-**ANNOVAR**
+ANNOVAR
+~~~~~~~
 
 (It is possible to proceed without installing ANNOVAR. Variants will only be annotated with MyVariant.info. In that case,
 users can skip the next steps and go straight to the section Known Variant Annotation and Storage)

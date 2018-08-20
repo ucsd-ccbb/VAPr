@@ -27,8 +27,7 @@ the user to query in an easy and efficient manner variants of interest
 2. Known Disease Variants
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* criteria: cosmic70 (MyVariant.info) information is present or ClinVar data is present and clinical significance is
-not Benign or Likely Benign
+* criteria: cosmic70 (MyVariant.info) information is present or ClinVar data is present and clinical significance is not Benign or Likely Benign
 
 .. _del-compound:
 
@@ -57,10 +56,7 @@ Running the query will return a :code:`cursor` object, which can be iterated upo
 
 If instead a list is intended to be created from it, simply add: `filter2 = list(filter2)`. 
 
-.. WARNING:: If the number of variants in the database is large and the filtering is not set up correctly,
-returning a list will be probably crash your computer since lists are kept in memory. Iterating over the cursor
-object perform `lazy evaluations` (i.e., one item is returned at a time instead of in bulk) which are much more memory
-efficient.
+.. WARNING:: If the number of variants in the database is large and the filtering is not set up correctly, returning a list will be probably crash your computer since lists are kept in memory. Iterating over the cursor object perform `lazy evaluations` (i.e., one item is returned at a time instead of in bulk) which are much more memory efficient.
 
 Further, if you'd like to customize your filters, a good idea would be to look at the available fields to be filtered.
 Looking at the myvariant.info documentation, you can see what are all the fields available and can be used for filtering.
@@ -91,7 +87,7 @@ Although iterating over variants can be interesting for cursory analyses, we pro
 csv files for downstream analysis. A few options are available:
 
 Unfiltered Variants CSV
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 :code:`write_unfiltered_annotated_csv(out_file_path)`
 
@@ -99,7 +95,7 @@ Unfiltered Variants CSV
 
 
 Filtered Variants CSV
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 :code:`write_filtered_annotated_csv(variant_list, out_file_path)`
 
