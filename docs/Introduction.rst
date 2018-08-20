@@ -111,7 +111,7 @@ methods provided to spawn annotation jobs. This is done in the following manner:
                                        vcfs_gzipped=False,
                                        annovar_install_path=ANNOVAR_PATH)
 
-    annotator.download_databases()
+    annotator.download_databases()  
     dataset = annotator.annotate(num_processes=8)
 
 
