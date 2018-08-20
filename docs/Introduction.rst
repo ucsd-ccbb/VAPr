@@ -12,15 +12,10 @@ NoSQL database (MongoDB solely at the moment).
 Installation
 ------------
 
-VAPr
-~~~~
+Ancillary Libraries
+~~~~~~~~~~~~~~~~~~~
 
-VAPr is compatible with Python 2.7 or later, but it is preferred to use Python 3.5 or later to take full advantage of all functionality.
-The simplest way to install VAPr is from PyPI_ with pip_, Python's preferred package installer.
-
-.. code-block:: bash
-
-    $ pip install VAPr
+VAPr relies on a variety of packages to function correctly. Below are packages and dependencies required to ensure that VAPr works correctly. 
 
 .. NOTE:: Jupyter, Pandas, and other ancillary libraries are not installed with VAPr and must be installed separately. These can be conveniently install using `Anaconda <https://conda.io/docs/user-guide/install/download.html>`_:
 
@@ -80,9 +75,17 @@ Download this file (which will usually have a name like annovar.latest.tar.gz) a
 machine in which you would like the ANNOVAR program and its data to be installed--the entire disk size of the databases
 will be around 25 GB, so make sure you have such space available!
 
+VAPr
+~~~~
 
-Annotation Quickstart
----------------------
+VAPr is compatible with Python 2.7 or later, but it is preferred to use Python 3.5 or later to take full advantage of all functionality. The simplest way to install VAPr is from PyPI_ with pip_, Python's preferred package installer.
+
+.. code-block:: bash
+
+    $ pip install VAPr
+
+Annotation Quickstart using ANNOVAR
+-----------------------------------
 An annotation project can be started by providing the API with a small set of information and then running the core
 methods provided to spawn annotation jobs. This is done in the following manner:
 
@@ -111,6 +114,13 @@ methods provided to spawn annotation jobs. This is done in the following manner:
     annotator.download_databases()
     dataset = annotator.annotate(num_processes=8)
 
+
+Downloading the ANNOVAR databases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you plan to use Annovar, please make sure to download the necessary Annovar databases. The code above includes this step. When Annovar is first installed, it does not install Annovar databases by default. The vapr_core has a method download_annovar_databases() that will download the necessary annovar databases. If you do not plan on using Annovar, you should not run this command. Note: this command only needs to be run the first time you use VAPr.
+
+.. code-block:: python
+   annotator.download_databases()
 
 This will download the required databases from ANNOVAR for annotation and will kickstart the annotation
 process, storing the variants in MongoDB.
