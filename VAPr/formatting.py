@@ -212,7 +212,18 @@ def change_cols(df):
     df.loc[mask, 'Variant_Classification'] = "Missense_Mutation"
     mask = df.exonicfunc_knowngene == 'synonymous SNV'
     df.loc[mask, 'Variant_Classification'] = "Silent"
+    mask = df.exonicfunc_knowngene == 'stopgain'
+    df.loc[mask, 'Variant_Classification'] = "Nonsense_Mutation"
+    mask = df.exonicfunc_knowngene == 'stoploss'
+    df.loc[mask, 'Variant_Classification'] = "Nonstop_Mutation"
+    mask = df.exonicfunc_knowngene == 'frameshift insertion'
+    df.loc[mask, 'Variant_Classification'] = "Frame_Shift_Ins"
+    mask = df.exonicfunc_knowngene == 'frameshift deletion'
+    df.loc[mask, 'Variant_Classification'] = "Frame_Shift_Del"
+    mask = df.exonicfunc_knowngene == 'nonframeshift insertion'
+    df.loc[mask, 'Variant_Classification'] = "In_Frame_Ins"
+    mask = df.exonicfunc_knowngene == 'nonframeshift deletion'
+    df.loc[mask, 'Variant_Classification'] = "In_Frame_Del"
 
     return df
-
 
