@@ -376,3 +376,21 @@ def maf_formatter(dataset_list_in):
     df2 = change_cols(df)
 
     return df2
+
+#########################################################################################
+### CREATE A LIST OF THE WHOLE DATASET
+def create_whole_dataset_list(MONGODB, COLLECTION):
+     #access the mongodb database
+    from pymongo import MongoClient
+    c = MongoClient()
+    c.test_database
+    db = c[MONGODB]
+    col = db[COLLECTION]
+    
+    #create a list of all the values in the database
+    cursor = col.find({})
+    wholeList = []
+    for document in cursor:
+        wholeList.append(document)
+
+    return wholeList
