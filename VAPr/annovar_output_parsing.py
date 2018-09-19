@@ -30,6 +30,7 @@ class AnnovarTxtParser(object):
     GENE_KNOWNGENE_HEADER = 'gene_knowngene'
     GENEDETAIL_KNOWNGENE_HEADER = 'genedetail_knowngene'
     EXONICFUNC_KNOWNGENE_HEADER = 'exonicfunc_knowngene'
+    AACHANGE_KNOWNGENE_HEADER = 'aachange_knowngene'
     SCORE_KEY = "Score"
     RAW_CHR_MT_VAL = "chrM"
     RAW_CHR_MT_SUFFIX_VAL = RAW_CHR_MT_VAL.replace(CHR_HEADER, "")
@@ -45,6 +46,7 @@ class AnnovarTxtParser(object):
                            GENE_KNOWNGENE_HEADER,
                            GENEDETAIL_KNOWNGENE_HEADER,
                            EXONICFUNC_KNOWNGENE_HEADER,
+                           AACHANGE_KNOWNGENE_HEADER, 
                            # CYTOBAND_HEADER,
                            # GENOMIC_SUPERDUPS_HEADER,
                            THOU_G_2015_ALL_HEADER] #,
@@ -55,8 +57,7 @@ class AnnovarTxtParser(object):
 
     @staticmethod
     def _normalize_header(raw_headers_list):
-        """Lower-case all header strings and replace periods with underscores.
-
+        """Lower-case all header strings and replace periods with underscores
         Args:
             raw_headers_list (List[str]): A list of the headers from the Annovar txt output file.
 
