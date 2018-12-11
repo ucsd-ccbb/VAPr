@@ -1,4 +1,4 @@
-
+import pandas as pd
 """ 
 formatting.py: formats the output from VAPr such that the output matches MAF format, allowing for downstream processing 
 and analysis in Maftools 
@@ -291,22 +291,15 @@ def unnest_semicolon_values(data_list_in):
 
 # Re-arrange and rename columns to match the MAF format
 def change_cols(df):
-    cols = list(df)
-    cols.insert(0, cols.pop(cols.index('gene_knowngene')))
-    cols.insert(1, cols.pop(cols.index('chr')))
-    cols.insert(2, cols.pop(cols.index('start')))
-    cols.insert(3, cols.pop(cols.index('end')))
-    cols.insert(4, cols.pop(cols.index('ref')))
-    cols.insert(5, cols.pop(cols.index('alt')))
-    cols.insert(6, cols.pop(cols.index('Variant_Type')))
-    cols.insert(7, cols.pop(cols.index('func_knowngene')))
-    cols.insert(8, cols.pop(cols.index('samples.sample_id')))
-    cols.insert(9, cols.pop(cols.index('dbsnp.rsid')))
-    cols.insert(10, cols.pop(cols.index('t_ref_count')))
-    cols.insert(11, cols.pop(cols.index('t_alt_count')))
-    cols.insert(12, cols.pop(cols.index('aachange_knowngene')))
+    required_cols = ['gene_knowngene', 'chr', 'start', 'end', 'ref', 'alt', 'Variant_Type', 'func_knowngene',
+                     'samples.sample_id', 'dbsnp.rsid', 't_ref_count', 't_alt_count', 'aachange_knowngene']
+    for col in required_cols:
+        if col not in df.columns.values:
+            df[col] = ""
 
-    df = df.loc[:, cols]
+    df_req = df[required_cols]
+    df_extra = df.drop(required_cols, axis=1)
+    df = pd.concat([df_req, df_extra], axis=1)
 
     df = df.rename(columns={'gene_knowngene': 'Hugo_Symbol',
                             'chr': 'Chromosome',
@@ -373,9 +366,9 @@ def maf_formatter(dataset_list_in):
     k7 = unnest_semicolon_values(k6)
 
     df = pd.DataFrame(data=k7)
-    df2 = change_cols(df)
+    maf = change_cols(df)
 
-    return df2
+    return maf
 
 #########################################################################################
 ### CREATE A LIST OF THE WHOLE DATASET
