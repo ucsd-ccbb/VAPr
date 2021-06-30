@@ -78,6 +78,9 @@ class AnnovarTxtParser(object):
         annotations_dict_per_variant_list = []
         hgvsid_list = []
 
+        # increase limit of csv file
+        csv.field_size_limit(sys.maxsize)
+
         # read in the header line and normalize the header names
         reader = csv.reader(annovar_txt_file_like_obj, delimiter='\t')
         normed_headers_list = cls._normalize_header(next(reader))
